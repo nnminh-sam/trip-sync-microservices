@@ -1,0 +1,17 @@
+services:
+  nats:
+    image: nats:2.10-alpine
+    container_name: nats
+    ports:
+      - '4222:4222'
+      - '8222:8222'
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - ./docker-volume/redis-data:/data
+    restart: unless-stopped

@@ -1,0 +1,19 @@
+services:
+  nats:
+    image: nats:2.10-alpine
+    container_name: nats
+    ports:
+      - '4222:4222'
+      - '8222:8222'
+    restart: unless-stopped
+
+  api-gateway:
+    build: .
+    container_name: api-gateway
+    ports:
+      - '3000:${APP_PORT}'
+    env_file:
+      - .env
+    depends_on:
+      - nats
+    restart: unless-stopped
