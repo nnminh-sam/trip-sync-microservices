@@ -12,6 +12,8 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
+import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
+import { User } from 'src/models/user.model';
 
 @ApiTags('User')
 @Controller('users')
@@ -21,14 +23,23 @@ export class UserController {
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user by access token' })
-  @ApiResponse({ status: 200, description: 'Current user info' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Current user info',
+    model: User,
+  })
   async findByAccessToken(@RequestUserClaims() claims: TokenClaimsDto) {
     return await this.userService.findById(claims.sub);
   }
 
   @Get()
   @ApiOperation({ summary: 'Find users' })
-  @ApiResponse({ status: 200, description: 'List of users' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'List of users',
+    model: User,
+    isArray: true,
+  })
   @ApiBody({ type: FilterUserDto })
   async find(
     @RequestUserClaims() claims: TokenClaimsDto,
@@ -40,7 +51,11 @@ export class UserController {
   @Post()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create user' })
-  @ApiResponse({ status: 201, description: 'User created' })
+  @ApiResponseConstruction({
+    status: 201,
+    description: 'User created',
+    model: User,
+  })
   @ApiBody({ type: CreateUserDto })
   async create(
     @RequestUserClaims() claims: TokenClaimsDto,
@@ -52,7 +67,11 @@ export class UserController {
   @Patch()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update user' })
-  @ApiResponse({ status: 200, description: 'User updated' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'User updated',
+    model: User,
+  })
   @ApiBody({ type: UpdateUserDto })
   async update(
     @RequestUserClaims() claims: TokenClaimsDto,

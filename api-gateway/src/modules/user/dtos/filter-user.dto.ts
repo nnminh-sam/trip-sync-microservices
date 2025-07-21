@@ -1,7 +1,8 @@
 import { IsEmail, IsOptional, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { BaseRequestFilterDto } from 'src/dtos/base-request-filter.dto';
 
-export class FilterUserDto {
+export class FilterUserDto extends BaseRequestFilterDto {
   @ApiPropertyOptional({ description: 'First name to filter' })
   @IsOptional()
   @IsString()

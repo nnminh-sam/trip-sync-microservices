@@ -4,11 +4,12 @@ import { Repository } from 'typeorm';
 import { Role } from 'src/models/role.model';
 import { RolePermission } from 'src/models/role-permission.model';
 import { Permission } from 'src/models/permission.model';
-import { throwRpcException } from 'src/utils';
+import { paginateAndOrder, throwRpcException } from 'src/utils';
 import { CreateRoleDto } from './dtos/create-role.dto';
 import { UpdateRoleDto } from './dtos/update-role.dto';
 import { AuthorizeClaimsPayloadDto } from 'src/modules/role/dtos/authorize-claims-payload.dto';
 import { FilterRoleDto } from 'src/modules/role/dtos/filter-role.dto';
+import { ListDataDto } from 'src/dtos/list-data.dto';
 
 @Injectable()
 export class RoleService {
@@ -36,6 +37,34 @@ export class RoleService {
     if (!existingRole) {
       await this.create(createRoleDto);
       this.logger.log('System admin role created');
+    }
+
+    // TODO: change the permission role's permissions
+    const createManagerRoleDto: CreateRoleDto = {
+      name: 'manager',
+      description: 'Manager role of the system.',
+      permissionIds: systemAdminPermissionIds,
+    };
+    const existingManagerRole = await this.roleRepository.exists({
+      where: { name: createManagerRoleDto.name },
+    });
+    if (!existingManagerRole) {
+      await this.create(createManagerRoleDto);
+      this.logger.log('Manager role created');
+    }
+
+    // TODO: change the permission role's permissions
+    const createEmployeeRoleDto: CreateRoleDto = {
+      name: 'employee',
+      description: 'Employee role of the system.',
+      permissionIds: systemAdminPermissionIds,
+    };
+    const existingEmployeeRole = await this.roleRepository.exists({
+      where: { name: createEmployeeRoleDto.name },
+    });
+    if (!existingEmployeeRole) {
+      await this.create(createEmployeeRoleDto);
+      this.logger.log('Employee role created');
     }
     this.logger.log('Role seeding completed.');
   }
@@ -159,18 +188,28 @@ export class RoleService {
     }
   }
 
-  async findAll(payload: FilterRoleDto): Promise<Role[]> {
+  async findAll(payload: FilterRoleDto) {
     this.logger.log('Fetching all roles');
     const { name, sortBy, order, page, size } = payload;
-    const skip = (page - 1) * size;
-    const roles = await this.roleRepository.find({
+
+    const [roles, total] = await this.roleRepository.findAndCount({
       where: { ...(name && { name }) },
       relations: ['rolePermissions', 'rolePermissions.permission'],
-      skip,
-      order: { [sortBy]: order.toLowerCase() === 'asc' ? 1 : -1 },
+      ...paginateAndOrder({
+        page,
+        size,
+        order,
+        sortBy,
+      }),
+    });
+    const result = ListDataDto.build<Role>({
+      data: roles,
+      page,
+      size,
+      total,
     });
     this.logger.log(`Fetched ${roles.length} roles`);
-    return roles;
+    return result;
   }
 
   async findOne(id: string): Promise<Role> {

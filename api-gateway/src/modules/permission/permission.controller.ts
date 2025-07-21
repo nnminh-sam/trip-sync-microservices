@@ -6,7 +6,6 @@ import {
   Delete,
   Body,
   Param,
-  Query,
   HttpStatus,
   HttpCode,
   ValidationPipe,
@@ -16,19 +15,18 @@ import { PermissionService } from './permission.service';
 import { CreatePermissionDto } from './dtos/create-permission.dto';
 import { UpdatePermissionDto } from './dtos/update-permission.dto';
 import { BulkCreatePermissionDto } from './dtos/bulk-create-permission.dto';
-import { PublicRequest } from 'src/common/decorators/public-request.decorator';
 import {
   ApiTags,
   ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
   ApiBody,
   ApiParam,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { FilterPermissionDto } from 'src/modules/permission/dtos/filter-permission.dto';
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
+import { Permission } from 'src/models/permission.model';
+import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
 
 @ApiTags('Permission')
 @Controller('permissions')
@@ -40,7 +38,11 @@ export class PermissionController {
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create permission' })
-  @ApiResponse({ status: 201, description: 'Permission created' })
+  @ApiResponseConstruction({
+    status: 201,
+    description: 'Permission created',
+    model: Permission,
+  })
   @ApiBody({ type: CreatePermissionDto })
   async create(
     @RequestUserClaims() claims: TokenClaimsDto,
@@ -53,7 +55,12 @@ export class PermissionController {
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Bulk create permissions' })
-  @ApiResponse({ status: 201, description: 'Permissions created' })
+  @ApiResponseConstruction({
+    status: 201,
+    description: 'Permissions created',
+    model: Permission,
+    isArray: true,
+  })
   @ApiBody({ type: BulkCreatePermissionDto })
   async bulkCreate(
     @RequestUserClaims() claims: TokenClaimsDto,
@@ -68,7 +75,12 @@ export class PermissionController {
   @Get()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all permissions' })
-  @ApiResponse({ status: 200, description: 'List of permissions' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'List of permissions',
+    model: Permission,
+    isArray: true,
+  })
   async findAll(
     @RequestUserClaims() claims: TokenClaimsDto,
     @Body() payload: FilterPermissionDto,
@@ -79,7 +91,11 @@ export class PermissionController {
   @Get(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get permission by ID' })
-  @ApiResponse({ status: 200, description: 'Permission details' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Permission details',
+    model: Permission,
+  })
   @ApiParam({ name: 'id', type: String })
   async findOne(
     @RequestUserClaims() claims: TokenClaimsDto,
@@ -91,7 +107,11 @@ export class PermissionController {
   @Put(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update permission' })
-  @ApiResponse({ status: 200, description: 'Permission updated' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Permission updated',
+    model: Permission,
+  })
   @ApiParam({ name: 'id', type: String })
   @ApiBody({ type: UpdatePermissionDto })
   async update(
@@ -106,7 +126,11 @@ export class PermissionController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete permission' })
-  @ApiResponse({ status: 204, description: 'Permission deleted' })
+  @ApiResponseConstruction({
+    status: 204,
+    description: 'Permission deleted',
+    model: Permission,
+  })
   @ApiParam({ name: 'id', type: String })
   async remove(
     @RequestUserClaims() claims: TokenClaimsDto,

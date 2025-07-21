@@ -2,11 +2,12 @@ import { Injectable, HttpStatus, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Permission } from 'src/models/permission.model';
-import { throwRpcException } from 'src/utils';
+import { paginateAndOrder, throwRpcException } from 'src/utils';
 import { CreatePermissionDto } from './dtos/create-permission.dto';
 import { UpdatePermissionDto } from './dtos/update-permission.dto';
 import { BulkCreatePermissionDto } from './dtos/bulk-create-permission.dto';
 import { FilterPermissionDto } from 'src/modules/permission/dtos/filter-permission.dto';
+import { ListDataDto } from 'src/dtos/list-data.dto';
 
 @Injectable()
 export class PermissionService {
@@ -17,6 +18,7 @@ export class PermissionService {
     private readonly permissionRepository: Repository<Permission>,
   ) {}
 
+  // TODO: Seeding permissions for Manager and Employee roles
   async onStartUp() {
     this.logger.log('Seeding default permissions if not exist...');
     const resources = ['role', 'permission', 'user'];
@@ -68,19 +70,26 @@ export class PermissionService {
     }
   }
 
-  async findAll(payload: FilterPermissionDto): Promise<Permission[]> {
+  async findAll(payload: FilterPermissionDto) {
     const { action, resource, page, size, order, sortBy } = payload;
 
-    const skip = (page - 1) * size;
-    const permissions = await this.permissionRepository.find({
+    const [permissions, total] = await this.permissionRepository.findAndCount({
       where: { ...(action && { action }), ...(resource && { resource }) },
-      skip,
-      order: {
-        [sortBy]: order.toLowerCase() === 'asc' ? 1 : -1,
-      },
+      ...paginateAndOrder({
+        page,
+        size,
+        order,
+        sortBy,
+      }),
+    });
+    const result = ListDataDto.build<Permission>({
+      data: permissions,
+      page,
+      size,
+      total,
     });
     this.logger.log(`Fetched ${permissions.length} permissions`);
-    return permissions;
+    return result;
   }
 
   async findOne(id: string): Promise<Permission> {
@@ -99,34 +108,6 @@ export class PermissionService {
     }
 
     this.logger.log(`Permission found with id: ${id}`);
-    return permission;
-  }
-
-  async findByActionAndResource(
-    action: string,
-    resource: string,
-  ): Promise<Permission> {
-    this.logger.log(
-      `Fetching permission with action: ${action}, resource: ${resource}`,
-    );
-    const permission = await this.permissionRepository.findOne({
-      where: { action, resource },
-      relations: ['rolePermissions', 'rolePermissions.role'],
-    });
-
-    if (!permission) {
-      this.logger.warn(
-        `Permission not found for action: ${action}, resource: ${resource}`,
-      );
-      throwRpcException({
-        message: 'Permission not found',
-        statusCode: HttpStatus.NOT_FOUND,
-      });
-    }
-
-    this.logger.log(
-      `Permission found for action: ${action}, resource: ${resource}`,
-    );
     return permission;
   }
 

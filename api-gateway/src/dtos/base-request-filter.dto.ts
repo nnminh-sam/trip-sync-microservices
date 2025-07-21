@@ -9,7 +9,7 @@ export class BaseRequestFilterDto {
   })
   @IsOptional()
   @IsString()
-  sortBy?: string;
+  sortBy?: string = 'id';
 
   @ApiProperty({
     description: 'Sort order',
@@ -19,7 +19,7 @@ export class BaseRequestFilterDto {
   })
   @IsOptional()
   @IsIn(['asc', 'desc'])
-  order?: 'asc' | 'desc';
+  order?: 'asc' | 'desc' = 'asc';
 
   @ApiProperty({
     description: 'Page number (starts from 1)',

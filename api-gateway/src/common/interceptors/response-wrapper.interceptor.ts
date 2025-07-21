@@ -6,35 +6,21 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Request } from 'express';
-
-interface PaginationMeta {
-  total?: number;
-  page?: number;
-  pageSize?: number;
-  [key: string]: any;
-}
-
-interface ResponseWrapper<T = any> {
-  data: T;
-  path: string;
-  method: string;
-  timestamp: string;
-  metadata?: Record<string, any>;
-  pagination?: PaginationMeta;
-}
+import { Request, Response } from 'express';
+import { ApiResponseDto } from 'src/dtos/api-response.dto';
 
 @Injectable()
 export class ResponseWrapperInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const ctx = context.switchToHttp();
     const request = ctx.getRequest<Request>();
+    const response = ctx.getResponse<Response>();
     const { method, originalUrl: path } = request;
     const timestamp = new Date().toISOString();
+    const statusCode = response.statusCode;
 
     return next.handle().pipe(
       map((response) => {
-        // If response has both data and pagination, treat as paginated
         if (
           response &&
           typeof response === 'object' &&
@@ -43,21 +29,22 @@ export class ResponseWrapperInterceptor implements NestInterceptor {
         ) {
           const { data, pagination, ...metadata } = response;
           return {
-            data,
-            path,
-            method,
             timestamp,
-            metadata: Object.keys(metadata).length ? metadata : undefined,
+            method,
+            path,
+            statusCode,
+            data,
             pagination,
-          } as ResponseWrapper;
+            metadata: Object.keys(metadata).length ? metadata : undefined,
+          } as ApiResponseDto;
         }
-        // Non-paginated response
+
         return {
           data: response,
           path,
           method,
           timestamp,
-        } as ResponseWrapper;
+        } as ApiResponseDto;
       }),
     );
   }

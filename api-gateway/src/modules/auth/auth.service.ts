@@ -15,6 +15,7 @@ import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { ExchangeTokenDto } from 'src/modules/auth/dtos/exchange-token.dto';
 import { v4 as uuid } from 'uuid';
 import { AuthorizeClaimPayloadDto } from 'src/modules/auth/dtos/authorize-claim-payload.dto';
+import { AuthResponseDto } from 'src/modules/auth/dtos/auth-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -114,7 +115,7 @@ export class AuthService {
     return {
       ...tokens,
       user,
-    };
+    } as AuthResponseDto;
   }
 
   async logout(claims: TokenClaimsDto): Promise<{ message: string }> {

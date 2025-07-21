@@ -13,6 +13,8 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
+import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
+import { AuthResponseDto } from 'src/modules/auth/dtos/auth-response.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -23,7 +25,11 @@ export class AuthController {
   @PublicRequest()
   @HttpCode(200)
   @ApiOperation({ summary: 'User login' })
-  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Login successful',
+    model: AuthResponseDto,
+  })
   @ApiBody({ type: LoginDto })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
@@ -33,7 +39,11 @@ export class AuthController {
   @HttpCode(200)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'User logout' })
-  @ApiResponse({ status: 200, description: 'Logout successful' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Logout successful',
+    model: AuthResponseDto,
+  })
   async logout(@RequestUserClaims() claims: TokenClaimsDto) {
     return this.authService.logout(claims);
   }
@@ -41,7 +51,11 @@ export class AuthController {
   @Post('/tokens/exchange')
   @PublicRequest()
   @ApiOperation({ summary: 'Exchange tokens' })
-  @ApiResponse({ status: 200, description: 'Token exchange successful' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Token exchange successful',
+    model: AuthResponseDto,
+  })
   @ApiBody({ type: ExchangeTokenDto })
   async exchangeToken(@Body() payload: ExchangeTokenDto) {
     return await this.authService.exchangeTokens(payload);

@@ -10,6 +10,7 @@ import { RoleService } from 'src/modules/role/role.service';
 import { ConfigService } from '@nestjs/config';
 import { EnvSchema } from 'src/config';
 import * as bcrypt from 'bcryptjs';
+import { ListDataDto } from 'src/dtos/list-data.dto';
 
 @Injectable()
 export class UserService {
@@ -45,9 +46,19 @@ export class UserService {
   async findByEmail(email: string) {
     this.logger.log(`Finding user by email: ${email}`);
 
-    const user = await this.userRepository.findOne({
-      where: { email },
-    });
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.firstName',
+        'user.lastName',
+        'user.email',
+        'user.roleId',
+        'user.createdAt',
+        'user.updatedAt',
+      ])
+      .where('user.email = :email', { email })
+      .getOne();
 
     if (!user) {
       this.logger.warn(`User not found with email: ${email}`);
@@ -64,9 +75,19 @@ export class UserService {
   async findById(id: string) {
     this.logger.log(`Finding user by ID: ${id}`);
 
-    const user = await this.userRepository.findOne({
-      where: { id },
-    });
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.firstName',
+        'user.lastName',
+        'user.email',
+        'user.roleId',
+        'user.createdAt',
+        'user.updatedAt',
+      ])
+      .where('user.id = :id', { id })
+      .getOne();
 
     if (!user) {
       this.logger.warn(`User not found with ID: ${id}`);
@@ -83,7 +104,20 @@ export class UserService {
   async find(filter: FilterUserDto) {
     this.logger.log(`Finding users with filter: ${JSON.stringify(filter)}`);
 
+    const { page, size, order, sortBy, ...rest } = filter;
+    const skip: number = (page - 1) * size;
+
     const queryBuilder = this.userRepository.createQueryBuilder('user');
+
+    queryBuilder.select([
+      'user.id',
+      'user.firstName',
+      'user.lastName',
+      'user.email',
+      'user.roleId',
+      'user.createdAt',
+      'user.updatedAt',
+    ]);
 
     if (filter.email) {
       queryBuilder.andWhere('user.email LIKE :email', {
@@ -103,10 +137,19 @@ export class UserService {
       });
     }
 
-    const users = await queryBuilder.getMany();
-    this.logger.log(`Found ${users.length} users matching the filter criteria`);
+    queryBuilder.skip(skip).take(size);
 
-    return users;
+    const [users, total] = await queryBuilder.getManyAndCount();
+    this.logger.log(
+      `Found ${users.length} users (page ${page}, size ${size}, total ${total}) matching the filter criteria`,
+    );
+
+    return ListDataDto.build<User>({
+      data: users,
+      page,
+      size,
+      total,
+    });
   }
 
   async create(payload: CreateUserDto) {
