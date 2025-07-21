@@ -33,7 +33,7 @@ export class UserController {
     await this.roleService.authorizeClaims({
       claims: payload.claims,
       required: {
-        roles: ['system admin', 'manager'],
+        roles: ['system admin'],
         permission: {
           action: 'read',
           resource: 'user',
@@ -48,7 +48,7 @@ export class UserController {
     await this.roleService.authorizeClaims({
       claims: payload.claims,
       required: {
-        roles: ['system admin', 'manager'],
+        roles: ['system admin'],
         permission: {
           action: 'create',
           resource: 'user',

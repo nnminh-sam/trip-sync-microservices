@@ -25,6 +25,8 @@ import {
 import { FilterRoleDto } from 'src/modules/role/dtos/filter-role.dto';
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
+import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
+import { Role } from 'src/models/role.model';
 
 @ApiTags('Role')
 @Controller('roles')
@@ -36,7 +38,11 @@ export class RoleController {
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create role' })
-  @ApiResponse({ status: 201, description: 'Role created' })
+  @ApiResponseConstruction({
+    status: 201,
+    description: 'Role created',
+    model: Role,
+  })
   @ApiBody({ type: CreateRoleDto })
   async create(
     @RequestUserClaims() claims: TokenClaimsDto,
@@ -49,7 +55,12 @@ export class RoleController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all roles' })
-  @ApiResponse({ status: 200, description: 'List of roles' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'List of roles',
+    model: Role,
+    isArray: true,
+  })
   async findAll(
     @RequestUserClaims() claims: TokenClaimsDto,
     @Body() payload: FilterRoleDto,
@@ -60,7 +71,11 @@ export class RoleController {
   @Get(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get role by ID' })
-  @ApiResponse({ status: 200, description: 'Role details' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Role details',
+    model: Role,
+  })
   @ApiParam({ name: 'id', type: String })
   async findOne(
     @RequestUserClaims() claims: TokenClaimsDto,
@@ -72,7 +87,11 @@ export class RoleController {
   @Patch(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update role' })
-  @ApiResponse({ status: 200, description: 'Role updated' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Role updated',
+    model: Role,
+  })
   @ApiParam({ name: 'id', type: String })
   @ApiBody({ type: UpdateRoleDto })
   async update(
@@ -87,7 +106,11 @@ export class RoleController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete role' })
-  @ApiResponse({ status: 204, description: 'Role deleted' })
+  @ApiResponseConstruction({
+    status: 204,
+    description: 'Role deleted',
+    model: Role,
+  })
   @ApiParam({ name: 'id', type: String })
   async remove(
     @RequestUserClaims() claims: TokenClaimsDto,
