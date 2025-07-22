@@ -7,6 +7,7 @@ import { UserService } from 'src/modules/user/user.service';
 import * as bcrypt from 'bcryptjs';
 import { AuthorizeClaimsPayloadDto } from 'src/modules/role/dtos/authorize-claims-payload.dto';
 import { RoleService } from 'src/modules/role/role.service';
+import { User } from 'src/models/user.model';
 
 @Injectable()
 export class AuthService {
@@ -42,7 +43,9 @@ export class AuthService {
       }
 
       this.logger.log('Login successful. Returning user info.');
-      return user;
+      const userWithoutPassword = { ...user };
+      delete userWithoutPassword.password;
+      return userWithoutPassword as User;
     } catch (error) {
       this.logger.error('Login failed:', error);
       throwRpcException({
