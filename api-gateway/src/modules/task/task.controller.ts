@@ -1,3 +1,4 @@
+import { IsDate } from 'class-validator';
 import {
   Body,
   Controller,
@@ -6,12 +7,14 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
@@ -22,6 +25,7 @@ import { CreateTaskProofDto } from 'src/modules/task-proof/dtos/create-task-proo
 import { FilterTaskProofDto } from 'src/modules/task-proof/dtos/filter-task-proof.dto';
 import { CreateTaskDto } from 'src/modules/task/dtos/create-task.dto';
 import { FilterTaskDto } from 'src/modules/task/dtos/filter-task.dto';
+import { UpdateTaskDto } from 'src/modules/task/dtos/update-task.dto';
 
 @ApiBearerAuth()
 @ApiTags('Task')
@@ -37,10 +41,9 @@ export class TaskController {
     model: Task,
     isArray: true,
   })
-  @ApiBody({ type: FilterTaskDto })
   async findAll(
     @RequestUserClaims() claims: TokenClaimsDto,
-    @Body() payload: FilterTaskDto,
+    @Query() payload: FilterTaskDto,
   ) {
     return { claims, payload };
   }
@@ -96,10 +99,12 @@ export class TaskController {
   async update(
     @RequestUserClaims() claims: TokenClaimsDto,
     @Param('id') id: string,
+    @Body() payload: UpdateTaskDto,
   ) {
     return {
       claims,
       id,
+      payload,
     };
   }
 
@@ -137,10 +142,12 @@ export class TaskController {
   })
   async findProofs(
     @RequestUserClaims() claims: TokenClaimsDto,
-    @Body() payload: FilterTaskProofDto,
+    @Param('id') id: string,
+    @Query() payload: FilterTaskProofDto,
   ) {
     return {
       claims,
+      id,
       payload,
     };
   }

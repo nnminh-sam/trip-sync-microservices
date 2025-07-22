@@ -11,34 +11,34 @@ export class TaskProof extends BaseModel {
   task: Task;
 
   @ApiProperty({
-    description: "Task's type",
+    description: "Proof's type",
     examples: ['completion', 'cancellation'],
   })
   type: 'completion' | 'cancellation';
 
   @ApiProperty({
-    description: "Task's media URL",
+    description: "Proof's media URL",
   })
   mediaUrl: string;
 
   @ApiProperty({
-    description: "Task's media type",
+    description: "Proof's media type",
     examples: ['photo', 'video'],
   })
   mediaType: 'photo' | 'video';
 
   @ApiProperty({
-    description: "Task's submit latitude value",
+    description: "Proof's submit latitude value",
   })
   latitude: number;
 
   @ApiProperty({
-    description: "Task's submit longitude value",
+    description: "Proof's submit longitude value",
   })
   longitude: number;
 
   @ApiProperty({
-    description: "Task's submit timestamp",
+    description: "Proof's submit timestamp",
   })
   timestamp: Date;
 
