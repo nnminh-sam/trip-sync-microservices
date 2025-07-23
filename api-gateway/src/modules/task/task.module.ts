@@ -4,6 +4,6 @@ import { TaskController } from './task.controller';
 
 @Module({
   providers: [TaskService],
-  controllers: [TaskController]
+  controllers: [TaskController],
 })
 export class TaskModule {}

@@ -1,6 +1,7 @@
+import { BaseRequestFilterDto } from './../../../../../api-gateway/src/dtos/base-request-filter.dto';
 import { IsDate, IsOptional, IsString, IsUUID } from 'class-validator';
 
-export class FilterTaskDto {
+export class FilterTaskDto extends BaseRequestFilterDto {
   @IsOptional()
   @IsUUID()
   tripLocationId?: string;

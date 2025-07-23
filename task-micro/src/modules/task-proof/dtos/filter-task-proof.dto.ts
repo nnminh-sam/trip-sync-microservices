@@ -1,6 +1,7 @@
 import { IsDate, IsOptional, IsString, IsUUID } from 'class-validator';
+import { BaseRequestFilterDto } from 'src/dtos/base-request-filter.dto';
 
-export class FilterTaskProofDto {
+export class FilterTaskProofDto extends BaseRequestFilterDto {
   @IsOptional()
   @IsString()
   type?: 'completion' | 'cancellation';
