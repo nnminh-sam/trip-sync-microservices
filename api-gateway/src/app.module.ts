@@ -7,6 +7,8 @@ import { ClientModule } from './client/client.module';
 import { RoleModule } from './modules/role/role.module';
 import { PermissionModule } from './modules/permission/permission.module';
 import { DatabaseModule } from './database/database.module';
+import { LocationModule } from './modules/location/location.module';
+import { TripModule } from './modules/trip/trip.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { DatabaseModule } from './database/database.module';
     RoleModule,
     PermissionModule,
     DatabaseModule,
+    LocationModule,
+    TripModule,
   ],
   controllers: [],
   providers: [],

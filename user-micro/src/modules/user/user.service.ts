@@ -56,7 +56,9 @@ export class UserService {
         'user.roleId',
         'user.createdAt',
         'user.updatedAt',
+        'user.password', 
       ])
+      .leftJoinAndSelect('user.role', 'role') 
       .where('user.email = :email', { email })
       .getOne();
 

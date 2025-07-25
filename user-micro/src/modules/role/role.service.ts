@@ -132,7 +132,7 @@ export class RoleService {
     }
 
     await this.validateRequiredRoleAndPermission(
-      required.roles,
+      [claims.role],
       required.permission,
     );
 
