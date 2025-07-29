@@ -3,10 +3,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ExportController } from './export.controller';
 import { ExportService } from './export.service';
 import { ExportLog } from 'src/models/export-logs.model';
-
+import { NatsClientService } from 'src/common/services/nats-client.service';
+import { NATSClient } from 'src/client/clients';
+import { ClientsModule } from '@nestjs/microservices';
 @Module({
-  imports: [TypeOrmModule.forFeature([ExportLog])],
+    imports: [
+    TypeOrmModule.forFeature([ExportLog]),
+    ClientsModule.registerAsync([NATSClient]),
+  ],
   controllers: [ExportController],
-  providers: [ExportService]
+  providers: [ExportService, NatsClientService],
+  exports: [ClientsModule], 
 })
 export class ExportModule {}

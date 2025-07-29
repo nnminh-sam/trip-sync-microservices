@@ -12,7 +12,7 @@ export class ExportController {
 
   @MessagePattern(ExportMessagePattern.CREATE)
   async create(@Payload() payload: MessagePayloadDto<CreateExportDto>) {
-    return await this.exportService.create(payload.request.body);
+    return await this.exportService.createExportRequest(payload.request.body);
   }
 
 

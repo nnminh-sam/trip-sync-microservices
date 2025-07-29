@@ -1,10 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExportLog } from 'src/models/export-logs.model';
 import { CreateExportDto } from './dtos/create-export.dto';
-import { NatsClientService } from 'src/nats/nats-client.service';
 import { v4 as uuidv4 } from 'uuid';
+import { NatsClientService } from 'src/common/services/nats-client.service';
 import * as path from 'path';
 
 @Injectable()
@@ -51,5 +51,15 @@ export class ExportService {
     return { id: exportId, file_url };
   }
 
+  async findOne(id: string) {
+      const exportLog = await this.exportLogRepo.findOne({ where: { id } });
+
+      if (!exportLog) {
+        this.logger.warn(`ExportLog with id ${id} not found`);
+        throw new NotFoundException(`Export log with id ${id} not found`);
+      }
+
+      return exportLog;
+    }
   
 }
