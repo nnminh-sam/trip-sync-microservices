@@ -124,7 +124,7 @@ async create(dto: CreateTripDto): Promise<Trip> {
 
 
   async findAll(filter: FilterTripDto): Promise<ListDataDto<any>> {
-  const { assignee_id, from_date, to_date, page = 1, size = 10, sortBy = 'id', order = 'ASC' } = filter;
+  const { assignee_id, from_date, to_date, status, page = 1, size = 10, sortBy = 'id', order = 'ASC' } = filter;
 
   // Join bảng locations
   const query = this.tripRepo
@@ -141,7 +141,9 @@ async create(dto: CreateTripDto): Promise<Trip> {
       to_date,
     });
   }
-
+  if (status) {
+    query.andWhere('trip.status = :status', { status });
+  }
   query
     .orderBy(`trip.${sortBy}`, order.toUpperCase() as 'ASC' | 'DESC')
     .skip((page - 1) * size)

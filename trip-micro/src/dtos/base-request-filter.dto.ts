@@ -13,11 +13,11 @@ export class BaseRequestFilterDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  page: number;
+  page?: number;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  size: number;
+  size?: number;
 }

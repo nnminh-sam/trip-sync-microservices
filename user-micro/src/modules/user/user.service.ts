@@ -48,7 +48,6 @@ export class UserService {
 
     const user = await this.userRepository
       .createQueryBuilder('user')
-      .leftJoinAndSelect('user.role', 'role')
       .select([
         'user.id',
         'user.firstName',

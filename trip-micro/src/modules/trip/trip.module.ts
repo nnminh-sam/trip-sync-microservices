@@ -14,5 +14,6 @@ import { ClientModule } from 'src/client/client.module';
   ],
   controllers: [TripController],
   providers: [TripService],
+  exports: [TripService],
 })
 export class TripModule {}
