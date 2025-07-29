@@ -1,6 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseModel } from 'src/models/base.model';
 import { TaskProof } from 'src/models/task-proof.model';
+import { TripLocation } from 'src/models/trip-location.model';
+
+export enum TaskStatus {
+  PENDING = 'pending',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
+}
 
 export class Task extends BaseModel {
   @ApiProperty({
@@ -9,53 +16,68 @@ export class Task extends BaseModel {
   tripLocationId: string;
 
   @ApiProperty({
-    description: "Trip's title",
+    description: 'Trip location object',
+    type: () => TripLocation,
+  })
+  tripLocation?: TripLocation;
+
+  @ApiProperty({
+    description: "Task's title",
   })
   title: string;
 
   @ApiProperty({
-    description: "Trip's description",
+    description: "Task's description",
   })
   description: string;
 
   @ApiProperty({
-    description: "Trip's status",
-    examples: ['pending', 'completed', 'canceled'],
+    description: "Task's status",
+    enum: TaskStatus,
+    example: TaskStatus.PENDING,
   })
-  status: 'pending' | 'completed' | 'canceled';
+  status: TaskStatus;
 
   @ApiProperty({
-    description: "Trip's note",
+    description: "Task's note",
+    required: false,
   })
-  note: string;
+  note?: string;
 
   @ApiProperty({
-    description: "Trip's deadline",
+    description: "Task's deadline",
+    type: 'string',
+    format: 'date-time',
+    required: false,
   })
-  deadline: Date;
+  deadline?: Date;
 
   @ApiProperty({
-    description: "Trip's completion timestamp",
+    description: "Task's completion timestamp",
+    type: 'string',
+    format: 'date-time',
     required: false,
   })
   completedAt?: Date;
 
   @ApiProperty({
-    description: "Trip's cancelation timestamp",
+    description: "Task's cancelation timestamp", 
+    type: 'string',
+    format: 'date-time',
     required: false,
   })
-  canceledAt?: Date;
+  cancelledAt?: Date;
 
   @ApiProperty({
-    description: "Trip's cancel reason",
+    description: "Task's cancel reason",
     required: false,
   })
   cancelReason?: string;
 
   @ApiProperty({
-    description: "Trip's proofs",
-    type: TaskProof,
+    description: "Task's proofs",
+    type: () => TaskProof,
     isArray: true,
   })
-  proofs: TaskProof[];
+  proofs?: TaskProof[];
 }
