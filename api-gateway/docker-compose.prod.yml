@@ -7,6 +7,15 @@ services:
       - '8222:8222'
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - ./docker-volume/redis-data:/data
+    restart: unless-stopped
+
   api-gateway:
     build: .
     container_name: api-gateway
@@ -16,4 +25,5 @@ services:
       - .env
     depends_on:
       - nats
+      - redis
     restart: unless-stopped
