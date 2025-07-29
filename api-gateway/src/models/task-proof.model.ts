@@ -1,6 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseModel } from 'src/models/base.model';
 import { Task } from 'src/models/task.model';
+import { User } from 'src/models/user.model';
+
+export enum ProofType {
+  COMPLETION = 'completion',
+  CANCELLATION = 'cancellation',
+}
+
+export enum MediaType {
+  PHOTO = 'photo',
+  VIDEO = 'video',
+}
 
 export class TaskProof extends BaseModel {
   @ApiProperty({
@@ -8,13 +19,18 @@ export class TaskProof extends BaseModel {
   })
   taskId: string;
 
-  task: Task;
+  @ApiProperty({
+    description: 'Task object',
+    type: () => Task,
+  })
+  task?: Task;
 
   @ApiProperty({
     description: "Proof's type",
-    examples: ['completion', 'cancellation'],
+    enum: ProofType,
+    example: ProofType.COMPLETION,
   })
-  type: 'completion' | 'cancellation';
+  type: ProofType;
 
   @ApiProperty({
     description: "Proof's media URL",
@@ -23,22 +39,29 @@ export class TaskProof extends BaseModel {
 
   @ApiProperty({
     description: "Proof's media type",
-    examples: ['photo', 'video'],
+    enum: MediaType,
+    example: MediaType.PHOTO,
   })
-  mediaType: 'photo' | 'video';
+  mediaType: MediaType;
 
   @ApiProperty({
     description: "Proof's submit latitude value",
+    type: 'number',
+    example: 21.0285,
   })
   latitude: number;
 
   @ApiProperty({
     description: "Proof's submit longitude value",
+    type: 'number',
+    example: 105.8542,
   })
   longitude: number;
 
   @ApiProperty({
     description: "Proof's submit timestamp",
+    type: 'string',
+    format: 'date-time',
   })
   timestamp: Date;
 
@@ -46,6 +69,12 @@ export class TaskProof extends BaseModel {
     description: 'Uploader ID of the task, UUID value',
   })
   uploadedBy: string;
+
+  @ApiProperty({
+    description: 'Uploader user object',
+    type: () => User,
+  })
+  uploader?: User;
 
   @ApiProperty({
     description: 'Spatial point for geospatial indexing',

@@ -9,6 +9,12 @@ import { PermissionModule } from './modules/permission/permission.module';
 import { DatabaseModule } from './database/database.module';
 import { TaskModule } from './modules/task/task.module';
 import { TaskProofModule } from './modules/task-proof/task-proof.module';
+import { LocationModule } from './modules/location/location.module';
+import { TripModule } from './modules/trip/trip.module';
+import { GpsModule } from './modules/gps/gps.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { ReportModule } from './modules/report/report.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 @Module({
   imports: [
@@ -24,6 +30,12 @@ import { TaskProofModule } from './modules/task-proof/task-proof.module';
     DatabaseModule,
     TaskModule,
     TaskProofModule,
+    LocationModule,
+    TripModule,
+    GpsModule,
+    NotificationModule,
+    ReportModule,
+    AuditModule,
   ],
   controllers: [],
   providers: [],
