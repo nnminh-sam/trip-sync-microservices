@@ -9,6 +9,7 @@ import { PermissionModule } from './modules/permission/permission.module';
 import { DatabaseModule } from './database/database.module';
 import { TaskModule } from './modules/task/task.module';
 import { TaskProofModule } from './modules/task-proof/task-proof.module';
+import { LocationModule } from './modules/location/location.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { TaskProofModule } from './modules/task-proof/task-proof.module';
     DatabaseModule,
     TaskModule,
     TaskProofModule,
+    LocationModule,
   ],
   controllers: [],
   providers: [],
