@@ -24,7 +24,15 @@ export class RoleService {
     private readonly permissionRepository: Repository<Permission>,
   ) {}
 
-  async onStartUp(systemAdminPermissionIds: string[]) {
+  async onStartUp({
+    systemAdminPermissionIds,
+    managerPermissionIds,
+    employeePermissionIds,
+  }: {
+    systemAdminPermissionIds: string[];
+    managerPermissionIds: string[];
+    employeePermissionIds: string[];
+  }) {
     this.logger.log('Seeding default roles if not exist...');
     const createRoleDto: CreateRoleDto = {
       name: 'system admin',
@@ -39,11 +47,10 @@ export class RoleService {
       this.logger.log('System admin role created');
     }
 
-    // TODO: change the permission role's permissions
     const createManagerRoleDto: CreateRoleDto = {
       name: 'manager',
       description: 'Manager role of the system.',
-      permissionIds: systemAdminPermissionIds,
+      permissionIds: managerPermissionIds,
     };
     const existingManagerRole = await this.roleRepository.exists({
       where: { name: createManagerRoleDto.name },
@@ -53,11 +60,10 @@ export class RoleService {
       this.logger.log('Manager role created');
     }
 
-    // TODO: change the permission role's permissions
     const createEmployeeRoleDto: CreateRoleDto = {
       name: 'employee',
       description: 'Employee role of the system.',
-      permissionIds: systemAdminPermissionIds,
+      permissionIds: employeePermissionIds,
     };
     const existingEmployeeRole = await this.roleRepository.exists({
       where: { name: createEmployeeRoleDto.name },

@@ -18,40 +18,111 @@ export class PermissionService {
     private readonly permissionRepository: Repository<Permission>,
   ) {}
 
-  // TODO: Seeding permissions for Manager and Employee roles
   async onStartUp() {
     this.logger.log('Seeding default permissions if not exist...');
-    const resources = ['role', 'permission', 'user'];
+    const resources = [
+      'role',
+      'permission',
+      'user',
+      'trip',
+      'task',
+      'task proof',
+      'location',
+      'gps',
+      'notification',
+      'report',
+      'log',
+    ];
     const actions = ['create', 'read', 'update', 'delete'];
+    const allPermissions: Permission[] = [];
+
     for (const resource of resources) {
       for (const action of actions) {
         const exists = await this.permissionRepository.findOne({
           where: { action, resource },
         });
         if (!exists) {
-          await this.permissionRepository.save(
+          const createdPermission = await this.permissionRepository.save(
             this.permissionRepository.create({
               action,
               resource,
               description: `${action} ${resource}`,
             }),
           );
+          allPermissions.push(createdPermission);
           this.logger.log(`Created permission: ${action} ${resource}`);
+        } else {
+          allPermissions.push(exists);
         }
       }
     }
-    const systemAdminPermissionIds: string[] = [];
-    for (const resource of resources) {
-      for (const action of actions) {
-        const role = await this.permissionRepository.findOne({
-          where: { action, resource },
-          select: { id: true },
-        });
-        systemAdminPermissionIds.push(role.id);
-      }
-    }
+
+    const systemAdminPermissionIds: string[] = allPermissions.map(
+      (permission) => permission.id,
+    );
+
+    const managerPermissionIds: string[] = allPermissions
+      .filter((permission) => {
+        switch (permission.resource) {
+          case 'role':
+            return true;
+          case 'permission':
+            return permission.action === 'read';
+          case 'user':
+            return ['read', 'create', 'update'].includes(permission.action);
+          case 'trip':
+            return true;
+          case 'task':
+            return true;
+          case 'task proof':
+            return true;
+          case 'location':
+            return true;
+          case 'gps':
+            return permission.action === 'read';
+          case 'notification':
+            return true;
+          case 'report':
+            return true;
+          case 'log':
+            return permission.action === 'read';
+          default:
+            return false;
+        }
+      })
+      .map((permission) => permission.id);
+
+    const employeePermissionIds: string[] = allPermissions
+      .filter((permission) => {
+        switch (permission.resource) {
+          case 'user':
+            return ['read', 'update'].includes(permission.action);
+          case 'trip':
+            return ['read', 'create', 'update'].includes(permission.action);
+          case 'task':
+            return ['read', 'update'].includes(permission.action);
+          case 'task proof':
+            return ['create', 'read'].includes(permission.action);
+          case 'location':
+            return permission.action === 'read';
+          case 'gps':
+            return ['create', 'read'].includes(permission.action);
+          case 'notification':
+            return ['read', 'update'].includes(permission.action);
+          case 'report':
+            return permission.action === 'read';
+          default:
+            return false;
+        }
+      })
+      .map((permission) => permission.id);
+
     this.logger.log('Permission seeding completed.');
-    return systemAdminPermissionIds;
+    return {
+      systemAdminPermissionIds,
+      managerPermissionIds,
+      employeePermissionIds,
+    };
   }
 
   async create(createPermissionDto: CreatePermissionDto): Promise<Permission> {
