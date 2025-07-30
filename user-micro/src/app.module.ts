@@ -37,8 +37,8 @@ export class AppModule {
   }
 
   async onStartUp() {
-    const systemAdminPermissionIds = await this.permissionService.onStartUp();
-    await this.roleService.onStartUp(systemAdminPermissionIds);
+    const permissions = await this.permissionService.onStartUp();
+    await this.roleService.onStartUp(permissions);
     await this.userService.onStartUp();
   }
 }
