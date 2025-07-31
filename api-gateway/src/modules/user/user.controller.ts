@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Query } from '@nestjs/common';
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { CreateUserDto } from 'src/modules/user/dtos/create-user.dto';
@@ -43,7 +43,7 @@ export class UserController {
   @ApiBody({ type: FilterUserDto })
   async find(
     @RequestUserClaims() claims: TokenClaimsDto,
-    @Body() payload: FilterUserDto,
+    @Query() payload: FilterUserDto,
   ) {
     return await this.userService.find(claims, payload);
   }
