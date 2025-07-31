@@ -6,6 +6,7 @@ export class Location extends BaseModel {
   @ApiProperty({
     description: 'Location name',
     type: 'string',
+    example: 'TripSync HQ',
   })
   name: string;
 
@@ -39,6 +40,7 @@ export class Location extends BaseModel {
   @ApiProperty({
     description: 'Creator user object',
     type: () => User,
+    required: false,
   })
   creator?: User;
 }

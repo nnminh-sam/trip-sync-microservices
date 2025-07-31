@@ -10,6 +10,7 @@ import {
   HttpCode,
   ValidationPipe,
   UsePipes,
+  Query,
 } from '@nestjs/common';
 import { PermissionService } from './permission.service';
 import { CreatePermissionDto } from './dtos/create-permission.dto';
@@ -83,7 +84,7 @@ export class PermissionController {
   })
   async findAll(
     @RequestUserClaims() claims: TokenClaimsDto,
-    @Body() payload: FilterPermissionDto,
+    @Query() payload: FilterPermissionDto,
   ) {
     return await this.permissionService.findAll(claims, payload);
   }

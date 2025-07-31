@@ -10,6 +10,7 @@ import {
   ValidationPipe,
   UsePipes,
   Patch,
+  Query,
 } from '@nestjs/common';
 import { RoleService } from './role.service';
 import { CreateRoleDto } from './dtos/create-role.dto';
@@ -63,7 +64,7 @@ export class RoleController {
   })
   async findAll(
     @RequestUserClaims() claims: TokenClaimsDto,
-    @Body() payload: FilterRoleDto,
+    @Query() payload: FilterRoleDto,
   ) {
     return await this.roleService.findAll(claims, payload);
   }
