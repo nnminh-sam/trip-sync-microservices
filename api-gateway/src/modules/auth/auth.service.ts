@@ -105,7 +105,6 @@ export class AuthService {
       messagePattern: 'login',
       payload: { request: { body: loginDto } },
     });
-    console.log('🚀 ~ AuthService ~ login ~ user:', user);
 
     const tokens = await this.generateTokens({
       email: user.email,
@@ -151,6 +150,13 @@ export class AuthService {
       email: claims.email,
       id: claims.sub,
       role: claims.role,
+    });
+  }
+
+  async updatePassword(claims: TokenClaimsDto) {
+    return await this.sender.send({
+      messagePattern: 'updatePassword',
+      payload: { claims },
     });
   }
 }

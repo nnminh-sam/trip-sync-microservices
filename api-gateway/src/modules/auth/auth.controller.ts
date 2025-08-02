@@ -72,4 +72,16 @@ export class AuthController {
   ) {
     return await this.authService.authorizeClaims(claims, payload);
   }
+
+  @Post('update-password')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update user password' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Password updated successfully',
+    model: AuthResponseDto,
+  })
+  async updatePassword(@RequestUserClaims() claims: TokenClaimsDto) {
+    return await this.authService.updatePassword(claims);
+  }
 }

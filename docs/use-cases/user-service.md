@@ -136,31 +136,21 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoint: `auth.login`
 - Location: `src/modules/auth/auth.controller.ts:13-16`
 
-### UC-A2: User Logout ❌
+### UC-A2: User Logout ✅
 **Actor**: Employee, Manager, System Admin  
 **Description**: Log out from the system  
 **Preconditions**: 
 - User must be authenticated
 
-**Implementation Status**: ❌ Not Implemented
-- Endpoint pattern exists but no implementation
-- Location: `src/modules/auth/auth-message.pattern.ts`
+**Implementation Status**: ✅ Implemented
 
-### UC-A3: Token Exchange ❌
+### UC-A3: Token Exchange ✅
 **Actor**: System (API Gateway)  
 **Description**: Exchange tokens for authentication  
 **Preconditions**: 
 - Valid token must be provided
 
-**Implementation Status**: ❌ Not Implemented
-- No token exchange endpoint found
-
-### UC-A4: Session Management ❌
-**Actor**: System  
-**Description**: Manage user sessions and token validity  
-
-**Implementation Status**: ❌ Not Implemented
-- No session management functionality found
+**Implementation Status**: ✅ Implemented
 
 ## Role Management Use Cases
 
@@ -382,8 +372,6 @@ This document outlines all use cases related to users, roles, and permissions in
 
 ### Not Implemented Use Cases (7/23 - 31%)
 ❌ User: Password Reset  
-❌ Authentication: Logout, Token Exchange, Session Management  
-❌ User: Account Activation/Deactivation  
 ❌ Audit: User activity logging  
 
 ## Missing Use Cases
