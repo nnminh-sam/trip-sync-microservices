@@ -46,7 +46,7 @@
 **Important:** Use the below command to install necessary dependencies.
 
 ```bash
-npm install @nestjs/microservices@10 @nestjs/config @nestjs/typeorm class-transformer class-validator joi mysql2 nats reflect-metadata typeorm
+npm install @nestjs/microservices@10 @nestjs/config @nestjs/typeorm class-transformer class-validator joi mysql2 nats reflect-metadata typeorm @nestjs/swagger@8
 ```
 
 ---
@@ -100,7 +100,7 @@ Based on the requirements and the original monolithic schema, the system is spli
 ## 2. Service-to-Table Mapping
 
 | Service            | Tables                                      |
-| ------------------ | ------------------------------------------- |
+|--------------------|---------------------------------------------|
 | User & Identity    | users, roles, permissions, role_permissions |
 | Trip Management    | trips, trip_locations, trip_approvals       |
 | Task & Proof       | tasks, task_proofs                          |
@@ -186,7 +186,7 @@ graph TD
 ## 5. Summary Table
 
 | Service Name         | Main Responsibility          | Owns Tables                           | Owns DB? | Exposes API? | Calls Other APIs? |
-| -------------------- | ---------------------------- | ------------------------------------- | -------- | ------------ | ----------------- |
+|----------------------|------------------------------|---------------------------------------|----------|--------------|-------------------|
 | User Service         | Auth, user, role, permission | users, roles, permissions             | Yes      | Yes          | No                |
 | Trip Service         | Trip lifecycle, assignment   | trips, trip_locations, trip_approvals | Yes      | Yes          | User, Location    |
 | Task Service         | Tasks, proofs                | tasks, task_proofs                    | Yes      | Yes          | Trip, User        |
@@ -202,7 +202,7 @@ graph TD
 
 #### **Auth Endpoints** (`/auth`)
 | Endpoint               | Method | Description      | Subscriber (Service)        | Message Pattern             |
-| ---------------------- | ------ | ---------------- | --------------------------- | --------------------------- |
+|------------------------|--------|------------------|-----------------------------|-----------------------------|
 | /auth/login            | POST   | User login       | user-micro (AuthController) | auth.login                  |
 | /auth/logout           | POST   | User logout      | user-micro (AuthController) | auth.logout (assumed)       |
 | /auth/tokens/exchange  | POST   | Exchange tokens  | user-micro (AuthController) | (not shown, likely similar) |
@@ -210,7 +210,7 @@ graph TD
 
 #### **User Endpoints** (`/users`)
 | Endpoint  | Method | Description      | Subscriber (Service)        | Message Pattern |
-| --------- | ------ | ---------------- | --------------------------- | --------------- |
+|-----------|--------|------------------|-----------------------------|-----------------|
 | /users/me | GET    | Get current user | user-micro (UserController) | user.find.id    |
 | /users    | GET    | Find users       | user-micro (UserController) | user.find       |
 | /users    | POST   | Create user      | user-micro (UserController) | user.create     |
@@ -218,7 +218,7 @@ graph TD
 
 #### **Role Endpoints** (`/roles`)
 | Endpoint   | Method | Description    | Subscriber (Service)        | Message Pattern |
-| ---------- | ------ | -------------- | --------------------------- | --------------- |
+|------------|--------|----------------|-----------------------------|-----------------|
 | /roles     | POST   | Create role    | user-micro (RoleController) | role.create     |
 | /roles     | GET    | Get all roles  | user-micro (RoleController) | role.find_all   |
 | /roles/:id | GET    | Get role by ID | user-micro (RoleController) | role.find_one   |
@@ -227,7 +227,7 @@ graph TD
 
 #### **Permission Endpoints** (`/permissions`)
 | Endpoint          | Method | Description             | Subscriber (Service)              | Message Pattern                 |
-| ----------------- | ------ | ----------------------- | --------------------------------- | ------------------------------- |
+|-------------------|--------|-------------------------|-----------------------------------|---------------------------------|
 | /permissions      | POST   | Create permission       | user-micro (PermissionController) | permission.create (likely)      |
 | /permissions/bulk | POST   | Bulk create permissions | user-micro (PermissionController) | permission.bulk_create (likely) |
 | /permissions      | GET    | Get all permissions     | user-micro (PermissionController) | permission.find_all (likely)    |
@@ -237,7 +237,7 @@ graph TD
 
 #### **Trip Service** (`/trips`)
 | Endpoint             | Method | Description         | Subscriber (Service) | NATS Message Pattern |
-| -------------------- | ------ | ------------------- | -------------------- | -------------------- |
+|----------------------|--------|---------------------|----------------------|----------------------|
 | /trips               | GET    | List/filter trips   | trip-micro           | trip.find            |
 | /trips               | POST   | Create a new trip   | trip-micro           | trip.create          |
 | /trips/:id           | GET    | Get trip details    | trip-micro           | trip.find_one        |
@@ -249,7 +249,7 @@ graph TD
 
 #### **Task & Proof Service** (`/tasks`, `/proofs`)
 | Endpoint          | Method | Description            | Subscriber (Service) | NATS Message Pattern |
-| ----------------- | ------ | ---------------------- | -------------------- | -------------------- |
+|-------------------|--------|------------------------|----------------------|----------------------|
 | /tasks            | GET    | List/filter tasks      | task-micro           | task.find            |
 | /tasks            | POST   | Create a new task      | task-micro           | task.create          |
 | /tasks/:id        | GET    | Get task details       | task-micro           | task.find_one        |
@@ -262,7 +262,7 @@ graph TD
 
 #### **Location Service** (`/locations`)
 | Endpoint       | Method | Description           | Subscriber (Service) | NATS Message Pattern |
-| -------------- | ------ | --------------------- | -------------------- | -------------------- |
+|----------------|--------|-----------------------|----------------------|----------------------|
 | /locations     | GET    | List/filter locations | location-micro       | location.find        |
 | /locations     | POST   | Create a new location | location-micro       | location.create      |
 | /locations/:id | GET    | Get location details  | location-micro       | location.find_one    |
@@ -271,7 +271,7 @@ graph TD
 
 #### **GPS Tracking Service** (`/gps-logs`)
 | Endpoint      | Method | Description          | Subscriber (Service) | NATS Message Pattern |
-| ------------- | ------ | -------------------- | -------------------- | -------------------- |
+|---------------|--------|----------------------|----------------------|----------------------|
 | /gps-logs     | GET    | List/filter GPS logs | gps-micro            | gps.find             |
 | /gps-logs     | POST   | Add a GPS log        | gps-micro            | gps.create           |
 | /gps-logs/:id | GET    | Get GPS log details  | gps-micro            | gps.find_one         |
@@ -279,7 +279,7 @@ graph TD
 
 #### **Notification Service** (`/notifications`)
 | Endpoint           | Method | Description               | Subscriber (Service) | NATS Message Pattern   |
-| ------------------ | ------ | ------------------------- | -------------------- | ---------------------- |
+|--------------------|--------|---------------------------|----------------------|------------------------|
 | /notifications     | GET    | List/filter notifications | notification-micro   | notification.find      |
 | /notifications     | POST   | Create/send notification  | notification-micro   | notification.create    |
 | /notifications/:id | PATCH  | Mark as read              | notification-micro   | notification.mark_read |
@@ -287,7 +287,7 @@ graph TD
 
 #### **Reporting & Export Service** (`/reports`, `/exports`)
 | Endpoint       | Method | Description                | Subscriber (Service) | NATS Message Pattern   |
-| -------------- | ------ | -------------------------- | -------------------- | ---------------------- |
+|----------------|--------|----------------------------|----------------------|------------------------|
 | /reports/trips | GET    | Export trip summary        | report-micro         | report.trip_summary    |
 | /reports/tasks | GET    | Export task completion     | report-micro         | report.task_completion |
 | /exports       | POST   | Request export (CSV/Excel) | report-micro         | export.create          |
@@ -295,7 +295,7 @@ graph TD
 
 #### **Audit Logging Service** (`/audit-logs`)
 | Endpoint        | Method | Description            | Subscriber (Service) | NATS Message Pattern |
-| --------------- | ------ | ---------------------- | -------------------- | -------------------- |
+|-----------------|--------|------------------------|----------------------|----------------------|
 | /audit-logs     | GET    | List/filter audit logs | audit-log-micro      | audit.find           |
 | /audit-logs/:id | GET    | Get audit log details  | audit-log-micro      | audit.find_one       |
 
@@ -320,19 +320,19 @@ Permissions:
 ### Role-Based Permission Matrix
 
 | Resource      | Action       | System Admin | Manager                        | Employee                       | Description/Notes                                                         |
-| ------------- | ------------ | ------------ | ------------------------------ | ------------------------------ | ------------------------------------------------------------------------- |
-| role          | CRUD         | ✓           | (read, create, update, delete) |                                | Only admin/manager can manage roles                                       |
-| permission    | CRUD         | ✓           | (read)                         |                                | Only admin can manage permissions                                         |
-| user          | CRUD         | ✓           | (read, create, update)         | (read, update own)             | Admin manages all, manager manages users, employee can update own profile |
-| trip          | CRUD         | ✓           | ✓                             | (read, create own, update own) | Manager assigns, employee requests/updates own                            |
-| trip approval | read, update | ✓           | ✓                             |                                | Manager/admin approve trips                                               |
-| task          | CRUD         | ✓           | ✓                             | (read, update own)             | Manager assigns, employee updates/completes own                           |
-| task proof    | CRUD         | ✓           | ✓                             | (create, read own)             | Employee submits proof, manager/admin reviews                             |
-| location      | CRUD         | ✓           | ✓                             | (read)                         | Manager/admin manage, employee can view                                   |
-| gps           | read         | ✓           | ✓                             | (create own, read own)         | Employee logs, manager/admin monitors                                     |
-| notification  | CRUD         | ✓           | ✓                             | (read, update own)             | Employee receives, manager/admin sends                                    |
-| report        | CRUD         | ✓           | ✓                             | (read own)                     | Manager/admin export, employee views own                                  |
-| log (audit)   | read         | ✓           | (read)                         |                                | Only admin/manager can view logs                                          |
+|---------------|--------------|--------------|--------------------------------|--------------------------------|---------------------------------------------------------------------------|
+| role          | CRUD         | ✓            | (read, create, update, delete) |                                | Only admin/manager can manage roles                                       |
+| permission    | CRUD         | ✓            | (read)                         |                                | Only admin can manage permissions                                         |
+| user          | CRUD         | ✓            | (read, create, update)         | (read, update own)             | Admin manages all, manager manages users, employee can update own profile |
+| trip          | CRUD         | ✓            | ✓                              | (read, create own, update own) | Manager assigns, employee requests/updates own                            |
+| trip approval | read, update | ✓            | ✓                              |                                | Manager/admin approve trips                                               |
+| task          | CRUD         | ✓            | ✓                              | (read, update own)             | Manager assigns, employee updates/completes own                           |
+| task proof    | CRUD         | ✓            | ✓                              | (create, read own)             | Employee submits proof, manager/admin reviews                             |
+| location      | CRUD         | ✓            | ✓                              | (read)                         | Manager/admin manage, employee can view                                   |
+| gps           | read         | ✓            | ✓                              | (create own, read own)         | Employee logs, manager/admin monitors                                     |
+| notification  | CRUD         | ✓            | ✓                              | (read, update own)             | Employee receives, manager/admin sends                                    |
+| report        | CRUD         | ✓            | ✓                              | (read own)                     | Manager/admin export, employee views own                                  |
+| log (audit)   | read         | ✓            | (read)                         |                                | Only admin/manager can view logs                                          |
 
 **Legend:**
 - ✓ = Full access (create, read, update, delete)
@@ -352,7 +352,7 @@ VM: GCE - Ubuntu 22.04
 SSH: nnminh
 
 | Service              | VM             |
-| :------------------- | :------------- |
+|:---------------------|:---------------|
 | API Gateway          | 34.63.114.216  |
 | User service         | 34.63.101.58   |
 | Trip service         | 34.56.129.43   |

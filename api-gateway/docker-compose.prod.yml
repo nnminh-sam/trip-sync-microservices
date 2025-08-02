@@ -22,7 +22,7 @@ services:
     ports:
       - '${APP_PORT}:80'
     env_file:
-      - .env
+      - .env.production
     depends_on:
       - nats
       - redis

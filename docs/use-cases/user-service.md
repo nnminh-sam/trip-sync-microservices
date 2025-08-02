@@ -107,13 +107,13 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoint: `user.remove`
 - Authorization: System Admin only (should include Manager)
 
-### UC-U6: Password Reset ❌
+### UC-U6: Password Reset ✅
 **Actor**: Employee, Manager, System Admin  
 **Description**: Reset user password  
 **Preconditions**: 
 - Actor must be authenticated or have reset token
 
-**Implementation Status**: ❌ Not Implemented
+**Implementation Status**: ✅ Implemented
 - No password reset functionality found
 
 ## Authentication Use Cases
@@ -371,16 +371,11 @@ This document outlines all use cases related to users, roles, and permissions in
 ⚠️ User: Update Profile (missing admin/manager update for other users)
 
 ### Not Implemented Use Cases (7/23 - 31%)
-❌ User: Password Reset  
 ❌ Audit: User activity logging  
 
 ## Missing Use Cases
 
 Based on the requirements and typical enterprise systems, these use cases are missing:
-
-### UC-U8: Bulk User Import ❌
-**Description**: Import multiple users from CSV/Excel  
-**Importance**: Medium - Useful for initial setup
 
 ### UC-U9: User Activity Audit ❌
 **Description**: Track user login/logout and actions  
