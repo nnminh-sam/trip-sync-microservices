@@ -15,6 +15,12 @@ export class AuthController {
     return await this.authService.login(payload.request.body);
   }
 
+  @MessagePattern(AuthMessagePattern.updatePassword)
+  async updatePassword(@Payload() payload: MessagePayloadDto) {
+    const { sub } = payload.claims;
+    return await this.authService.updatePassword(sub);
+  }
+
   @MessagePattern(AuthMessagePattern.authorizeClaims)
   async authorizeClaims(
     @Payload() payload: MessagePayloadDto<AuthorizeClaimsPayloadDto>,

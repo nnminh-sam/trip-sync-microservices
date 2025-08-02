@@ -10,8 +10,10 @@ import { RoleService } from 'src/modules/role/role.service';
 import { ConfigService } from '@nestjs/config';
 import { EnvSchema } from 'src/config';
 import * as bcrypt from 'bcryptjs';
+import { EmailService } from 'src/modules/email/email.service';
 import { ListDataDto } from 'src/dtos/list-data.dto';
 import { Gender } from 'src/models/enums/gender.enum';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class UserService {
@@ -22,6 +24,7 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly roleService: RoleService,
+    private readonly emailService: EmailService,
   ) {}
 
   async onStartUp() {
@@ -420,5 +423,60 @@ export class UserService {
       `User deactivated successfully with ID: ${updatedUser.id}, email: ${updatedUser.email}`,
     );
     return updatedUser;
+  }
+
+  async updatePassword(userId: string) {
+    this.logger.log(`Updating password for user with ID: ${userId}`);
+
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      this.logger.error(`User not found with ID: ${userId}`);
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'User Not Found',
+      });
+    }
+
+    const newPassword = this.generateRandomPassword();
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+
+    const updatedUser = await this.userRepository.save(user);
+    this.logger.log(`Password updated successfully for user ID: ${userId}`);
+
+    // Send password reset email
+    try {
+      this.emailService.sendPasswordResetEmail({
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        newPassword: newPassword,
+      });
+      this.logger.log(`Password reset email sent to user: ${user.email}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send password reset email to user: ${user.email}`,
+        error.stack,
+      );
+      // Continue even if email fails - password is already reset
+    }
+
+    const userWithoutPassword = { ...updatedUser };
+    delete userWithoutPassword.password;
+    return userWithoutPassword as User;
+  }
+
+  private generateRandomPassword(length: number = 12): string {
+    const charset =
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    const randomBytes = crypto.randomBytes(length);
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += charset[randomBytes[i] % charset.length];
+    }
+    return password;
   }
 }

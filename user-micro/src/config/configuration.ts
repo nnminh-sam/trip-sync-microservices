@@ -17,6 +17,12 @@ export interface EnvSchema {
   SYSAD_PASSWORD: string;
   SYSAD_CITIZEN_ID: string;
   SYSAD_PHONE_NUMBER: string;
+  MAIL_HOST: string;
+  MAIL_PORT: number;
+  MAIL_SECURE: boolean;
+  MAIL_USER: string;
+  MAIL_PASSWORD: string;
+  MAIL_FROM: string;
 }
 
 export const validationSchema = Joi.object<EnvSchema>({
@@ -36,4 +42,10 @@ export const validationSchema = Joi.object<EnvSchema>({
   SYSAD_PASSWORD: Joi.string().required(),
   SYSAD_CITIZEN_ID: Joi.string().required(),
   SYSAD_PHONE_NUMBER: Joi.string().required(),
+  MAIL_HOST: Joi.string().required(),
+  MAIL_PORT: Joi.number().required(),
+  MAIL_SECURE: Joi.boolean().required(),
+  MAIL_USER: Joi.string().required(),
+  MAIL_PASSWORD: Joi.string().required(),
+  MAIL_FROM: Joi.string().email().required(),
 });

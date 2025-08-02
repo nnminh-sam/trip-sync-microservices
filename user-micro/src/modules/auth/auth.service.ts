@@ -43,10 +43,6 @@ export class AuthService {
 
       this.logger.log('Login successful. Returning user info.');
       const userWithoutPassword = { ...user };
-      console.log(
-        '🚀 ~ AuthService ~ login ~ userWithoutPassword:',
-        userWithoutPassword,
-      );
       delete userWithoutPassword.password;
       return userWithoutPassword as User;
     } catch (error) {
@@ -57,6 +53,10 @@ export class AuthService {
         message: error.message,
       });
     }
+  }
+
+  async updatePassword(userId: string) {
+    return await this.userService.updatePassword(userId);
   }
 
   async authorizeClaims(payload: AuthorizeClaimsPayloadDto) {
