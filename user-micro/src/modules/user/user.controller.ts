@@ -45,17 +45,22 @@ export class UserController {
 
   @MessagePattern(UserMessagePattern.create)
   async create(@Payload() payload: MessagePayloadDto<CreateUserDto>) {
-    await this.roleService.authorizeClaims({
-      claims: payload.claims,
-      required: {
-        roles: ['system admin'],
-        permission: {
-          action: 'create',
-          resource: 'user',
+    try {
+      await this.roleService.authorizeClaims({
+        claims: payload.claims,
+        required: {
+          roles: ['system admin'],
+          permission: {
+            action: 'create',
+            resource: 'user',
+          },
         },
-      },
-    });
-    return await this.userService.create(payload.request.body);
+      });
+      return await this.userService.create(payload.request.body);
+    } catch (error) {
+      console.error('Error in user controller create:', error);
+      throw error;
+    }
   }
 
   @MessagePattern(UserMessagePattern.update)

@@ -18,3 +18,8 @@ export function paginateAndOrder(filter: BaseRequestFilterDto) {
     },
   };
 }
+
+export function formatDate(dataString: string) {
+  const date = new Date(dataString);
+  return new Date(date.toISOString().split('T')[0]);
+}

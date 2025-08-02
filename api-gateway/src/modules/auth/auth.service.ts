@@ -105,6 +105,7 @@ export class AuthService {
       messagePattern: 'login',
       payload: { request: { body: loginDto } },
     });
+    console.log('🚀 ~ AuthService ~ login ~ user:', user);
 
     const tokens = await this.generateTokens({
       email: user.email,
