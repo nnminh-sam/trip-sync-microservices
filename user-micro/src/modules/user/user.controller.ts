@@ -73,4 +73,49 @@ export class UserController {
       payload.request.body,
     );
   }
+
+  @MessagePattern(UserMessagePattern.delete)
+  async delete(@Payload() payload: MessagePayloadDto) {
+    await this.roleService.authorizeClaims({
+      claims: payload.claims,
+      required: {
+        roles: ['system admin'],
+        permission: {
+          action: 'create',
+          resource: 'user',
+        },
+      },
+    });
+    return await this.userService.delete(payload.request.path.id);
+  }
+
+  @MessagePattern(UserMessagePattern.deactivate)
+  async deactivate(@Payload() payload: MessagePayloadDto) {
+    await this.roleService.authorizeClaims({
+      claims: payload.claims,
+      required: {
+        roles: ['system admin'],
+        permission: {
+          action: 'update',
+          resource: 'user',
+        },
+      },
+    });
+    return await this.userService.deactivate(payload.request.path.id);
+  }
+
+  @MessagePattern(UserMessagePattern.activate)
+  async activate(@Payload() payload: MessagePayloadDto) {
+    await this.roleService.authorizeClaims({
+      claims: payload.claims,
+      required: {
+        roles: ['system admin'],
+        permission: {
+          action: 'update',
+          resource: 'user',
+        },
+      },
+    });
+    return await this.userService.activate(payload.request.path.id);
+  }
 }

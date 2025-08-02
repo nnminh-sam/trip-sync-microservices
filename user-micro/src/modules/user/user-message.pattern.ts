@@ -5,4 +5,6 @@ export const UserMessagePattern = {
   create: 'user.create',
   update: 'user.update',
   delete: 'user.delete',
+  deactivate: 'user.deactivate',
+  activate: 'user.activate',
 } as const;

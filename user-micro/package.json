@@ -28,6 +28,7 @@
     "@nestjs/microservices": "^10.4.19",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/swagger": "^8.1.1",
     "@nestjs/typeorm": "^11.0.0",
     "@types/bcrypt": "^5.0.2",
     "@types/passport-local": "^1.0.38",

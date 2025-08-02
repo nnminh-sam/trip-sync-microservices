@@ -15,7 +15,7 @@ This document outlines all use cases related to users, roles, and permissions in
 
 ## User Management Use Cases
 
-### UC-U1: User Registration/Creation
+### UC-U1: User Registration/Creation ✅
 
 **Actor**: System Admin, Manager  
 **Description**: Create a new user account in the system  
@@ -39,7 +39,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Authorization: System Admin only
 - Location: `src/modules/user/user.controller.ts:46-59`
 
-### UC-U2: View User Profile
+### UC-U2: View User Profile ✅
 
 **Actor**: System Admin, Manager, Employee  
 **Description**: View user profile information  
@@ -59,7 +59,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoints: `user.find.id`, `user.find`
 - Location: `src/modules/user/user.controller.ts:19-44`
 
-### UC-U3: Update User Profile
+### UC-U3: Update User Profile ✅
 **Actor**: System Admin, Manager, Employee  
 **Description**: Update user profile information  
 **Preconditions**: 
@@ -77,7 +77,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoint: `user.update`
 - Location: `src/modules/user/user.controller.ts:61-71`
 
-### UC-U4: List/Search Users
+### UC-U4: List/Search Users ✅
 **Actor**: System Admin, Manager  
 **Description**: List and search users with filtering and pagination  
 **Preconditions**: 
@@ -96,17 +96,18 @@ This document outlines all use cases related to users, roles, and permissions in
 - Authorization: System Admin only (should include Manager)
 - Location: `src/modules/user/user.controller.ts:31-44`
 
-### UC-U5: Delete User
+### UC-U5: Delete User ✅
 **Actor**: System Admin  
 **Description**: Delete a user from the system  
 **Preconditions**: 
 - Actor must be authenticated
 - Actor must have "delete" permission on "user" resource
 
-**Implementation Status**: ❌ Not Implemented
-- No delete endpoint found in UserController
+**Implementation Status**: ✅ Fully Implemented
+- Endpoint: `user.remove`
+- Authorization: System Admin only (should include Manager)
 
-### UC-U6: Password Reset
+### UC-U6: Password Reset ❌
 **Actor**: Employee, Manager, System Admin  
 **Description**: Reset user password  
 **Preconditions**: 
@@ -117,7 +118,7 @@ This document outlines all use cases related to users, roles, and permissions in
 
 ## Authentication Use Cases
 
-### UC-A1: User Login
+### UC-A1: User Login ✅
 **Actor**: Employee, Manager, System Admin  
 **Description**: Authenticate user with email and password  
 **Preconditions**: 
@@ -135,7 +136,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoint: `auth.login`
 - Location: `src/modules/auth/auth.controller.ts:13-16`
 
-### UC-A2: User Logout
+### UC-A2: User Logout ❌
 **Actor**: Employee, Manager, System Admin  
 **Description**: Log out from the system  
 **Preconditions**: 
@@ -145,7 +146,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoint pattern exists but no implementation
 - Location: `src/modules/auth/auth-message.pattern.ts`
 
-### UC-A3: Token Exchange
+### UC-A3: Token Exchange ❌
 **Actor**: System (API Gateway)  
 **Description**: Exchange tokens for authentication  
 **Preconditions**: 
@@ -154,7 +155,7 @@ This document outlines all use cases related to users, roles, and permissions in
 **Implementation Status**: ❌ Not Implemented
 - No token exchange endpoint found
 
-### UC-A4: Session Management
+### UC-A4: Session Management ❌
 **Actor**: System  
 **Description**: Manage user sessions and token validity  
 
@@ -163,7 +164,7 @@ This document outlines all use cases related to users, roles, and permissions in
 
 ## Role Management Use Cases
 
-### UC-R1: Create Role
+### UC-R1: Create Role ✅
 **Actor**: System Admin, Manager  
 **Description**: Create a new role with permissions  
 **Preconditions**: 
@@ -182,7 +183,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoint: `role.create`
 - Location: `src/modules/role/role.controller.ts:15-28`
 
-### UC-R2: View Role Details
+### UC-R2: View Role Details ✅
 **Actor**: System Admin, Manager  
 **Description**: View role information with permissions  
 **Preconditions**: 
@@ -200,7 +201,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoints: `role.find_one`, `role.find_by_name`
 - Location: `src/modules/role/role.controller.ts:45-88`
 
-### UC-R3: Update Role
+### UC-R3: Update Role ✅
 **Actor**: System Admin, Manager  
 **Description**: Update role information and permissions  
 **Preconditions**: 
@@ -218,7 +219,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoint: `role.update`
 - Location: `src/modules/role/role.controller.ts:90-112`
 
-### UC-R4: Delete Role
+### UC-R4: Delete Role ✅
 **Actor**: System Admin, Manager  
 **Description**: Remove a role from the system  
 **Preconditions**: 
@@ -237,7 +238,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoint: `role.remove`
 - Location: `src/modules/role/role.controller.ts:114-136`
 
-### UC-R5: List Roles
+### UC-R5: List Roles ✅
 **Actor**: System Admin, Manager  
 **Description**: List all roles with filtering and pagination  
 **Preconditions**: 
@@ -256,7 +257,7 @@ This document outlines all use cases related to users, roles, and permissions in
 
 ## Permission Management Use Cases
 
-### UC-P1: Create Permission
+### UC-P1: Create Permission ✅
 **Actor**: System Admin, Manager  
 **Description**: Create a new permission  
 **Preconditions**: 
@@ -274,7 +275,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoint: `permission.create`
 - Location: `src/modules/permission/permission.controller.ts:20-33`
 
-### UC-P2: Bulk Create Permissions
+### UC-P2: Bulk Create Permissions ✅
 **Actor**: System Admin, Manager  
 **Description**: Create multiple permissions at once  
 **Preconditions**: 
@@ -291,7 +292,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoint: `permission.bulk_create`
 - Location: `src/modules/permission/permission.controller.ts:119-134`
 
-### UC-P3: View Permission
+### UC-P3: View Permission ✅
 **Actor**: System Admin, Manager  
 **Description**: View permission details  
 **Preconditions**: 
@@ -302,7 +303,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoint: `permission.find_one`
 - Location: `src/modules/permission/permission.controller.ts:50-70`
 
-### UC-P4: Update Permission
+### UC-P4: Update Permission ✅
 **Actor**: System Admin, Manager  
 **Description**: Update permission information  
 **Preconditions**: 
@@ -313,7 +314,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoint: `permission.update`
 - Location: `src/modules/permission/permission.controller.ts:72-95`
 
-### UC-P5: Delete Permission
+### UC-P5: Delete Permission ✅
 **Actor**: System Admin, Manager  
 **Description**: Remove a permission  
 **Preconditions**: 
@@ -325,7 +326,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Endpoint: `permission.remove`
 - Location: `src/modules/permission/permission.controller.ts:97-117`
 
-### UC-P6: List Permissions
+### UC-P6: List Permissions ✅
 **Actor**: System Admin, Manager  
 **Description**: List permissions with filtering  
 **Preconditions**: 
@@ -338,7 +339,7 @@ This document outlines all use cases related to users, roles, and permissions in
 
 ## Authorization Use Cases
 
-### UC-AZ1: Verify User Claims
+### UC-AZ1: Verify User Claims ✅
 **Actor**: System (Microservices)  
 **Description**: Verify user claims for authorization  
 **Preconditions**: 
@@ -356,7 +357,7 @@ This document outlines all use cases related to users, roles, and permissions in
 - Used internally by all services
 - Location: `src/modules/auth/auth.controller.ts:18-24`
 
-### UC-AZ2: Role-Based Access Control
+### UC-AZ2: Role-Based Access Control ✅
 **Actor**: System  
 **Description**: Enforce role-based access control across services  
 **Preconditions**: 
@@ -380,7 +381,7 @@ This document outlines all use cases related to users, roles, and permissions in
 ⚠️ User: Update Profile (missing admin/manager update for other users)
 
 ### Not Implemented Use Cases (7/23 - 31%)
-❌ User: Delete User, Password Reset  
+❌ User: Password Reset  
 ❌ Authentication: Logout, Token Exchange, Session Management  
 ❌ User: Account Activation/Deactivation  
 ❌ Audit: User activity logging  
@@ -389,29 +390,13 @@ This document outlines all use cases related to users, roles, and permissions in
 
 Based on the requirements and typical enterprise systems, these use cases are missing:
 
-### UC-U7: Account Activation/Deactivation
-**Description**: Enable/disable user accounts without deletion  
-**Importance**: High - Required for temporary access control
-
-### UC-U8: Bulk User Import
+### UC-U8: Bulk User Import ❌
 **Description**: Import multiple users from CSV/Excel  
 **Importance**: Medium - Useful for initial setup
 
-### UC-U9: User Activity Audit
+### UC-U9: User Activity Audit ❌
 **Description**: Track user login/logout and actions  
 **Importance**: High - Required for security compliance
-
-### UC-U10: Two-Factor Authentication
-**Description**: Additional security layer for authentication  
-**Importance**: Medium - Enhanced security
-
-### UC-R6: Role Assignment History
-**Description**: Track role changes for users  
-**Importance**: Medium - Audit trail
-
-### UC-P7: Permission Templates
-**Description**: Predefined permission sets for common roles  
-**Importance**: Low - Convenience feature
 
 ## Recommendations
 

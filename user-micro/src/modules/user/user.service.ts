@@ -310,4 +310,115 @@ export class UserService {
     );
     return updatedUser;
   }
+
+  async delete(id: string) {
+    this.logger.log(`Soft deleting user with ID: ${id}`);
+
+    const user = await this.userRepository.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      this.logger.warn(`User deletion failed - user not found with ID: ${id}`);
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'User Not Found',
+      });
+    }
+
+    if (user.deletedAt) {
+      this.logger.warn(
+        `User deletion failed - user already deleted with ID: ${id}`,
+      );
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'User already deleted',
+      });
+    }
+
+    user.deletedAt = new Date();
+    user.isActive = false;
+
+    const deletedUser = await this.userRepository.save(user);
+
+    this.logger.log(
+      `User soft deleted successfully with ID: ${deletedUser.id}, email: ${deletedUser.email}`,
+    );
+    return deletedUser;
+  }
+
+  async activate(id: string) {
+    this.logger.log(`Activating user with ID: ${id}`);
+
+    const user = await this.userRepository.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      this.logger.warn(
+        `User activation failed - user not found with ID: ${id}`,
+      );
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'User Not Found',
+      });
+    }
+
+    if (user.isActive) {
+      this.logger.warn(
+        `User activation failed - user already active with ID: ${id}`,
+      );
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'User already active',
+      });
+    }
+
+    user.isActive = true;
+    user.deletedAt = null;
+
+    const updatedUser = await this.userRepository.save(user);
+
+    this.logger.log(
+      `User activated successfully with ID: ${updatedUser.id}, email: ${updatedUser.email}`,
+    );
+    return updatedUser;
+  }
+
+  async deactivate(id: string) {
+    this.logger.log(`Deactivating user with ID: ${id}`);
+
+    const user = await this.userRepository.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      this.logger.warn(
+        `User deactivation failed - user not found with ID: ${id}`,
+      );
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'User Not Found',
+      });
+    }
+
+    if (!user.isActive) {
+      this.logger.warn(
+        `User deactivation failed - user already inactive with ID: ${id}`,
+      );
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'User already inactive',
+      });
+    }
+
+    user.isActive = false;
+
+    const updatedUser = await this.userRepository.save(user);
+
+    this.logger.log(
+      `User deactivated successfully with ID: ${updatedUser.id}, email: ${updatedUser.email}`,
+    );
+    return updatedUser;
+  }
 }
