@@ -25,8 +25,5 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 
-# Expose the port (default NestJS port)
-EXPOSE 3000
-
 # Start the app
 CMD ["node", "dist/main"]
