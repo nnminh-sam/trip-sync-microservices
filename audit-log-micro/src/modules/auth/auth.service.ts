@@ -44,7 +44,6 @@ export class AuthService {
       this.logger.log('Authorization successful');
       return response;
     } catch (error: any) {
-      console.log('🚀 ~ AuthService ~ authorize ~ error:', error);
       this.logger.error('Authorization error:', error);
       if (error instanceof EmptyError) {
         throwRpcException({

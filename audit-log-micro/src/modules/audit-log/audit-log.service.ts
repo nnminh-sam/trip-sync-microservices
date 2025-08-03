@@ -159,7 +159,6 @@ export class AuditLogService {
         total,
       });
     } catch (error) {
-      console.log('🚀 ~ AuditLogService ~ findAll ~ error:', error);
       this.logger.error(
         `Failed to find audit logs: ${error.message}`,
         error.stack,
