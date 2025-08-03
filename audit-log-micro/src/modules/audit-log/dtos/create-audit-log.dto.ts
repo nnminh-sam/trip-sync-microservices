@@ -1,43 +1,57 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { BaseModel } from 'src/models/base.model';
-import { User } from 'src/models/user.model';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
-@Entity('audit_logs')
-export class AuditLog extends BaseModel {
+export enum AuditAction {
+  CREATE = 'CREATE',
+  READ = 'READ',
+  UPDATE = 'UPDATE',
+  DELETE = 'DELETE',
+  LOGIN = 'LOGIN',
+  LOGOUT = 'LOGOUT',
+}
+
+export class CreateAuditLogDto {
   @ApiProperty({
     description: 'User ID who performed the action',
     type: 'string',
+    format: 'uuid',
   })
-  @Column({ type: 'uuid' })
+  @IsNotEmpty()
+  @IsUUID()
   userId: string;
 
   @ApiProperty({
     description: 'Action performed',
-    type: 'string',
-    enum: ['CREATE', 'READ', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT'],
-    example: 'CREATE',
+    enum: AuditAction,
+    example: AuditAction.CREATE,
   })
-  @Column({
-    type: 'enum',
-    enum: ['CREATE', 'READ', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT'],
-  })
-  action: string;
+  @IsNotEmpty()
+  @IsEnum(AuditAction)
+  action: AuditAction;
 
   @ApiProperty({
     description: 'Entity type that was acted upon',
     type: 'string',
     example: 'Trip',
   })
-  @Column({ type: 'varchar', length: 100 })
+  @IsNotEmpty()
+  @IsString()
   entity: string;
 
   @ApiProperty({
     description: 'ID of the entity that was acted upon',
     type: 'string',
+    format: 'uuid',
     required: false,
   })
-  @Column({ type: 'uuid', nullable: true })
+  @IsOptional()
+  @IsUUID()
   entityId?: string;
 
   @ApiProperty({
@@ -45,7 +59,8 @@ export class AuditLog extends BaseModel {
     type: 'string',
     example: 'Created new trip with ID: trip-123',
   })
-  @Column({ type: 'text' })
+  @IsNotEmpty()
+  @IsString()
   description: string;
 
   @ApiProperty({
@@ -54,7 +69,8 @@ export class AuditLog extends BaseModel {
     example: '192.168.1.1',
     required: false,
   })
-  @Column({ type: 'varchar', length: 45, nullable: true })
+  @IsOptional()
+  @IsString()
   ipAddress?: string;
 
   @ApiProperty({
@@ -62,12 +78,7 @@ export class AuditLog extends BaseModel {
     type: 'string',
     required: false,
   })
-  @Column({ type: 'text', nullable: true })
+  @IsOptional()
+  @IsString()
   userAgent?: string;
-
-  @ApiProperty({
-    description: 'User object who performed the action',
-    type: () => User,
-  })
-  user?: User;
 }

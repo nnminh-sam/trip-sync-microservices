@@ -3,6 +3,7 @@ import { ClientModule } from 'src/client/client.module';
 import { ConfigModule } from '@nestjs/config';
 import { validationSchema } from 'src/config';
 import { DatabaseModule } from './database/database.module';
+import { AuditLogModule } from './modules/audit-log/audit-log.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { DatabaseModule } from './database/database.module';
       validationSchema,
     }),
     DatabaseModule,
+    AuditLogModule,
   ],
   controllers: [],
   providers: [],
