@@ -152,4 +152,11 @@ export class AuthService {
       role: claims.role,
     });
   }
+
+  async updatePassword(claims: TokenClaimsDto) {
+    return await this.sender.send({
+      messagePattern: 'updatePassword',
+      payload: { claims },
+    });
+  }
 }

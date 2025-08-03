@@ -1,17 +1,20 @@
-import { Body, Controller, Get, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { CreateUserDto } from 'src/modules/user/dtos/create-user.dto';
 import { FilterUserDto } from 'src/modules/user/dtos/filter-user.dto';
 import { UpdateUserDto } from 'src/modules/user/dtos/update-user.dto';
 import { UserService } from 'src/modules/user/user.service';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiBody,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
 import { User } from 'src/models/user.model';
 
@@ -33,6 +36,7 @@ export class UserController {
   }
 
   @Get()
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Find users' })
   @ApiResponseConstruction({
     status: 200,
@@ -78,5 +82,50 @@ export class UserController {
     @Body() updateUserDto: UpdateUserDto,
   ) {
     return await this.userService.update(claims, updateUserDto);
+  }
+
+  @Delete()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete user' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'User deleted',
+    model: User,
+  })
+  async delete(
+    @Param('id') id: string,
+    @RequestUserClaims() claims: TokenClaimsDto,
+  ) {
+    return await this.userService.delete(claims, id);
+  }
+
+  @Patch('deactivate')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Deactivate user' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'User deactivated',
+    model: User,
+  })
+  async deactivate(
+    @Param('id') id: string,
+    @RequestUserClaims() claims: TokenClaimsDto,
+  ) {
+    return await this.userService.deactivate(claims, id);
+  }
+
+  @Patch('activate')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Activate user' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'User activated',
+    model: User,
+  })
+  async activate(
+    @Param('id') id: string,
+    @RequestUserClaims() claims: TokenClaimsDto,
+  ) {
+    return await this.userService.activate(claims, id);
   }
 }

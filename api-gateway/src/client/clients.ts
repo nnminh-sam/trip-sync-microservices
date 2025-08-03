@@ -13,6 +13,7 @@ export const NATSClient: ClientsProviderAsyncOptions = {
       transport: Transport.NATS,
       options: {
         servers: [natsServer],
+        timeout: 30000, // 30 seconds timeout
       },
     };
   },

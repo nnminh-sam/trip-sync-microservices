@@ -5,12 +5,15 @@ import { CreateUserDto } from 'src/modules/user/dtos/create-user.dto';
 import { FilterUserDto } from 'src/modules/user/dtos/filter-user.dto';
 import { UpdateUserDto } from 'src/modules/user/dtos/update-user.dto';
 import { User } from 'src/models/user.model';
-import { throwRpcException } from 'src/utils';
+import { formatDate, throwRpcException } from 'src/utils';
 import { RoleService } from 'src/modules/role/role.service';
 import { ConfigService } from '@nestjs/config';
 import { EnvSchema } from 'src/config';
 import * as bcrypt from 'bcryptjs';
+import { EmailService } from 'src/modules/email/email.service';
 import { ListDataDto } from 'src/dtos/list-data.dto';
+import { Gender } from 'src/models/enums/gender.enum';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class UserService {
@@ -21,17 +24,24 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly roleService: RoleService,
+    private readonly emailService: EmailService,
   ) {}
 
   async onStartUp() {
     this.logger.log('Seeding default system admin user if not exist...');
 
-    const createUserDto: CreateUserDto = {
+    const createUserDto = {
       firstName: this.configService.get('SYSAD_FIRSTNAME'),
       lastName: this.configService.get('SYSAD_LASTNAME'),
       email: this.configService.get('SYSAD_EMAIL'),
       password: this.configService.get('SYSAD_PASSWORD'),
       role: 'system admin',
+      citizenId: this.configService.get('SYSAD_CITIZEN_ID'),
+      phoneNumber: this.configService.get('SYSAD_PHONE_NUMBER'),
+      gender: Gender.OTHER,
+      dateOfBirth: new Date('1990-01-01'),
+      isActive: true,
+      deletedAt: null,
     };
     const existingUser = await this.userRepository.exists({
       where: { email: createUserDto.email },
@@ -58,6 +68,11 @@ export class UserService {
         'user.createdAt',
         'user.updatedAt',
         'user.password',
+        'user.citizenId',
+        'user.phoneNumber',
+        'user.gender',
+        'user.dateOfBirth',
+        'user.isActive',
         'role.id',
         'role.name',
       ])
@@ -89,6 +104,11 @@ export class UserService {
         'user.roleId',
         'user.createdAt',
         'user.updatedAt',
+        'user.citizenId',
+        'user.phoneNumber',
+        'user.gender',
+        'user.dateOfBirth',
+        'user.isActive',
       ])
       .where('user.id = :id', { id })
       .getOne();
@@ -108,7 +128,7 @@ export class UserService {
   async find(filter: FilterUserDto) {
     this.logger.log(`Finding users with filter: ${JSON.stringify(filter)}`);
 
-    const { page, size, order, sortBy, ...rest } = filter;
+    const { page, size } = filter;
     const skip: number = (page - 1) * size;
 
     const queryBuilder = this.userRepository.createQueryBuilder('user');
@@ -121,6 +141,11 @@ export class UserService {
       'user.roleId',
       'user.createdAt',
       'user.updatedAt',
+      'user.citizenId',
+      'user.phoneNumber',
+      'user.gender',
+      'user.dateOfBirth',
+      'user.isActive',
     ]);
 
     if (filter.email) {
@@ -138,6 +163,42 @@ export class UserService {
     if (filter.lastName) {
       queryBuilder.andWhere('user.lastName LIKE :lastName', {
         lastName: `%${filter.lastName}%`,
+      });
+    }
+
+    if (filter.gender) {
+      queryBuilder.andWhere('user.gender = :gender', {
+        gender: filter.gender,
+      });
+    }
+
+    if (filter.citizenId) {
+      queryBuilder.andWhere('user.citizenId LIKE :citizenId', {
+        citizenId: `%${filter.citizenId}%`,
+      });
+    }
+
+    if (filter.phoneNumber) {
+      queryBuilder.andWhere('user.phoneNumber LIKE :phoneNumber', {
+        phoneNumber: `%${filter.phoneNumber}%`,
+      });
+    }
+
+    if (filter.roleId) {
+      queryBuilder.andWhere('user.roleId = :roleId', {
+        roleId: filter.roleId,
+      });
+    }
+
+    if (filter.dateOfBirth) {
+      queryBuilder.andWhere('user.dateOfBirth = :dateOfBirth', {
+        dateOfBirth: filter.dateOfBirth,
+      });
+    }
+
+    if (filter.isActive !== undefined) {
+      queryBuilder.andWhere('user.isActive = :isActive', {
+        isActive: filter.isActive,
       });
     }
 
@@ -189,17 +250,34 @@ export class UserService {
     const hashedPassword = await bcrypt.hash(payload.password, 10);
 
     const user = this.userRepository.create({
-      ...payload,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      email: payload.email,
       password: hashedPassword,
       roleId: role.id,
       role: role,
+      citizenId: payload.citizenId,
+      phoneNumber: payload.phoneNumber,
+      gender: payload.gender,
+      dateOfBirth: formatDate(payload.dateOfBirth.toString()),
+      isActive: true,
+      deletedAt: null,
     });
     const savedUser = await this.userRepository.save(user);
+
+    const { password, ...userWithoutPassword } = savedUser;
+    const userResponse = {
+      ...userWithoutPassword,
+      role: {
+        id: role.id,
+        name: role.name,
+      },
+    };
 
     this.logger.log(
       `User created successfully with ID: ${savedUser.id}, email: ${savedUser.email}`,
     );
-    return savedUser;
+    return userResponse;
   }
 
   async update(id: string, payload: UpdateUserDto) {
@@ -219,12 +297,186 @@ export class UserService {
       });
     }
 
-    Object.assign(user, payload);
+    if (payload.firstName !== undefined) user.firstName = payload.firstName;
+    if (payload.lastName !== undefined) user.lastName = payload.lastName;
+    if (payload.citizenId !== undefined) user.citizenId = payload.citizenId;
+    if (payload.phoneNumber !== undefined)
+      user.phoneNumber = payload.phoneNumber;
+    if (payload.gender !== undefined) user.gender = payload.gender;
+    if (payload.dateOfBirth !== undefined)
+      user.dateOfBirth = payload.dateOfBirth;
+
     const updatedUser = await this.userRepository.save(user);
 
     this.logger.log(
       `User updated successfully with ID: ${updatedUser.id}, email: ${updatedUser.email}`,
     );
     return updatedUser;
+  }
+
+  async delete(id: string) {
+    this.logger.log(`Soft deleting user with ID: ${id}`);
+
+    const user = await this.userRepository.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      this.logger.warn(`User deletion failed - user not found with ID: ${id}`);
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'User Not Found',
+      });
+    }
+
+    if (user.deletedAt) {
+      this.logger.warn(
+        `User deletion failed - user already deleted with ID: ${id}`,
+      );
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'User already deleted',
+      });
+    }
+
+    user.deletedAt = new Date();
+    user.isActive = false;
+
+    const deletedUser = await this.userRepository.save(user);
+
+    this.logger.log(
+      `User soft deleted successfully with ID: ${deletedUser.id}, email: ${deletedUser.email}`,
+    );
+    return deletedUser;
+  }
+
+  async activate(id: string) {
+    this.logger.log(`Activating user with ID: ${id}`);
+
+    const user = await this.userRepository.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      this.logger.warn(
+        `User activation failed - user not found with ID: ${id}`,
+      );
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'User Not Found',
+      });
+    }
+
+    if (user.isActive) {
+      this.logger.warn(
+        `User activation failed - user already active with ID: ${id}`,
+      );
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'User already active',
+      });
+    }
+
+    user.isActive = true;
+    user.deletedAt = null;
+
+    const updatedUser = await this.userRepository.save(user);
+
+    this.logger.log(
+      `User activated successfully with ID: ${updatedUser.id}, email: ${updatedUser.email}`,
+    );
+    return updatedUser;
+  }
+
+  async deactivate(id: string) {
+    this.logger.log(`Deactivating user with ID: ${id}`);
+
+    const user = await this.userRepository.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      this.logger.warn(
+        `User deactivation failed - user not found with ID: ${id}`,
+      );
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'User Not Found',
+      });
+    }
+
+    if (!user.isActive) {
+      this.logger.warn(
+        `User deactivation failed - user already inactive with ID: ${id}`,
+      );
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'User already inactive',
+      });
+    }
+
+    user.isActive = false;
+
+    const updatedUser = await this.userRepository.save(user);
+
+    this.logger.log(
+      `User deactivated successfully with ID: ${updatedUser.id}, email: ${updatedUser.email}`,
+    );
+    return updatedUser;
+  }
+
+  async updatePassword(userId: string) {
+    this.logger.log(`Updating password for user with ID: ${userId}`);
+
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      this.logger.error(`User not found with ID: ${userId}`);
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'User Not Found',
+      });
+    }
+
+    const newPassword = this.generateRandomPassword();
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+
+    const updatedUser = await this.userRepository.save(user);
+    this.logger.log(`Password updated successfully for user ID: ${userId}`);
+
+    // Send password reset email
+    try {
+      this.emailService.sendPasswordResetEmail({
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        newPassword: newPassword,
+      });
+      this.logger.log(`Password reset email sent to user: ${user.email}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send password reset email to user: ${user.email}`,
+        error.stack,
+      );
+      // Continue even if email fails - password is already reset
+    }
+
+    const userWithoutPassword = { ...updatedUser };
+    delete userWithoutPassword.password;
+    return userWithoutPassword as User;
+  }
+
+  private generateRandomPassword(length: number = 12): string {
+    const charset =
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    const randomBytes = crypto.randomBytes(length);
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += charset[randomBytes[i] % charset.length];
+    }
+    return password;
   }
 }

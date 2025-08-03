@@ -34,6 +34,7 @@
     - [**Audit Logging Service** (`/audit-logs`)](#audit-logging-service-audit-logs)
 - [7. Authorization](#7-authorization)
   - [Role-Based Permission Matrix](#role-based-permission-matrix)
+- [VMs informations](#vms-informations)
 
 <!-- /code_chunk_output -->
 
@@ -45,7 +46,7 @@
 **Important:** Use the below command to install necessary dependencies.
 
 ```bash
-npm install @nestjs/microservices@10 @nestjs/config @nestjs/typeorm class-transformer class-validator joi mysql2 nats reflect-metadata typeorm
+npm install @nestjs/microservices@10 @nestjs/config @nestjs/typeorm class-transformer class-validator joi mysql2 nats reflect-metadata typeorm @nestjs/swagger@8
 ```
 
 ---
@@ -343,4 +344,70 @@ Permissions:
 - Manager can manage users (except admin), assign trips/tasks, approve trips, manage locations, view logs, and export reports.
 - Employee can view and update their own profile, request trips, update their own tasks, submit proofs, log GPS, and view their own notifications and reports.
 
+---
 
+## VMs informations
+
+VM: GCE - Ubuntu 22.04
+SSH: nnminh
+
+| Service              | VM             |
+|:---------------------|:---------------|
+| API Gateway          | 34.63.114.216  |
+| User service         | 34.63.101.58   |
+| Trip service         | 34.56.129.43   |
+| Task service         | 34.56.219.103  |
+| Location service     | 34.176.27.148  |
+| GPS service          | 34.176.88.175  |
+| Notification service | 34.176.54.189  |
+| Reporting service    | 34.176.200.200 |
+| Audit service        | 34.95.163.128  |
+
+**SSH Config:**
+
+```
+Host api-gateway
+  HostName 34.63.114.216
+  IdentityFile /Users/nnminh/.ssh/keys/trip-sync
+  User nnminh.sam
+
+Host user-service
+  HostName 34.63.101.58
+  IdentityFile /Users/nnminh/.ssh/keys/trip-sync
+  User nnminh.sam
+
+Host trip-service
+  HostName 34.56.129.43
+  IdentityFile /Users/nnminh/.ssh/keys/trip-sync
+  User nnminh.sam
+
+Host task-service
+  HostName 34.56.219.103
+  IdentityFile /Users/nnminh/.ssh/keys/trip-sync
+  User nnminh.sam
+
+Host location-service
+  HostName 34.176.27.148
+  IdentityFile /Users/nnminh/.ssh/keys/trip-sync
+  User nnminh.sam
+
+Host gps-service
+  HostName 34.176.88.175
+  IdentityFile /Users/nnminh/.ssh/keys/trip-sync
+  User nnminh.sam
+
+Host notification-service
+  HostName 34.176.54.189
+  IdentityFile /Users/nnminh/.ssh/keys/trip-sync
+  User nnminh.sam
+
+Host reporting-service
+  HostName 34.176.200.200
+  IdentityFile /Users/nnminh/.ssh/keys/trip-sync
+  User nnminh.sam
+
+Host audit-service
+  HostName 34.95.163.128
+  IdentityFile /Users/nnminh/.ssh/keys/trip-sync
+  User nnminh.sam
+```

@@ -105,4 +105,61 @@ export class UserService {
       throw error;
     }
   }
+
+  async delete(claims: TokenClaimsDto, id: string) {
+    this.logger.log(`delete called for id: ${id}`);
+    try {
+      const result = await this.sender.send({
+        messagePattern: 'delete',
+        payload: {
+          claims,
+          request: { path: { id } },
+        },
+      });
+      this.logger.log(`delete success for id: ${id}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`delete failed for id: ${id}`, error.stack || error);
+      throw error;
+    }
+  }
+
+  async deactivate(claims: TokenClaimsDto, id: string) {
+    this.logger.log(`deactivate called for id: ${id}`);
+    try {
+      const result = await this.sender.send({
+        messagePattern: 'deactivate',
+        payload: {
+          claims,
+          request: { path: { id } },
+        },
+      });
+      this.logger.log(`deactivate success for id: ${id}`);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `deactivate failed for id: ${id}`,
+        error.stack || error,
+      );
+      throw error;
+    }
+  }
+
+  async activate(claims: TokenClaimsDto, id: string) {
+    this.logger.log(`activate called for id: ${id}`);
+    try {
+      const result = await this.sender.send({
+        messagePattern: 'activate',
+        payload: {
+          claims,
+          request: { path: { id } },
+        },
+      });
+      this.logger.log(`activate success for id: ${id}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`activate failed for id: ${id}`, error.stack || error);
+      throw error;
+    }
+  }
 }

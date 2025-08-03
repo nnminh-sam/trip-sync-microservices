@@ -18,4 +18,11 @@ export class BaseModel {
     type: 'string',
   })
   updatedAt: Date;
+
+  @ApiProperty({
+    description: 'Delete timestamp',
+    type: 'string',
+    required: false,
+  })
+  deletedAt?: Date;
 }

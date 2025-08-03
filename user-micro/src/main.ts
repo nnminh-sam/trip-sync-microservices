@@ -9,12 +9,15 @@ async function bootstrap() {
   const configService = app.get(ConfigService<EnvSchema>);
   const natsServer = configService.get<string>('NATS_SERVER');
 
-  const microservice = app.connectMicroservice<MicroserviceOptions>({
+  app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.NATS,
     options: {
       servers: [natsServer],
     },
   });
-  microservice.listen();
+  
+  await app.startAllMicroservices();
+  
+  console.log(`User microservice is listening on NATS: ${natsServer}`);
 }
 bootstrap();

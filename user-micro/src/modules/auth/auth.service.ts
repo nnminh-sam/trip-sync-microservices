@@ -1,6 +1,5 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { LoginDto } from 'src/modules/auth/dtos/login.dto';
-import { AuthTokensDto } from 'src/modules/auth/dtos/auth-tokens.dto';
 import { JwtService } from '@nestjs/jwt';
 import { throwRpcException } from 'src/utils';
 import { UserService } from 'src/modules/user/user.service';
@@ -54,6 +53,10 @@ export class AuthService {
         message: error.message,
       });
     }
+  }
+
+  async updatePassword(userId: string) {
+    return await this.userService.updatePassword(userId);
   }
 
   async authorizeClaims(payload: AuthorizeClaimsPayloadDto) {

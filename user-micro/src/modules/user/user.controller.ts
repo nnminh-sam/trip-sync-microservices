@@ -45,17 +45,22 @@ export class UserController {
 
   @MessagePattern(UserMessagePattern.create)
   async create(@Payload() payload: MessagePayloadDto<CreateUserDto>) {
-    await this.roleService.authorizeClaims({
-      claims: payload.claims,
-      required: {
-        roles: ['system admin'],
-        permission: {
-          action: 'create',
-          resource: 'user',
+    try {
+      await this.roleService.authorizeClaims({
+        claims: payload.claims,
+        required: {
+          roles: ['system admin'],
+          permission: {
+            action: 'create',
+            resource: 'user',
+          },
         },
-      },
-    });
-    return await this.userService.create(payload.request.body);
+      });
+      return await this.userService.create(payload.request.body);
+    } catch (error) {
+      console.error('Error in user controller create:', error);
+      throw error;
+    }
   }
 
   @MessagePattern(UserMessagePattern.update)
@@ -67,5 +72,50 @@ export class UserController {
       payload.claims.sub,
       payload.request.body,
     );
+  }
+
+  @MessagePattern(UserMessagePattern.delete)
+  async delete(@Payload() payload: MessagePayloadDto) {
+    await this.roleService.authorizeClaims({
+      claims: payload.claims,
+      required: {
+        roles: ['system admin'],
+        permission: {
+          action: 'create',
+          resource: 'user',
+        },
+      },
+    });
+    return await this.userService.delete(payload.request.path.id);
+  }
+
+  @MessagePattern(UserMessagePattern.deactivate)
+  async deactivate(@Payload() payload: MessagePayloadDto) {
+    await this.roleService.authorizeClaims({
+      claims: payload.claims,
+      required: {
+        roles: ['system admin'],
+        permission: {
+          action: 'update',
+          resource: 'user',
+        },
+      },
+    });
+    return await this.userService.deactivate(payload.request.path.id);
+  }
+
+  @MessagePattern(UserMessagePattern.activate)
+  async activate(@Payload() payload: MessagePayloadDto) {
+    await this.roleService.authorizeClaims({
+      claims: payload.claims,
+      required: {
+        roles: ['system admin'],
+        permission: {
+          action: 'update',
+          resource: 'user',
+        },
+      },
+    });
+    return await this.userService.activate(payload.request.path.id);
   }
 }
