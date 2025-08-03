@@ -60,6 +60,14 @@ async function bootstrap() {
 
   app.useGlobalFilters(new RpcExceptionFilter());
 
+  // Enable CORS for all origins
+  app.enableCors({
+    origin: true,
+    credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: '*',
+  });
+
   const logger = new Logger(name);
   await app.listen(port, () => {
     logger.log(`NestJS app: ${name}`);
