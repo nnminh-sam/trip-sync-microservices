@@ -1,18 +1,12 @@
-import { IsNotEmpty, IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 
-export class AuthorizeClaimPayloadDto {
-  @ApiProperty({ description: 'Roles to authorize' })
-  @IsNotEmpty()
-  roles: string[];
-
-  @ApiProperty({ description: 'Action to authorize' })
-  @IsNotEmpty()
-  @IsString()
-  action: string;
-
-  @ApiProperty({ description: 'Resource to authorize' })
-  @IsNotEmpty()
-  @IsString()
-  resource: string;
+export class AuthorizeClaimsPayloadDto {
+  claims: TokenClaimsDto;
+  required: {
+    roles: string[];
+    permission: {
+      action: string;
+      resource: string;
+    };
+  };
 }

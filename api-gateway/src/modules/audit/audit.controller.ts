@@ -30,7 +30,7 @@ export class AuditController {
     @RequestUserClaims() claims: TokenClaimsDto,
     @Body() createAuditLogDto: CreateAuditLogDto,
   ) {
-    return this.auditService.create(createAuditLogDto);
+    return this.auditService.create(claims, createAuditLogDto);
   }
 
   @Get()
@@ -45,7 +45,7 @@ export class AuditController {
     @RequestUserClaims() claims: TokenClaimsDto,
     @Query() payload: FilterAuditLogDto,
   ) {
-    return this.auditService.findAll(payload);
+    return this.auditService.findAll(claims, payload);
   }
 
   @Get(':id')
@@ -64,6 +64,6 @@ export class AuditController {
     @RequestUserClaims() claims: TokenClaimsDto,
     @Param('id') id: string,
   ) {
-    return this.auditService.findById(id);
+    return this.auditService.findById(claims, id);
   }
 }

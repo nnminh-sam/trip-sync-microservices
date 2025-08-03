@@ -18,10 +18,15 @@ export class AuditLogController {
   @MessagePattern(AuditLogMessagePattern.create)
   async create(@Payload() payload: MessagePayloadDto<CreateAuditLogDto>) {
     const { claims } = payload;
-    await this.authService.authorize(claims, {
-      roles: ['system admin', 'manager'],
-      action: 'create',
-      resource: 'log',
+    await this.authService.authorize({
+      claims,
+      required: {
+        roles: ['system admin', 'manager'],
+        permission: {
+          action: 'create',
+          resource: 'log',
+        },
+      },
     });
 
     const createAuditLogDto = payload.request.body;
@@ -38,10 +43,15 @@ export class AuditLogController {
   @MessagePattern(AuditLogMessagePattern.findById)
   async findById(@Payload() payload: MessagePayloadDto) {
     const { claims } = payload;
-    await this.authService.authorize(claims, {
-      roles: ['system admin', 'manager'],
-      action: 'read',
-      resource: 'log',
+    await this.authService.authorize({
+      claims,
+      required: {
+        roles: ['system admin', 'manager'],
+        permission: {
+          action: 'read',
+          resource: 'log',
+        },
+      },
     });
 
     const { id } = payload.request.path;
@@ -58,14 +68,20 @@ export class AuditLogController {
 
   @MessagePattern(AuditLogMessagePattern.findAll)
   async findAll(@Payload() payload: MessagePayloadDto<FilterAuditLogDto>) {
+    console.log('🚀 ~ AuditLogController ~ findAll ~ payload:');
+    console.dir(payload, { depth: null });
     const { claims } = payload;
-    await this.authService.authorize(claims, {
-      roles: ['system admin', 'manager'],
-      action: 'read',
-      resource: 'log',
+    await this.authService.authorize({
+      claims,
+      required: {
+        roles: ['system admin', 'manager'],
+        permission: {
+          action: 'read',
+          resource: 'log',
+        },
+      },
     });
 
-    const filters = payload.request.param as FilterAuditLogDto;
-    return await this.auditLogService.findAll(filters);
+    return await this.auditLogService.findAll(payload.request.body);
   }
 }

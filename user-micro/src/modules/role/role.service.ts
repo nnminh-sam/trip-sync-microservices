@@ -76,52 +76,41 @@ export class RoleService {
   }
 
   private async validateRequiredRoleAndPermission(
-    roles: string[],
+    role: string,
     permission: { action: string; resource: string },
   ) {
     this.logger.log(
       `Validating required roles and permission (${permission.action}:${permission.resource})`,
     );
 
-    // Fetch all roles in parallel and wait for all to complete
-    const existingRolesInDb: Role[] = await Promise.all(
-      roles.map(async (role: string) => {
-        const existingRoleInDb = await this.roleRepository.findOne({
-          where: { name: role },
-          relations: ['rolePermissions', 'rolePermissions.permission'],
-        });
-
-        if (!existingRoleInDb) {
-          this.logger.error(
-            'Invalid Required Role! Unknown Required Role Value',
-          );
-          throwRpcException({
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            message: 'Internal Server Error',
-          });
-        }
-
-        return existingRoleInDb;
-      }),
-    );
-
-    existingRolesInDb.forEach((role: Role) => {
-      const hasPermission = role.rolePermissions.some(
-        (rolePermission) =>
-          rolePermission.permission.action === permission.action &&
-          rolePermission.permission.resource === permission.resource,
-      );
-
-      if (!hasPermission) {
-        this.logger.error(
-          `Required Role ${role.name} Does Not Have Required Permission!`,
-        );
-        throwRpcException({
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Internal Server Error',
-        });
-      }
+    // * Check requiring roles existance
+    const existingRoleInDb: Role = await this.roleRepository.findOne({
+      where: { name: role },
+      relations: ['rolePermissions', 'rolePermissions.permission'],
     });
+    if (!existingRoleInDb) {
+      this.logger.error('Invalid Required Role! Unknown Required Role Value');
+      throwRpcException({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Internal Server Error',
+      });
+    }
+
+    // * Check requiring permission existance
+    const hasPermission = existingRoleInDb.rolePermissions.some(
+      (rolePermission) =>
+        rolePermission.permission.action === permission.action &&
+        rolePermission.permission.resource === permission.resource,
+    );
+    if (!hasPermission) {
+      this.logger.error(
+        `Required Role ${existingRoleInDb.name} Does Not Have Required Permission!`,
+      );
+      throwRpcException({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Internal Server Error',
+      });
+    }
 
     return true;
   }
@@ -137,17 +126,20 @@ export class RoleService {
       });
     }
 
-    await this.validateRequiredRoleAndPermission(
-      required.roles,
-      required.permission,
-    );
-
     if (!required.roles.includes(claimedRole)) {
+      this.logger.error(
+        `Claimed role (${claimedRole}) is not in the required roles list!`,
+      );
       throwRpcException({
         statusCode: HttpStatus.FORBIDDEN,
         message: 'Forbidden: Insufficient role',
       });
     }
+
+    await this.validateRequiredRoleAndPermission(
+      claimedRole,
+      required.permission,
+    );
 
     this.logger.log(
       `Authorized for user (${claims.email}) with role (${claims.role}) to perform action (${required.permission.action}) on resource (${required.permission.resource})`,
