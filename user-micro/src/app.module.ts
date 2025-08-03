@@ -10,6 +10,7 @@ import { PermissionModule } from './modules/permission/permission.module';
 import { PermissionService } from 'src/modules/permission/permission.service';
 import { RoleService } from 'src/modules/role/role.service';
 import { UserService } from 'src/modules/user/user.service';
+import { AuditLogModule } from './modules/audit-log/audit-log.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { UserService } from 'src/modules/user/user.service';
     PermissionModule,
     UserModule,
     RoleModule,
+    AuditLogModule,
   ],
   controllers: [],
   providers: [],

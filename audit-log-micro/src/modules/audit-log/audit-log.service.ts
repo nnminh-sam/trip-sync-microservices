@@ -73,7 +73,6 @@ export class AuditLogService {
   }
 
   async findAll(filterDto: FilterAuditLogDto) {
-    console.log('🚀 ~ AuditLogService ~ findAll ~ filterDto:', filterDto);
     this.logger.log(
       `Finding audit logs with filter: ${JSON.stringify(filterDto)}`,
     );

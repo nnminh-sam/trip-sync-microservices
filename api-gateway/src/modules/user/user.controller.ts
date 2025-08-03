@@ -31,8 +31,8 @@ export class UserController {
     description: 'Current user info',
     model: User,
   })
-  async findByAccessToken(@RequestUserClaims() claims: TokenClaimsDto) {
-    return await this.userService.findById(claims.sub);
+  async findById(@RequestUserClaims() claims: TokenClaimsDto) {
+    return await this.userService.findById(claims);
   }
 
   @Get()

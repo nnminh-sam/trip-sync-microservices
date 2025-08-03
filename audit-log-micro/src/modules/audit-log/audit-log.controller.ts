@@ -17,18 +17,6 @@ export class AuditLogController {
 
   @MessagePattern(AuditLogMessagePattern.create)
   async create(@Payload() payload: MessagePayloadDto<CreateAuditLogDto>) {
-    const { claims } = payload;
-    await this.authService.authorize({
-      claims,
-      required: {
-        roles: ['system admin', 'manager'],
-        permission: {
-          action: 'create',
-          resource: 'log',
-        },
-      },
-    });
-
     const createAuditLogDto = payload.request.body;
     if (!createAuditLogDto) {
       throwRpcException({
@@ -68,8 +56,6 @@ export class AuditLogController {
 
   @MessagePattern(AuditLogMessagePattern.findAll)
   async findAll(@Payload() payload: MessagePayloadDto<FilterAuditLogDto>) {
-    console.log('🚀 ~ AuditLogController ~ findAll ~ payload:');
-    console.dir(payload, { depth: null });
     const { claims } = payload;
     await this.authService.authorize({
       claims,

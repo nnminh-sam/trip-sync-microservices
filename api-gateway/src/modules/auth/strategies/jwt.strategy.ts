@@ -40,7 +40,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new BadRequestException('Invalid Token');
     }
 
-    const user = await this.userService.findById(payload.sub);
+    const user = await this.userService.findById(payload);
     if (!user) {
       throw new NotFoundException('User Not Found');
     }
