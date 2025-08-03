@@ -6,15 +6,25 @@ import { AuditLogService } from './audit-log.service';
 import { CreateAuditLogDto } from './dtos/create-audit-log.dto';
 import { FilterAuditLogDto } from './dtos/filter-audit-log.dto';
 import { throwRpcException } from 'src/utils';
+import { AuthService } from 'src/modules/auth/auth.service';
 
 @Controller()
 export class AuditLogController {
-  constructor(private readonly auditLogService: AuditLogService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   @MessagePattern(AuditLogMessagePattern.create)
   async create(@Payload() payload: MessagePayloadDto<CreateAuditLogDto>) {
-    const createAuditLogDto = payload.request.body;
+    const { claims } = payload;
+    await this.authService.authorize(claims, {
+      roles: ['system admin', 'manager'],
+      action: 'create',
+      resource: 'log',
+    });
 
+    const createAuditLogDto = payload.request.body;
     if (!createAuditLogDto) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
@@ -27,6 +37,13 @@ export class AuditLogController {
 
   @MessagePattern(AuditLogMessagePattern.findById)
   async findById(@Payload() payload: MessagePayloadDto) {
+    const { claims } = payload;
+    await this.authService.authorize(claims, {
+      roles: ['system admin', 'manager'],
+      action: 'read',
+      resource: 'log',
+    });
+
     const { id } = payload.request.path;
 
     if (!id) {
@@ -41,14 +58,14 @@ export class AuditLogController {
 
   @MessagePattern(AuditLogMessagePattern.findAll)
   async findAll(@Payload() payload: MessagePayloadDto<FilterAuditLogDto>) {
-    const filterDto: FilterAuditLogDto = {
-      sortBy: 'createdAt',
-      order: 'desc',
-      page: 1,
-      size: 20,
-      ...payload.request.body,
-    };
+    const { claims } = payload;
+    await this.authService.authorize(claims, {
+      roles: ['system admin', 'manager'],
+      action: 'read',
+      resource: 'log',
+    });
 
-    return await this.auditLogService.findAll(filterDto);
+    const filters = payload.request.param as FilterAuditLogDto;
+    return await this.auditLogService.findAll(filters);
   }
 }

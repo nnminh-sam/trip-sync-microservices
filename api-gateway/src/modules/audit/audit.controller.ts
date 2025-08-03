@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -10,12 +10,28 @@ import { RequestUserClaims } from 'src/common/decorators/request-user-claims.dec
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { FilterAuditLogDto } from './dtos/filter-audit-log.dto';
 import { AuditLog } from 'src/models';
+import { CreateAuditLogDto } from 'src/modules/audit/dtos/create-audit-log.dto';
+import { AuditService } from 'src/modules/audit/audit.service';
 
 @ApiBearerAuth()
 @ApiTags('Audit Logs')
 @Controller('audit-logs')
 export class AuditController {
-  constructor() {}
+  constructor(private readonly auditService: AuditService) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Create an audit log' })
+  @ApiResponseConstruction({
+    status: 201,
+    description: 'Audit log created successfully',
+    model: AuditLog,
+  })
+  async create(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Body() createAuditLogDto: CreateAuditLogDto,
+  ) {
+    return this.auditService.create(createAuditLogDto);
+  }
 
   @Get()
   @ApiOperation({ summary: 'List/filter audit logs' })
@@ -29,7 +45,7 @@ export class AuditController {
     @RequestUserClaims() claims: TokenClaimsDto,
     @Query() payload: FilterAuditLogDto,
   ) {
-    return { claims, payload };
+    return this.auditService.findAll(payload);
   }
 
   @Get(':id')
@@ -48,6 +64,6 @@ export class AuditController {
     @RequestUserClaims() claims: TokenClaimsDto,
     @Param('id') id: string,
   ) {
-    return { claims, id };
+    return this.auditService.findById(id);
   }
 }
