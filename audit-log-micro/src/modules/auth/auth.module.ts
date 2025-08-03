@@ -6,5 +6,6 @@ import { ClientModule } from 'src/client/client.module';
   imports: [ClientModule],
   providers: [AuthService],
   controllers: [],
+  exports: [AuthService],
 })
 export class AuthModule {}

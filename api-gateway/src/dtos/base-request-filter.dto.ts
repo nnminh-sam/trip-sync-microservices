@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsOptional, IsString, IsIn, IsInt, Min } from 'class-validator';
 
 export class BaseRequestFilterDto {
@@ -28,6 +29,7 @@ export class BaseRequestFilterDto {
     example: 1,
   })
   @IsOptional()
+  @Transform(({ value }) => parseInt(value, 10))
   @IsInt()
   @Min(1)
   page?: number = 1;
@@ -39,6 +41,7 @@ export class BaseRequestFilterDto {
     example: 10,
   })
   @IsOptional()
+  @Transform(({ value }) => parseInt(value, 10))
   @IsInt()
   @Min(1)
   size?: number = 10;

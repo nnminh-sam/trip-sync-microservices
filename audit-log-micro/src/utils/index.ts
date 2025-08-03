@@ -42,7 +42,7 @@ export class NatsClientSender<TPatterns extends Record<string, string>> {
     const patternValue = this.patterns[messagePattern];
     return await firstValueFrom(
       this._client.send(patternValue, payload).pipe(
-        timeout(5000),
+        timeout(10000),
         catchError((error) => {
           throw new RpcException(error);
         }),

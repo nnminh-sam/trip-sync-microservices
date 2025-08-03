@@ -5,6 +5,7 @@ import { AuditLog } from 'src/models/audit-log.model';
 import { CreateAuditLogDto } from './dtos/create-audit-log.dto';
 import { FilterAuditLogDto } from './dtos/filter-audit-log.dto';
 import { throwRpcException } from 'src/utils';
+import { ListDataDto } from 'src/dtos/list-data.dto';
 
 @Injectable()
 export class AuditLogService {
@@ -47,7 +48,6 @@ export class AuditLogService {
     try {
       const auditLog = await this.auditLogRepository.findOne({
         where: { id },
-        relations: ['user'],
       });
 
       if (!auditLog) {
@@ -72,9 +72,7 @@ export class AuditLogService {
     }
   }
 
-  async findAll(
-    filterDto: FilterAuditLogDto,
-  ): Promise<{ data: AuditLog[]; total: number }> {
+  async findAll(filterDto: FilterAuditLogDto) {
     this.logger.log(
       `Finding audit logs with filter: ${JSON.stringify(filterDto)}`,
     );
@@ -97,7 +95,6 @@ export class AuditLogService {
 
       const queryOptions: FindManyOptions<AuditLog> = {
         where: {},
-        relations: ['user'],
         skip: (page - 1) * size,
         take: size,
         order: {
@@ -155,7 +152,12 @@ export class AuditLogService {
       this.logger.log(
         `Found ${data.length} audit logs (page ${page}, size ${size}, total ${total})`,
       );
-      return { data, total };
+      return ListDataDto.build<AuditLog>({
+        data,
+        page,
+        size,
+        total,
+      });
     } catch (error) {
       this.logger.error(
         `Failed to find audit logs: ${error.message}`,

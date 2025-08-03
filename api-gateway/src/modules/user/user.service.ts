@@ -20,19 +20,22 @@ export class UserService {
     this.sender = new NatsClientSender(natsClient, UserMessagePattern);
   }
 
-  async findById(id: string) {
-    this.logger.log(`findById called with id: ${id}`);
+  async findById(claims: TokenClaimsDto) {
+    this.logger.log(`findById called with id: ${claims.sub}`);
     try {
       const result = await this.sender.send({
         messagePattern: 'findById',
         payload: {
-          request: { path: { id } },
+          claims,
         },
       });
-      this.logger.log(`findById success for id: ${id}`);
+      this.logger.log(`findById success for id: ${claims.sub}`);
       return result;
     } catch (error) {
-      this.logger.error(`findById failed for id: ${id}`, error.stack || error);
+      this.logger.error(
+        `findById failed for id: ${claims.sub}`,
+        error.stack || error,
+      );
       throw error;
     }
   }

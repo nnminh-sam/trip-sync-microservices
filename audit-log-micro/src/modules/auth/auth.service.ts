@@ -1,15 +1,10 @@
-import {
-  Inject,
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { EmptyError } from 'rxjs';
 import { NATSClient } from 'src/client/clients';
-import { AuthorizeClaimPayloadDto } from 'src/dtos/authorize-claim-payload.dto';
-import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
+import { AuthorizeClaimsPayloadDto } from 'src/dtos/authorize-claim-payload.dto';
 import { AuthMessagePattern } from 'src/modules/auth/auth-message.pattern';
-import { NatsClientSender } from 'src/utils';
+import { NatsClientSender, throwRpcException } from 'src/utils';
 
 @Injectable()
 export class AuthService {
@@ -23,10 +18,8 @@ export class AuthService {
     this.sender = new NatsClientSender(natsClient, AuthMessagePattern);
   }
 
-  async authorize(
-    claims: TokenClaimsDto,
-    authorizeClaimPayload: AuthorizeClaimPayloadDto,
-  ) {
+  async authorize(payload: AuthorizeClaimsPayloadDto) {
+    const { claims, required } = payload;
     this.logger.log(`Authorizing claims for email: ${claims.email}`);
 
     try {
@@ -37,10 +30,10 @@ export class AuthService {
             body: {
               claims,
               required: {
-                roles: authorizeClaimPayload.roles,
+                roles: required.roles,
                 permission: {
-                  action: authorizeClaimPayload.action,
-                  resource: authorizeClaimPayload.resource,
+                  action: required.permission.action,
+                  resource: required.permission.resource,
                 },
               },
             },
@@ -50,9 +43,18 @@ export class AuthService {
 
       this.logger.log('Authorization successful');
       return response;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('Authorization error:', error);
-      throw new UnauthorizedException('Unauthorized request');
+      if (error instanceof EmptyError) {
+        throwRpcException({
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Service Unavailable',
+        });
+      }
+      throwRpcException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        message: 'Unauthorized request',
+      });
     }
   }
 }

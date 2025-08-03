@@ -5,9 +5,13 @@ import { RoleService } from './role.service';
 import { Role } from 'src/models/role.model';
 import { RolePermission } from 'src/models/role-permission.model';
 import { Permission } from 'src/models/permission.model';
+import { AuditLogModule } from 'src/modules/audit-log/audit-log.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Role, RolePermission, Permission])],
+  imports: [
+    AuditLogModule,
+    TypeOrmModule.forFeature([Role, RolePermission, Permission]),
+  ],
   controllers: [RoleController],
   providers: [RoleService],
   exports: [RoleService],
