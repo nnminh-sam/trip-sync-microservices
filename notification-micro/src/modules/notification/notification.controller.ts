@@ -40,9 +40,10 @@ export class NotificationController {
     if (!id) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
-        message: 'Required notification ID',
+        message: 'Notification ID is required',
       });
     }
-    return await this.notificationService.delete(id);
+
+    return await this.notificationService.remove(id); 
   }
 }

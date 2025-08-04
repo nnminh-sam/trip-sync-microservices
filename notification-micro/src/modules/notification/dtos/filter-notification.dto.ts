@@ -1,4 +1,4 @@
-import { IsOptional, IsBoolean, IsUUID, IsString } from 'class-validator';
+import { IsOptional, IsBoolean, IsIn, IsString } from 'class-validator';
 import { BaseRequestFilterDto } from 'src/dtos/base-request-filter.dto';
 
 export class FilterNotificationDto extends BaseRequestFilterDto {
@@ -12,7 +12,11 @@ export class FilterNotificationDto extends BaseRequestFilterDto {
   user_id?: string;
 
   
-  @IsOptional()
-  @IsString()
-  type?: string;
+  @IsIn(['trip_approval', 'task_assignment', 'system_alert', 'trip_reminder'])
+  type: string;
+  
+  @IsIn(['low', 'medium', 'high'])
+  priority: string;
+
+
 }

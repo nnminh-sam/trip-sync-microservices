@@ -25,6 +25,7 @@ export class NotificationService {
       sortBy,
       user_id,
       type,
+      priority,
       is_read,
     } = payload;
 
@@ -33,6 +34,7 @@ export class NotificationService {
         ...(user_id && { user_id: user_id }),
         ...(type && { type }),
         ...(is_read !== undefined && { is_read }),
+        ...(priority && { priority }),
       },
       ...paginateAndOrder({ page, size, order, sortBy }),
     });
@@ -76,13 +78,14 @@ export class NotificationService {
     return noti;
   }
 
-  async update(id: string, payload: UpdateNotificationDto): Promise<Notification> {
+    async update(id: string, payload: UpdateNotificationDto): Promise<Notification> {
     const noti = await this.findOne(id);
 
     try {
       const updated = await this.notificationRepo.save({
         ...noti,
         ...payload,
+        is_read: payload.is_read ?? noti.is_read, // default giữ nguyên
         updatedAt: new Date(),
       });
 
@@ -96,17 +99,13 @@ export class NotificationService {
     }
   }
 
-  async delete(id: string): Promise<void> {
-    const noti = await this.findOne(id);
 
-    try {
-      await this.notificationRepo.remove(noti);
-    } catch (error) {
-      this.logger.error(`Failed to delete notification with id ${id}`, error);
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to delete notification',
-      });
-    }
+
+  async remove(id: string): Promise<{ success: boolean; id: string }> {
+    const notification = await this.findOne(id);
+    await this.notificationRepo.remove(notification);
+    this.logger.log(`Location removed with id: ${id}`);
+    return { success: true, id };
   }
+
 }
