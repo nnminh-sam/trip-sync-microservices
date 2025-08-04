@@ -8,6 +8,7 @@ import { DatabaseModule } from './database/database.module';
 import { RoleModule } from './modules/role/role.module';
 import { PermissionModule } from './modules/permission/permission.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
+import { GpsModule } from './modules/gps/gps.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
     UserModule,
     RoleModule,
     AuditLogModule,
+    GpsModule,
   ],
   controllers: [],
   providers: [],
