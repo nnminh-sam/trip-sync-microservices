@@ -21,7 +21,16 @@ export class TaskProofService {
   async create(taskId: string, payload: CreateTaskProofDto) {
     const task = await this.taskService.findOne(taskId);
 
-    const proof = this.taskProofRepository.create(payload);
+    // Calculate locationPoint from latitude and longitude
+    const proofData = {
+      ...payload,
+      taskId, // Ensure taskId is set
+      locationPoint: payload.latitude && payload.longitude
+        ? { x: payload.longitude, y: payload.latitude }
+        : null,
+    };
+
+    const proof = this.taskProofRepository.create(proofData);
     try {
       const savedProof = await this.taskProofRepository.save(proof);
       return savedProof;

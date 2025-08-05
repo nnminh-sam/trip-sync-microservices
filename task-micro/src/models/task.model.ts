@@ -1,8 +1,11 @@
 import { BaseModel } from 'src/models/base.model';
 import { TaskProof } from 'src/models/task-proof.model';
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity, Index, OneToMany } from 'typeorm';
 
 @Entity('tasks')
+@Index(['tripLocationId'])
+@Index(['status'])
+@Index(['tripLocationId', 'status'])
 export class Task extends BaseModel {
   @Column({ type: 'uuid', nullable: false })
   tripLocationId: string;

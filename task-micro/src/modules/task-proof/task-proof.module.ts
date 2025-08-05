@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { TaskProofService } from './task-proof.service';
 import { TaskProofController } from './task-proof.controller';
-import { TaskProof } from 'src/models/task-proof.model';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { TaskModule } from 'src/modules/task/task.module';
+import { DatabaseModule } from 'src/database/database.module';
+import { TaskProof } from 'src/models/task-proof.model';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TaskProof]), TaskModule],
+  imports: [DatabaseModule, TaskModule, TypeOrmModule.forFeature([TaskProof])],
   providers: [TaskProofService],
   controllers: [TaskProofController],
 })

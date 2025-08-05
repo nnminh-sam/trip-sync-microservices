@@ -1,4 +1,4 @@
-import { ListDataDto } from './../../../../user-micro/src/dtos/list-data.dto';
+import { ListDataDto } from '../../dtos/list-data.dto';
 import { paginateAndOrder, throwRpcException } from 'src/utils';
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
