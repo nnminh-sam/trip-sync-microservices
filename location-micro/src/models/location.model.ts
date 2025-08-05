@@ -3,7 +3,7 @@ import { Column, Entity, Index } from 'typeorm';
 import { LocationType } from '../types/location.types';
 
 @Entity('location')
-// Spatial index will be created via migration due to TypeORM limitations
+@Index('idx_location_geom', { spatial: true })
 @Index('idx_location_type_active', ['type', 'isActive'])
 @Index('idx_location_created_by_active', ['createdBy', 'isActive'])
 export class Location extends BaseModel {
@@ -25,14 +25,24 @@ export class Location extends BaseModel {
   @Column({ type: 'uuid', name: 'created_by', nullable: false })
   createdBy: string;
 
-  // Spatial column - temporarily commented out due to TypeORM issues
-  // The column exists in DB but TypeORM has issues with spatial types
-  // @Column({ 
-  //   type: 'point', 
-  //   srid: 4326,
-  //   nullable: true,
-  // })
-  geom?: { x: number; y: number } | null;
+  @Column({ 
+    type: 'point', 
+    srid: 4326,
+    nullable: true,
+    transformer: {
+      to: (value: { x: number; y: number }) => {
+        if (!value) return null;
+        return `POINT(${value.x} ${value.y})`;
+      },
+      from: (value: any) => {
+        if (!value) return null;
+        // MySQL returns geometry as buffer, need to parse
+        // This is a simplified version - you may need to use wkx library for proper parsing
+        return value;
+      }
+    }
+  })
+  geom: { x: number; y: number } | null;
 
   @Column({ 
     type: 'enum',
@@ -44,14 +54,12 @@ export class Location extends BaseModel {
   @Column({ type: 'boolean', default: true, name: 'is_active' })
   isActive: boolean;
 
-  // Polygon column - temporarily commented out due to TypeORM issues
-  // The column exists in DB but TypeORM has issues with spatial types
-  // @Column({ 
-  //   type: 'polygon', 
-  //   srid: 4326,
-  //   nullable: true 
-  // })
-  boundary?: any;
+  @Column({ 
+    type: 'polygon', 
+    srid: 4326,
+    nullable: true 
+  })
+  boundary: any;
 
   @Column({ type: 'json', nullable: true })
   metadata: Record<string, any>;

@@ -70,7 +70,6 @@ export class LocationRepository
         this.logger.warn(
           'Spatial column "geom" not found. Run migrations to add it.',
         );
-        this.spatialSupported = false;
         return;
       }
 
@@ -84,19 +83,11 @@ export class LocationRepository
       `);
 
       if (indexes.length === 0) {
-        try {
-          this.logger.log('Creating spatial index...');
-          await this.query(
-            `CREATE SPATIAL INDEX idx_location_geom ON location(geom)`,
-          );
-          this.logger.log('✓ Spatial index created');
-        } catch (error: any) {
-          if (error.code === 'ER_SPATIAL_CANT_HAVE_NULL') {
-            this.logger.warn('Cannot create spatial index on nullable column');
-          } else {
-            this.logger.error('Failed to create spatial index:', error.message);
-          }
-        }
+        this.logger.log('Creating spatial index...');
+        await this.query(
+          `CREATE SPATIAL INDEX idx_location_geom ON location(geom)`,
+        );
+        this.logger.log('✓ Spatial index created');
       } else {
         this.logger.log('✓ Spatial index already exists');
       }
