@@ -40,6 +40,7 @@ export class TaskService {
       deadline,
       completedAt,
       canceledAt,
+      activeOnly = true,
     } = payload;
 
     const [tasks, total] = await this.taskRepository.findAndCount({
@@ -50,6 +51,7 @@ export class TaskService {
         ...(deadline && { deadline }),
         ...(completedAt && { completedAt }),
         ...(canceledAt && { canceledAt }),
+        ...(activeOnly && { deletedAt: null }),
       },
       ...paginateAndOrder({
         page,
@@ -107,6 +109,28 @@ export class TaskService {
     return task;
   }
 
+  async findByTripLocation(tripLocationId: string): Promise<Task[]> {
+    try {
+      const tasks = await this.taskRepository.find({
+        where: {
+          tripLocationId,
+          deletedAt: null, // Only return active tasks
+        },
+        order: {
+          createdAt: 'DESC',
+        },
+      });
+
+      return tasks;
+    } catch (error) {
+      this.logger.error(`Failed to find tasks for trip location ${tripLocationId}`, error);
+      throwRpcException({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Failed to retrieve tasks',
+      });
+    }
+  }
+
   async update(id: string, payload: UpdateTaskDto): Promise<Task> {
     const task = await this.findOne(id);
 
@@ -147,6 +171,47 @@ export class TaskService {
       throwRpcException({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Failed to delete task',
+      });
+    }
+  }
+
+  async restoreTask(id: string): Promise<Task> {
+    try {
+      // Find the task including soft deleted ones
+      const task = await this.taskRepository.findOne({
+        where: { id },
+        withDeleted: true,
+      });
+
+      if (!task) {
+        throwRpcException({
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Task not found',
+        });
+      }
+
+      if (!task.isDeleted()) {
+        throwRpcException({
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Task is not deleted',
+        });
+      }
+
+      // Restore the task using BaseModel method
+      task.restore();
+      const restoredTask = await this.taskRepository.save(task);
+
+      this.logger.log(`Task ${id} has been restored`);
+      return restoredTask;
+    } catch (error) {
+      if (error.statusCode) {
+        throw error;
+      }
+
+      this.logger.error(`Failed to restore task with id ${id}`, error);
+      throwRpcException({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Failed to restore task',
       });
     }
   }

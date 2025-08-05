@@ -1,5 +1,6 @@
 import { BaseRequestFilterDto } from '../../../dtos/base-request-filter.dto';
-import { IsDate, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsDate, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class FilterTaskDto extends BaseRequestFilterDto {
   @IsOptional()
@@ -25,4 +26,9 @@ export class FilterTaskDto extends BaseRequestFilterDto {
   @IsOptional()
   @IsDate()
   canceledAt?: Date;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  activeOnly?: boolean = true;
 }
