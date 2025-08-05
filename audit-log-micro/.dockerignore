@@ -23,7 +23,6 @@ test
 .vscode
 .idea
 jest.config.*
-tsconfig*.json
 nest-cli.json
 
 # Docs & extras
