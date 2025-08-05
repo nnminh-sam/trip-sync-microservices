@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TaskProofService } from './task-proof.service';
 import { TaskProofController } from './task-proof.controller';
@@ -7,8 +7,13 @@ import { DatabaseModule } from 'src/database/database.module';
 import { TaskProof } from 'src/models/task-proof.model';
 
 @Module({
-  imports: [DatabaseModule, TaskModule, TypeOrmModule.forFeature([TaskProof])],
+  imports: [
+    DatabaseModule,
+    forwardRef(() => TaskModule),
+    TypeOrmModule.forFeature([TaskProof]),
+  ],
   providers: [TaskProofService],
   controllers: [TaskProofController],
+  exports: [TaskProofService],
 })
 export class TaskProofModule {}

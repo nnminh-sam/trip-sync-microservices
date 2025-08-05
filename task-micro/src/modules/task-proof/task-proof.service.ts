@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ListDataDto } from 'src/dtos/list-data.dto';
 import { TaskProof } from 'src/models/task-proof.model';
@@ -15,6 +15,7 @@ export class TaskProofService {
   constructor(
     @InjectRepository(TaskProof)
     private readonly taskProofRepository: Repository<TaskProof>,
+    @Inject(forwardRef(() => TaskService))
     private readonly taskService: TaskService,
   ) {}
 

@@ -4,4 +4,6 @@ export const TaskMessagePattern = {
   findOne: 'task.find_one',
   update: 'task.update',
   delete: 'task.delete',
+  complete: 'task.complete',
+  cancel: 'task.cancel',
 } as const;
