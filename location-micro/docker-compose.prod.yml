@@ -16,9 +16,9 @@ services:
     volumes:
       - ./docker-volumes/mysql_data:/var/lib/mysql
 
-  user-service:
+  location-service:
     build: .
-    container_name: user-service
+    container_name: location-service
     ports:
       - '80:80'
     env_file:
