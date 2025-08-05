@@ -122,7 +122,6 @@ export class LocationService {
         y: existingLocation.latitude,
       };
     }
-
     try {
       const updatedLocation =
         await this.locationRepository.save(existingLocation);
