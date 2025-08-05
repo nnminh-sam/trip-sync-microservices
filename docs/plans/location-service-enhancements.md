@@ -20,8 +20,8 @@ This document outlines the enhancements needed for the Location Service to suppo
 
 ### Missing Capabilities for GPS Service
 1. **Spatial Operations**
-   - PostGIS spatial data types
-   - Distance calculations
+   - MySQL spatial data types (POINT, POLYGON)
+   - Distance calculations using ST_Distance_Sphere
    - Point-in-radius validation
    - Nearby location queries
    - Polygon boundary support
@@ -42,19 +42,18 @@ This document outlines the enhancements needed for the Location Service to suppo
 
 ### Phase 1: Database Schema Enhancements
 
-#### 1.1 Add PostGIS Support
+#### 1.1 Add MySQL Spatial Support
 ```sql
--- Enable PostGIS extension
-CREATE EXTENSION IF NOT EXISTS postgis;
+-- MySQL 5.7+ has built-in spatial support
 
 -- Add spatial column to location table
-ALTER TABLE location ADD COLUMN geom geometry(Point, 4326);
+ALTER TABLE location ADD COLUMN geom POINT NOT NULL SRID 4326;
 
 -- Create spatial index
-CREATE INDEX idx_location_geom ON location USING GIST(geom);
+CREATE SPATIAL INDEX idx_location_geom ON location(geom);
 
 -- Update existing records
-UPDATE location SET geom = ST_SetSRID(ST_MakePoint(longitude, latitude), 4326);
+UPDATE location SET geom = ST_SRID(POINT(longitude, latitude), 4326);
 ```
 
 #### 1.2 Add New Columns
@@ -64,8 +63,8 @@ UPDATE location SET geom = ST_SetSRID(ST_MakePoint(longitude, latitude), 4326);
 export class Location extends BaseModel {
   // Existing fields...
   
-  @Column({ type: 'geometry', spatialFeatureType: 'Point', srid: 4326 })
-  geom: string;
+  @Column({ type: 'point', srid: 4326 })
+  geom: { x: number; y: number };
   
   @Column({ type: 'varchar', length: 50, default: 'office' })
   type: LocationType; // 'office' | 'client' | 'warehouse' | 'field' | 'other'
@@ -73,10 +72,10 @@ export class Location extends BaseModel {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
   
-  @Column({ type: 'geometry', spatialFeatureType: 'Polygon', srid: 4326, nullable: true })
-  boundary: string; // For complex geofences
+  @Column({ type: 'polygon', srid: 4326, nullable: true })
+  boundary: any; // For complex geofences
   
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'json', nullable: true })
   metadata: Record<string, any>; // Flexible attributes
   
   @Column({ type: 'varchar', length: 255, nullable: true })
@@ -107,12 +106,12 @@ async validateCoordinatesInRadius(
   const location = await this.findOne(locationId);
   
   const distance = await this.locationRepository.query(`
-    SELECT ST_Distance(
-      ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
-      geom::geography
+    SELECT ST_Distance_Sphere(
+      POINT(?, ?),
+      geom
     ) as distance
     FROM location
-    WHERE id = $3
+    WHERE id = ?
   `, [longitude, latitude, locationId]);
   
   return {
@@ -129,19 +128,16 @@ async findLocationsWithinRadius(
   radiusMeters: number
 ): Promise<Location[]> {
   return this.locationRepository.query(`
-    SELECT *
+    SELECT *,
+      ST_Distance_Sphere(geom, POINT(?, ?)) as distance
     FROM location
-    WHERE ST_DWithin(
-      geom::geography,
-      ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
-      $3
-    )
+    WHERE ST_Distance_Sphere(
+      geom,
+      POINT(?, ?)
+    ) <= ?
     AND is_active = true
-    ORDER BY ST_Distance(
-      geom::geography,
-      ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
-    )
-  `, [longitude, latitude, radiusMeters]);
+    ORDER BY distance
+  `, [longitude, latitude, longitude, latitude, radiusMeters]);
 }
 ```
 
@@ -180,9 +176,9 @@ async calculateDistance(
   toLng: number
 ): Promise<number> {
   const result = await this.locationRepository.query(`
-    SELECT ST_Distance(
-      ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
-      ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography
+    SELECT ST_Distance_Sphere(
+      POINT(?, ?),
+      POINT(?, ?)
     ) as distance
   `, [fromLng, fromLat, toLng, toLat]);
   
@@ -410,15 +406,16 @@ async getDistanceFromLocation(
 
 #### 6.1 Database Indexes
 ```sql
--- Spatial indexes
-CREATE INDEX idx_location_geom_active ON location USING GIST(geom) WHERE is_active = true;
+-- Spatial indexes (already created with CREATE SPATIAL INDEX)
 
 -- Composite indexes
 CREATE INDEX idx_location_type_active ON location(type, is_active);
 CREATE INDEX idx_location_created_by_active ON location(created_by, is_active);
 
--- JSON index for metadata queries
-CREATE INDEX idx_location_metadata ON location USING GIN(metadata);
+-- For MySQL 5.7+, create virtual columns for JSON indexing
+ALTER TABLE location 
+ADD metadata_contact VARCHAR(255) AS (JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.contactPerson'))) VIRTUAL;
+CREATE INDEX idx_metadata_contact ON location(metadata_contact);
 ```
 
 #### 6.2 Query Optimizations
@@ -430,9 +427,12 @@ async findLocationsInArea(
 ): Promise<PaginatedResult<Location>> {
   const query = this.locationRepository
     .createQueryBuilder('location')
-    .where(`ST_Within(
-      location.geom,
-      ST_MakeEnvelope(:minLng, :minLat, :maxLng, :maxLat, 4326)
+    .where(`ST_Contains(
+      ST_MakeEnvelope(
+        POINT(:minLng, :minLat),
+        POINT(:maxLng, :maxLat)
+      ),
+      location.geom
     )`)
     .andWhere('location.is_active = :isActive')
     .setParameters({
@@ -510,14 +510,14 @@ All location responses now include:
   "dependencies": {
     "@nestjs/typeorm": "^10.0.0",
     "typeorm": "^0.3.17",
-    "@types/geojson": "^7946.0.10"
+    "mysql2": "^3.6.0"
   }
 }
 ```
 
 ### External Services
 - Redis for caching
-- PostGIS-enabled PostgreSQL
+- MySQL 5.7+ with spatial support
 
 ## Performance Targets
 - Spatial queries: < 100ms for 10km radius
