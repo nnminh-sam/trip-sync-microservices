@@ -17,8 +17,7 @@ import { Location } from 'src/models/location.model';
           password: configService.get<string>('MYSQL_PASSWORD'),
           database: configService.get<string>('MYSQL_DATABASE'),
           entities: [Location],
-          migrations: ['dist/migrations/*.js'],
-          synchronize: false, // Set to false to avoid automatic schema sync issues
+          synchronize: true,
           logging: true,
           migrationsRun: false, // Set to true if you want migrations to run automatically
         };

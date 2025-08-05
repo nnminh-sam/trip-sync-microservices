@@ -34,6 +34,14 @@ export class LocationService {
     try {
       const location = this.locationRepository.create(payload);
 
+      // Set spatial data
+      if (location.latitude && location.longitude) {
+        location.geom = {
+          x: location.longitude,
+          y: location.latitude,
+        };
+      }
+
       const createdLocation = await this.locationRepository.save(location);
 
       // Clear relevant caches
@@ -107,6 +115,13 @@ export class LocationService {
 
     Object.assign(existingLocation, payload);
 
+    // Update spatial data if coordinates changed
+    if (payload.latitude !== undefined || payload.longitude !== undefined) {
+      existingLocation.geom = {
+        x: existingLocation.longitude,
+        y: existingLocation.latitude,
+      };
+    }
     try {
       const updatedLocation =
         await this.locationRepository.save(existingLocation);
