@@ -1,43 +1,21 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUUID, IsBoolean } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsBoolean, IsUUID, IsString } from 'class-validator';
 import { BaseRequestFilterDto } from 'src/dtos/base-request-filter.dto';
 
 export class FilterNotificationDto extends BaseRequestFilterDto {
-  @ApiProperty({
-    description: 'Filter by user ID',
-    example: 'user-uuid-123',
-    required: false,
-  })
-  @IsOptional()
-  @IsUUID()
-  user_id?: string;
-
-  @ApiProperty({
-    description: 'Filter by notification type',
-    example: 'trip_approval',
-    enum: ['trip_approval', 'task_assignment', 'trip_reminder', 'system_alert'],
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  type?: string;
-
-  @ApiProperty({
-    description: 'Filter by read status',
-    example: false,
-    required: false,
+  @ApiPropertyOptional({
+    description: 'Lọc theo trạng thái đã đọc (true: đã đọc, false: chưa đọc)',
+    example: true,
   })
   @IsOptional()
   @IsBoolean()
   is_read?: boolean;
 
-  @ApiProperty({
-    description: 'Filter by priority level',
-    example: 'high',
-    enum: ['low', 'medium', 'high'],
-    required: false,
+  @ApiPropertyOptional({
+    description: 'ID người dùng nhận thông báo',
+    example: 'a3f1c5d9-9d1a-4b19-b60e-871e7a934c12',
   })
   @IsOptional()
   @IsString()
-  priority?: string;
+  user_id?: string;
 }

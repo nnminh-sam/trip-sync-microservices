@@ -25,8 +25,8 @@ export class Location extends BaseModel {
   @Column({ type: 'uuid', name: 'created_by', nullable: false })
   createdBy: string;
 
-  @Column({ 
-    type: 'point', 
+  @Column({
+    type: 'point',
     srid: 4326,
     nullable: true,
     transformer: {
@@ -39,25 +39,25 @@ export class Location extends BaseModel {
         // MySQL returns geometry as buffer, need to parse
         // This is a simplified version - you may need to use wkx library for proper parsing
         return value;
-      }
-    }
+      },
+    },
   })
   geom: { x: number; y: number } | null;
 
-  @Column({ 
+  @Column({
     type: 'enum',
     enum: LocationType,
-    default: LocationType.OFFICE 
+    default: LocationType.OFFICE,
   })
   type: LocationType;
 
   @Column({ type: 'boolean', default: true, name: 'is_active' })
   isActive: boolean;
 
-  @Column({ 
-    type: 'polygon', 
+  @Column({
+    type: 'polygon',
     srid: 4326,
-    nullable: true 
+    nullable: true,
   })
   boundary: any;
 

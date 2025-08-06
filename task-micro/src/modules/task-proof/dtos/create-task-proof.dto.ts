@@ -2,6 +2,7 @@ import {
   IsDate,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   IsUUID,
 } from 'class-validator';
@@ -39,7 +40,7 @@ export class CreateTaskProofDto {
   @IsUUID()
   uploadedBy: string;
 
-  @IsNotEmpty()
-  @IsString()
-  locationPoint: string;
+  // locationPoint will be calculated from latitude/longitude
+  @IsOptional()
+  locationPoint?: { x: number; y: number } | null;
 }

@@ -2,7 +2,8 @@ import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EnvSchema } from 'src/config';
-import { tableSchemas } from 'src/models';
+import { Task } from 'src/models/task.model';
+import { TaskProof } from 'src/models/task-proof.model';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { tableSchemas } from 'src/models';
           username: configService.get<string>('MYSQL_USER'),
           password: configService.get<string>('MYSQL_PASSWORD'),
           database: configService.get<string>('MYSQL_DATABASE'),
-          entities: tableSchemas,
+          entities: [Task, TaskProof],
           synchronize: true,
           logging: true,
         };

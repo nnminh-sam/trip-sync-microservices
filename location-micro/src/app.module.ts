@@ -1,7 +1,10 @@
-import { Module } from '@nestjs/common';
-import { LocationModule } from './modules/location/location.module';
-import { DatabaseModule } from './database/database.module';
+// src/app.module.ts
+import { Module, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ClientModule } from './client/client.module';
+import { DatabaseModule } from './database/database.module';
+import { LocationModule } from './modules/location/location.module';
+import { LocationService } from './modules/location/location.service';
 import { validationSchema } from 'src/config';
 
 @Module({
@@ -13,7 +16,5 @@ import { validationSchema } from 'src/config';
     DatabaseModule,
     LocationModule,
   ],
-  controllers: [],
-  providers: [],
 })
 export class AppModule {}
