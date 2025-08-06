@@ -34,13 +34,11 @@ export class LocationService {
     try {
       const location = this.locationRepository.create(payload);
 
-      // Set spatial data
-      if (location.latitude && location.longitude) {
-        location.geom = {
-          x: location.longitude,
-          y: location.latitude,
-        };
-      }
+      // Set spatial data (required for spatial index)
+      location.geom = {
+        x: location.longitude,
+        y: location.latitude,
+      };
 
       const createdLocation = await this.locationRepository.save(location);
 
@@ -77,7 +75,7 @@ export class LocationService {
         ...(longitude && { longitude }),
         ...(location && { location: ILike(`%${location}%`) }),
         ...(createdBy && { createdBy }),
-        isActive: true, // Only return active locations by default
+        deletedAt: null, // Only return non-deleted locations by default
       },
       ...paginateAndOrder({
         page,
@@ -115,13 +113,11 @@ export class LocationService {
 
     Object.assign(existingLocation, payload);
 
-    // Update spatial data if coordinates changed
-    if (payload.latitude !== undefined || payload.longitude !== undefined) {
-      existingLocation.geom = {
-        x: existingLocation.longitude,
-        y: existingLocation.latitude,
-      };
-    }
+    // Always update geom to ensure consistency
+    existingLocation.geom = {
+      x: existingLocation.longitude,
+      y: existingLocation.latitude,
+    };
     try {
       const updatedLocation =
         await this.locationRepository.save(existingLocation);
@@ -142,8 +138,8 @@ export class LocationService {
   async delete(id: string) {
     const existingLocation = await this.findOne(id);
     try {
-      // Soft delete by setting isActive to false
-      existingLocation.isActive = false;
+      // Soft delete by setting deletedAt timestamp
+      existingLocation.deletedAt = new Date();
       await this.locationRepository.save(existingLocation);
 
       // Clear caches
@@ -241,7 +237,7 @@ export class LocationService {
     const where: any = { id: In(ids) };
 
     if (!includeInactive) {
-      where.isActive = true;
+      where.deletedAt = null;
     }
 
     return this.locationRepository.find({ where });

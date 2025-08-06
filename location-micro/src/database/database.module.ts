@@ -19,7 +19,6 @@ import { Location } from 'src/models/location.model';
           entities: [Location],
           synchronize: true,
           logging: true,
-          migrationsRun: false, // Set to true if you want migrations to run automatically
         };
       },
       inject: [ConfigService],

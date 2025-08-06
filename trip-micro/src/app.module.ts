@@ -1,45 +1,18 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import { tableSchemas } from './models';
 import { TripModule } from './modules/trip/trip.module';
+import { validationSchema } from './config/configuration';
+import { DatabaseModule } from './database/database.module';
+import { ClientModule } from './client/client.module';
 
 @Module({
   imports: [
+    DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      validationSchema,
     }),
-
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: process.env.MYSQL_HOST,
-      port: Number(process.env.MYSQL_PORT),
-      username: process.env.MYSQL_USER,
-      password: process.env.MYSQL_PASSWORD,
-      database: process.env.MYSQL_DATABASE,
-      entities: tableSchemas,
-      synchronize: true, // Chỉ bật khi dev
-    }),
-
-    ClientsModule.register([
-      {
-        name: 'LOCATION_SERVICE',
-        transport: Transport.NATS,
-        options: {
-          servers: [process.env.NATS_SERVER],
-        },
-      },
-      {
-        name: 'USER_SERVICE',
-        transport: Transport.NATS,
-        options: {
-          servers: [process.env.NATS_SERVER],
-        },
-      },
-    ]),
-
+    ClientModule,
     TripModule,
   ],
 })

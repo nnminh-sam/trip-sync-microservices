@@ -1,4 +1,4 @@
-import { IsNumber, IsEnum, IsOptional, Min, Max, IsLatitude, IsLongitude } from 'class-validator';
+import { IsNumber, IsEnum, IsOptional, IsBoolean, Min, Max, IsLatitude, IsLongitude } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { LocationType } from 'src/types/location.types';
@@ -20,13 +20,29 @@ export class NearbyLocationQueryDto {
     description: 'Search radius in meters', 
     minimum: 1, 
     maximum: 50000,
-    example: 1000 
+    example: 1000,
+    required: false
   })
+  @IsOptional()
   @IsNumber()
   @Min(1)
   @Max(50000)
   @Type(() => Number)
-  radiusMeters: number;
+  radius?: number;
+
+  @ApiProperty({ 
+    description: 'Search radius in meters (alias for radius)', 
+    minimum: 1, 
+    maximum: 50000,
+    example: 1000,
+    required: false
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(50000)
+  @Type(() => Number)
+  radiusMeters?: number;
 
   @ApiProperty({ 
     enum: LocationType, 
@@ -36,4 +52,28 @@ export class NearbyLocationQueryDto {
   @IsOptional()
   @IsEnum(LocationType)
   type?: LocationType;
+
+  @ApiProperty({ 
+    description: 'Maximum number of results to return',
+    minimum: 1,
+    maximum: 100,
+    default: 10,
+    required: false
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  @Type(() => Number)
+  limit?: number;
+
+  @ApiProperty({ 
+    description: 'Include inactive locations',
+    default: false,
+    required: false
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  includeInactive?: boolean;
 }

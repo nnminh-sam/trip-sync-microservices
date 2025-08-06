@@ -434,7 +434,7 @@ export class LocationRepository
     return this.find({
       where: {
         id: In(ids),
-        isActive: true,
+        deletedAt: null,
       },
     });
   }

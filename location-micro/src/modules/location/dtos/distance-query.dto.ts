@@ -3,15 +3,27 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class DistanceQueryDto {
-  @ApiProperty({ description: 'Latitude coordinate', example: 10.7769 })
+  @ApiProperty({ description: 'Starting latitude coordinate', example: 10.7769 })
   @IsNumber()
   @IsLatitude()
   @Type(() => Number)
-  latitude: number;
+  fromLat: number;
 
-  @ApiProperty({ description: 'Longitude coordinate', example: 106.7009 })
+  @ApiProperty({ description: 'Starting longitude coordinate', example: 106.7009 })
   @IsNumber()
   @IsLongitude()
   @Type(() => Number)
-  longitude: number;
+  fromLng: number;
+
+  @ApiProperty({ description: 'Destination latitude coordinate', example: 10.8231 })
+  @IsNumber()
+  @IsLatitude()
+  @Type(() => Number)
+  toLat: number;
+
+  @ApiProperty({ description: 'Destination longitude coordinate', example: 106.6297 })
+  @IsNumber()
+  @IsLongitude()
+  @Type(() => Number)
+  toLng: number;
 }
