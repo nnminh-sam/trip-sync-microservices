@@ -6,6 +6,7 @@ export interface EnvSchema {
   NATS_SERVER: string;
   API_PREFIX: string;
   JWT_SECRET: string;
+  MYSQL_PORT: number;
   MYSQL_HOST: string;
   MYSQL_ROOT_PASSWORD: string;
   MYSQL_DATABASE: string;
@@ -24,6 +25,7 @@ export const validationSchema = Joi.object<EnvSchema>({
   API_PREFIX: Joi.string().required(),
   JWT_SECRET: Joi.string().required(),
   MYSQL_HOST: Joi.string().required(),
+  MYSQL_PORT: Joi.number().default(3306),
   MYSQL_ROOT_PASSWORD: Joi.string().required(),
   MYSQL_DATABASE: Joi.string().required(),
   MYSQL_USER: Joi.string().required(),

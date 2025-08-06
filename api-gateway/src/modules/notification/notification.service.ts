@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
-export class NotificationService {}
+export class NotificationService {
+  private readonly logger: Logger = new Logger(NotificationService.name);
+}

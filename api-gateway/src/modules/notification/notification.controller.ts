@@ -6,7 +6,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -18,34 +17,35 @@ import {
 import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
-import { CreateNotificationDto } from './dtos/create-notification.dto';
-import { FilterNotificationDto } from './dtos/filter-notification.dto';
-import { MarkReadNotificationDto } from './dtos/mark-read-notification.dto';
-import { Notification } from 'src/models';
+import { Notification } from 'src/models/notification.model';
+import { CreateNotificationDto } from 'src/modules/notification/dtos/create-notification.dto';
+import { FilterNotificationDto } from 'src/modules/notification/dtos/filter-notification.dto';
+import { UpdateNotificationDto } from 'src/modules/notification/dtos/update-notification.dto';
 
 @ApiBearerAuth()
-@ApiTags('Notifications')
+@ApiTags('Notification')
 @Controller('notifications')
 export class NotificationController {
   constructor() {}
 
   @Get()
-  @ApiOperation({ summary: 'List/filter notifications' })
+  @ApiOperation({ summary: 'List/Filter notifications' })
   @ApiResponseConstruction({
     status: 200,
     description: 'List of notifications',
-    isArray: true,
     model: Notification,
+    isArray: true,
   })
+  @ApiBody({ type: FilterNotificationDto })
   async findAll(
     @RequestUserClaims() claims: TokenClaimsDto,
-    @Query() payload: FilterNotificationDto,
+    @Body() payload: FilterNotificationDto,
   ) {
     return { claims, payload };
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create/send notification' })
+  @ApiOperation({ summary: 'Create notification' })
   @ApiResponseConstruction({
     status: 201,
     description: 'Notification created',
@@ -60,22 +60,21 @@ export class NotificationController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Mark as read' })
+  @ApiOperation({ summary: 'Update notification' })
   @ApiResponseConstruction({
     status: 200,
-    description: 'Notification marked as read',
+    description: 'Notification updated',
     model: Notification,
   })
   @ApiParam({
     name: 'id',
     type: String,
-    description: 'Notification ID',
   })
-  @ApiBody({ type: MarkReadNotificationDto })
-  async markRead(
+  @ApiBody({ type: UpdateNotificationDto })
+  async update(
     @RequestUserClaims() claims: TokenClaimsDto,
     @Param('id') id: string,
-    @Body() payload: MarkReadNotificationDto,
+    @Body() payload: UpdateNotificationDto,
   ) {
     return { claims, id, payload };
   }
@@ -90,7 +89,6 @@ export class NotificationController {
   @ApiParam({
     name: 'id',
     type: String,
-    description: 'Notification ID',
   })
   async delete(
     @RequestUserClaims() claims: TokenClaimsDto,

@@ -1,6 +1,4 @@
-export const REPORT_MESSAGE_PATTERNS = {
+export const ReportMessagePattern = {
   TRIP_SUMMARY: 'report.trip_summary',
   TASK_COMPLETION: 'report.task_completion',
-  EXPORT_CREATE: 'export.create',
-  EXPORT_FIND_ONE: 'export.find_one',
 } as const;

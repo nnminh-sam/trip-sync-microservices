@@ -1,6 +1,6 @@
-export const TRIP_MESSAGE_PATTERNS = {
-  FIND: 'trip.find',
+export const TripMessagePattern = {
   CREATE: 'trip.create',
+  FIND_ALL: 'trip.find',
   FIND_ONE: 'trip.find_one',
   UPDATE: 'trip.update',
   DELETE: 'trip.delete',

@@ -392,7 +392,9 @@ export class LocationService {
     try {
       // Since we can't enumerate keys directly, we'll need to manage cache invalidation differently
       // For now, we'll just log the warning and rely on TTL for cache expiration
-      this.logger.debug('Cache invalidation triggered - relying on TTL for nearby cache expiration');
+      this.logger.debug(
+        'Cache invalidation triggered - relying on TTL for nearby cache expiration',
+      );
     } catch (error) {
       this.logger.warn('Unable to clear nearby caches:', error);
     }

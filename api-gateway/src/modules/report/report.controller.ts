@@ -1,86 +1,43 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Query, Controller, Get, Body } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
-import { ExportRequestDto } from './dtos/export-request.dto';
-import { TripSummaryFilterDto } from './dtos/trip-summary-filter.dto';
-import { TaskCompletionFilterDto } from './dtos/task-completion-filter.dto';
-import { ExportLog } from 'src/models';
+import { FilterReportDto } from './dtos/filter-report.dto';
+import { ReportService } from './report.service';
+import { ExportLog } from 'src/models/export-log.model';
 
 @ApiBearerAuth()
-@ApiTags('Reports & Exports')
-@Controller()
+@ApiTags('Reports')
+@Controller('reports')
 export class ReportController {
-  constructor() {}
+  constructor(private readonly reportService: ReportService) {}
 
-  @Get('reports/trips')
+  @Get('trips')
   @ApiOperation({ summary: 'Export trip summary' })
   @ApiResponseConstruction({
     status: 200,
-    description: 'Trip summary report data',
-    isArray: true,
+    description: 'Trip summary exported',
     model: ExportLog,
   })
-  async getTripSummary(
+  async exportTripSummary(
     @RequestUserClaims() claims: TokenClaimsDto,
-    @Query() payload: TripSummaryFilterDto,
+    @Body() payload: FilterReportDto,
   ) {
-    return { claims, payload };
+    return this.reportService.getTripSummary(claims, payload);
   }
 
-  @Get('reports/tasks')
-  @ApiOperation({ summary: 'Export task completion' })
+  @Get('tasks')
+  @ApiOperation({ summary: 'Export Task Completion' })
   @ApiResponseConstruction({
     status: 200,
-    description: 'Task completion report data',
-    isArray: true,
+    description: 'Task Completion exported',
     model: ExportLog,
   })
-  async getTaskCompletion(
+  async exportTaskCompletion(
     @RequestUserClaims() claims: TokenClaimsDto,
-    @Query() payload: TaskCompletionFilterDto,
+    @Body() payload: FilterReportDto,
   ) {
-    return { claims, payload };
-  }
-
-  @Post('exports')
-  @ApiOperation({ summary: 'Request export (CSV/Excel)' })
-  @ApiResponseConstruction({
-    status: 201,
-    description: 'Export request created',
-    model: ExportLog,
-  })
-  @ApiBody({ type: ExportRequestDto })
-  async createExport(
-    @RequestUserClaims() claims: TokenClaimsDto,
-    @Body() payload: ExportRequestDto,
-  ) {
-    return { claims, payload };
-  }
-
-  @Get('exports/:id')
-  @ApiOperation({ summary: 'Get export file/status' })
-  @ApiResponseConstruction({
-    status: 200,
-    description: 'Export details and download link',
-    model: ExportLog,
-  })
-  @ApiParam({
-    name: 'id',
-    type: String,
-    description: 'Export ID',
-  })
-  async getExport(
-    @RequestUserClaims() claims: TokenClaimsDto,
-    @Param('id') id: string,
-  ) {
-    return { claims, id };
+    return this.reportService.getTaskCompletion(claims, payload);
   }
 }

@@ -15,6 +15,11 @@ import { GpsModule } from './modules/gps/gps.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { ReportModule } from './modules/report/report.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { TripModule } from './modules/trip/trip.module';
+import { LocationModule } from './modules/location/location.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { ReportModule } from './modules/report/report.module';
+import { ExportModule } from './modules/export/export.module';
 
 @Module({
   imports: [
@@ -36,6 +41,11 @@ import { AuditModule } from './modules/audit/audit.module';
     NotificationModule,
     ReportModule,
     AuditModule,
+    TripModule,
+    LocationModule,
+    NotificationModule,
+    ReportModule,
+    ExportModule,
   ],
   controllers: [],
   providers: [],

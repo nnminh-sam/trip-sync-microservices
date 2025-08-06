@@ -1,4 +1,13 @@
-import { IsNotEmpty, IsNumber, IsString, IsUUID, IsOptional, IsEnum, IsObject, IsBoolean } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  IsUUID,
+  IsOptional,
+  IsEnum,
+  IsObject,
+  IsBoolean,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { LocationType } from 'src/types/location.types';
 
@@ -28,7 +37,11 @@ export class CreateLocationDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ description: 'Location type', enum: LocationType, default: LocationType.OFFICE })
+  @ApiProperty({
+    description: 'Location type',
+    enum: LocationType,
+    default: LocationType.OFFICE,
+  })
   @IsOptional()
   @IsEnum(LocationType)
   type?: LocationType;

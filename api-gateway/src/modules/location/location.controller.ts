@@ -1,116 +1,121 @@
 import {
-  Body,
   Controller,
-  Delete,
   Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
   HttpCode,
   HttpStatus,
-  Param,
-  Patch,
-  Post,
-  Query,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
+  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
+import { LocationService } from './location.service';
+import { CreateLocationDto } from './dtos/create-location.dto';
+import { UpdateLocationDto } from './dtos/update-location.dto';
+import { FilterLocationDto } from './dtos/filter-location.dto';
+import { Location } from 'src/models/location.model';
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
-import { Location } from 'src/models/location.model';
-import { CreateLocationDto } from './dtos/create-location.dto';
-import { FindLocationsDto } from './dtos/find-locations.dto';
-import { UpdateLocationDto } from './dtos/update-location.dto';
-import { LocationService } from './location.service';
+import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
 
 @ApiTags('Location')
 @Controller('locations')
+@UsePipes(new ValidationPipe({ transform: true }))
 export class LocationController {
   constructor(private readonly locationService: LocationService) {}
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new location' })
+  @ApiBody({ type: CreateLocationDto })
   @ApiResponseConstruction({
-    status: HttpStatus.CREATED,
-    description: 'Location created successfully',
+    status: 201,
+    description: 'Location created',
     model: Location,
   })
-  @ApiBody({ type: CreateLocationDto })
   async create(
     @RequestUserClaims() claims: TokenClaimsDto,
-    @Body() createLocationDto: CreateLocationDto,
+    @Body() dto: CreateLocationDto,
   ) {
-    return await this.locationService.create(claims, createLocationDto);
+    return this.locationService.create(claims, dto);
   }
 
   @Get()
+  @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'List/filter locations' })
+  @ApiOperation({ summary: 'Get list of locations' })
   @ApiResponseConstruction({
-    status: HttpStatus.OK,
+    status: 200,
     description: 'List of locations',
     model: Location,
     isArray: true,
   })
-  async find(
+  async findAll(
     @RequestUserClaims() claims: TokenClaimsDto,
-    @Query() findLocationsDto: FindLocationsDto,
+    @Body() filter: FilterLocationDto,
   ) {
-    return await this.locationService.find(claims, findLocationsDto);
+    return this.locationService.findAll(claims, filter);
   }
 
   @Get(':id')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get location details' })
+  @ApiOperation({ summary: 'Get location by ID' })
+  @ApiParam({ name: 'id', type: String })
   @ApiResponseConstruction({
-    status: HttpStatus.OK,
-    description: 'Location details',
+    status: 200,
+    description: 'Location detail',
     model: Location,
   })
-  @ApiParam({ name: 'id', type: 'string', description: 'Location ID' })
   async findOne(
     @RequestUserClaims() claims: TokenClaimsDto,
     @Param('id') id: string,
   ) {
-    return await this.locationService.findOne(claims, id);
+    return this.locationService.findOne(claims, id);
   }
 
   @Patch(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update location' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiBody({ type: UpdateLocationDto })
   @ApiResponseConstruction({
-    status: HttpStatus.OK,
-    description: 'Location updated successfully',
+    status: 200,
+    description: 'Location updated',
     model: Location,
   })
-  @ApiParam({ name: 'id', type: 'string', description: 'Location ID' })
-  @ApiBody({ type: UpdateLocationDto })
   async update(
     @RequestUserClaims() claims: TokenClaimsDto,
     @Param('id') id: string,
-    @Body() updateLocationDto: UpdateLocationDto,
+    @Body() dto: UpdateLocationDto,
   ) {
-    return await this.locationService.update(claims, id, updateLocationDto);
+    return this.locationService.update(claims, id, dto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete location' })
+  @ApiParam({ name: 'id', type: String })
   @ApiResponseConstruction({
-    status: HttpStatus.NO_CONTENT,
-    description: 'Location deleted successfully',
+    status: 204,
+    description: 'Location deleted',
     model: Location,
   })
-  @ApiParam({ name: 'id', type: 'string', description: 'Location ID' })
   async remove(
     @RequestUserClaims() claims: TokenClaimsDto,
     @Param('id') id: string,
-  ) {
-    return await this.locationService.remove(claims, id);
+  ): Promise<void> {
+    await this.locationService.remove(claims, id);
   }
 }
