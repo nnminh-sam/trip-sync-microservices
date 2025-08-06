@@ -4,14 +4,15 @@ import { BaseModel } from './base.model';
 @Entity({ name: 'export_logs' })
 export class ExportLog extends BaseModel{
   @Column()
-  requested_by: string; // FK -> users.id
+  requested_by: string;
 
   @Column()
-  export_type: string; // e.g., 'trip_summary'
+  export_type: string;
 
   @Column({ type: 'text', nullable: true })
-  filter_params?: string;
+  filters: string;
 
   @Column({ nullable: true })
   file_url?: string;
+
 }

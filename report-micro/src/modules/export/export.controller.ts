@@ -12,13 +12,13 @@ export class ExportController {
 
   @MessagePattern(ExportMessagePattern.CREATE)
   async create(@Payload() payload: MessagePayloadDto<CreateExportDto>) {
-    return await this.exportService.createExportRequest(payload.request.body);
+    return await this.exportService.create(payload.claims, payload.request.body);
   }
 
 
   @MessagePattern(ExportMessagePattern.FIND_ONE)
   async findOne(@Payload() payload: MessagePayloadDto) {
-    const { id } = payload.request.path;
+    const { id } = payload.request.param;
     if (!id) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,

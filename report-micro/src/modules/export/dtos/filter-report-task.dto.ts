@@ -1,18 +1,26 @@
 import { IsOptional, IsString, IsDateString, IsInt } from 'class-validator';
 import { BaseRequestFilterDto } from 'src/dtos/base-request-filter.dto';
 
-export class FilterReportDto extends BaseRequestFilterDto {
+export class FilterReportTaskDto extends BaseRequestFilterDto {
   @IsOptional()
-  @IsInt()
-  assignee?: string;
+  @IsString()
+  trip_id?: string;
 
   @IsOptional()
   @IsDateString()
-  from_date?: string;
+  created_at_from?: string;
 
   @IsOptional()
   @IsDateString()
-  to_date?: string;
+  created_at_to?: string;
+
+  @IsOptional()
+  @IsDateString()
+  completed_at_from?: string;
+
+  @IsOptional()
+  @IsDateString()
+  completed_at_to?: string;
 
   @IsOptional()
   @IsString()

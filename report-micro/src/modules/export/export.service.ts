@@ -3,9 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExportLog } from 'src/models/export-logs.model';
 import { CreateExportDto } from './dtos/create-export.dto';
-import { v4 as uuidv4 } from 'uuid';
+import { FilterReportTripDto } from './dtos/filter-report-trip.dto';
+import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
+import { parse } from 'json2csv';
 import { NatsClientService } from 'src/common/services/nats-client.service';
-import * as path from 'path';
+import { ReportService } from '../report/report.service';
+import { generateFileName, writeToLocalFile } from 'src/utils/file';
 
 @Injectable()
 export class ExportService {
@@ -15,51 +18,89 @@ export class ExportService {
     @InjectRepository(ExportLog)
     private readonly exportLogRepo: Repository<ExportLog>,
     private readonly natsClient: NatsClientService,
+    private readonly reportService: ReportService
   ) {}
 
-  async createExportRequest(dto: CreateExportDto) {
-    const { export_type, filter_params } = dto;
-
-    // 1. Gọi report service tương ứng qua NATS
-    const fileBuffer = await this.natsClient.send(`report.${export_type}`, {
-      body: filter_params,
+  
+  async create(claims: TokenClaimsDto, dto: CreateExportDto) {
+    const log = this.exportLogRepo.create({
+      requested_by: claims.sub,
+      export_type: dto.export_type,
+      filters: dto.filters,
     });
 
-    if (!fileBuffer || !fileBuffer.buffer) {
-      throw new Error(`Export failed: No file returned from report.${export_type}`);
+    await this.exportLogRepo.save(log);
+
+    try {
+      // Parse filters JSON string -> object
+      const rawFilters = JSON.parse(dto.filters || '{}');
+
+      // Convert to FilterReportDto
+      const parsedFilters: FilterReportTripDto = {
+        ...rawFilters,
+        from_date: dto.date_from,
+        to_date: dto.date_to,
+        status: rawFilters.status,
+        assignee_id: rawFilters.assignee_id,
+      };
+      const selectedColumns: string[] = JSON.parse(dto.columns || '[]');
+
+      // Get data
+      let data = [];
+      if (dto.export_type === 'trips') {
+        data = await this.reportService.getTripSummary(claims, parsedFilters);
+      }
+      //Get task here  
+    
+
+
+      // Select columns
+      const filteredData = data.map((item) =>
+        selectedColumns.reduce((obj, col) => {
+          obj[col] = item[col];
+          return obj;
+        }, {}),
+      );
+
+      // Format to CSV
+      const csvData = parse(filteredData, { fields: selectedColumns });
+
+      // Save file
+      const fileName = generateFileName(dto.export_type, dto.format);
+      const filePath = await writeToLocalFile(fileName, csvData);
+
+      // Update export log
+      log.file_url = filePath;
+      await this.exportLogRepo.save(log);
+
+      return {
+        data: data,
+        success: true,
+        id: log.id,
+        createdAt: log.createdAt,
+        updatedAt: log.updatedAt,
+        requestedBy: log.requested_by,
+        exportType: log.export_type,
+        filterParams: log.filters,
+        fileUrl: log.file_url,
+        status: rawFilters.status
+      };
+    } catch (error) {
+      this.logger.error('Export failed:', error.stack);
+      await this.exportLogRepo.save(log);
+
+      throw error;
     }
-
-    // 2. Tạo file và đường dẫn giả lập (có thể thay bằng lưu Google Cloud Storage)
-    const exportId = uuidv4();
-    const filename = `${export_type}-${Date.now()}.csv`;
-    const file_url = `/exports/${filename}`; // Giả lập URL (có thể là public URL từ cloud)
-
-    // 3. Lưu log vào bảng export_logs
-    const exportLog = this.exportLogRepo.create({
-      export_type,
-      filter_params: JSON.stringify(filter_params),
-      file_url,
-    });
-
-    await this.exportLogRepo.save(exportLog);
-
-    // 4. (Tuỳ chọn) Lưu file thực tế vào file system hoặc cloud tại đây
-    // Ví dụ: await writeFile(`/path/to/exports/${filename}`, fileBuffer.buffer);
-
-    this.logger.log(`Export log created: ${exportId} - ${file_url}`);
-
-    return { id: exportId, file_url };
   }
 
   async findOne(id: string) {
-      const exportLog = await this.exportLogRepo.findOne({ where: { id } });
+    const exportLog = await this.exportLogRepo.findOne({ where: { id } });
 
-      if (!exportLog) {
-        this.logger.warn(`ExportLog with id ${id} not found`);
-        throw new NotFoundException(`Export log with id ${id} not found`);
-      }
-
-      return exportLog;
+    if (!exportLog) {
+      this.logger.warn(`ExportLog with id ${id} not found`);
+      throw new NotFoundException(`Export log with id ${id} not found`);
     }
-  
+
+    return exportLog;
+  }
 }

@@ -2,22 +2,27 @@ import { IsDateString, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 
-export class FilterTripDto {
+export class FilterTaskDto {
   @IsOptional()
   @IsString()
-  assignee_id?: string;
-
-  @IsOptional()
-  @IsString()
-  created_by?: string;
+  trip_id?: string;
 
   @IsOptional()
   @IsDateString()
-  from_date?: string;
+  created_at_from?: string;
 
   @IsOptional()
   @IsDateString()
-  to_date?: string;
+  created_at_to?: string;
+
+  
+  @IsOptional()
+  @IsDateString()
+  completed_at_from?: string;
+
+  @IsOptional()
+  @IsDateString()
+  completed_at_to?: string;
 
   @IsOptional()
   @IsString()

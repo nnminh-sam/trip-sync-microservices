@@ -7,4 +7,5 @@ export class MessagePayloadDto<T = null> {
     path?: Record<string, any>;
     param?: Record<string, any>;
   };
+  user: TokenClaimsDto; 
 }

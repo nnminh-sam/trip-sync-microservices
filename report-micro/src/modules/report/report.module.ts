@@ -8,6 +8,7 @@ import { ClientModule } from 'src/client/client.module';
 @Module({
   imports: [TypeOrmModule.forFeature([ExportLog]), ClientModule],
   controllers: [ReportController],
-  providers: [ReportService]
+  providers: [ReportService],
+  exports: [ReportService],
 })
 export class ReportModule {}

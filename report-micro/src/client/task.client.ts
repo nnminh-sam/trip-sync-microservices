@@ -3,7 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 export enum TaskMessagePattern {
-  findAll = 'trip.find',
+  findAll = 'task.find',
 }
 
 @Injectable()
@@ -16,8 +16,8 @@ export class TaskClient {
   ) {}
 
   private readonly systemClaims = {
-    sub: 'trip-micro@system',
-    email: 'trip-micro@system',
+    sub: 'task-micro@system',
+    email: 'task-micro@system',
     role: 'system admin',
   };
 

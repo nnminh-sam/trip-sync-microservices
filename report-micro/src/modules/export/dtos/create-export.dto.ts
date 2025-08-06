@@ -1,17 +1,23 @@
-import { IsEnum, IsObject, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
-import { FilterReportDto } from './filter-report.dto';
+import { IsOptional, IsString, IsDateString, IsIn} from 'class-validator';
 
-export enum ExportType {
-  TRIP_SUMMARY = 'trip_summary',
-  TASK_COMPLETION = 'task_completion',
-}
 export class CreateExportDto {
-  @IsEnum(ExportType)
-  export_type: ExportType;
+  @IsIn(['csv', 'xlsx'])
+  format: string;
 
-  @IsObject()
-  @ValidateNested()
-  @Type(() => FilterReportDto)
-  filter_params: FilterReportDto;
+  @IsIn(['trips', 'tasks']) // customize export types
+  export_type: string;
+
+  @IsDateString()
+  date_from: string;
+
+  @IsDateString()
+  date_to: string;
+
+  @IsOptional()
+  @IsString()
+  filters?: string; // must be valid JSON string
+
+  @IsOptional()
+  @IsString()
+  columns?: string; // must be valid JSON string
 }

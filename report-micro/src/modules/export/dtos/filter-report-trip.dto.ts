@@ -1,7 +1,7 @@
 import { IsOptional, IsString, IsDateString, IsInt } from 'class-validator';
 import { BaseRequestFilterDto } from 'src/dtos/base-request-filter.dto';
 
-export class FilterReportDto extends BaseRequestFilterDto {
+export class FilterReportTripDto extends BaseRequestFilterDto {
   @IsOptional()
   @IsInt()
   assignee?: string;
@@ -16,5 +16,5 @@ export class FilterReportDto extends BaseRequestFilterDto {
 
   @IsOptional()
   @IsString()
-  status?: string; // nếu có trạng thái riêng cho export như 'pending', 'completed'
+  status?: string;
 }
