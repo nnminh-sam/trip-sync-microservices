@@ -32,20 +32,24 @@ export class LocationService {
 
   async create(payload: CreateLocationDto) {
     try {
-      const location = this.locationRepository.create(payload);
+      // Use insert query to avoid the geom field issue
+      const result = await this.locationRepository
+        .createQueryBuilder()
+        .insert()
+        .into(Location)
+        .values({
+          ...payload,
+          geom: () => `POINT(${payload.longitude}, ${payload.latitude})`,
+        })
+        .execute();
 
-      // Set spatial data (required for spatial index)
-      location.geom = {
-        x: location.longitude,
-        y: location.latitude,
-      };
-
-      const createdLocation = await this.locationRepository.save(location);
+      const locationId = result.identifiers[0].id;
 
       // Clear relevant caches
       await this.clearLocationCaches();
 
-      return createdLocation;
+      // Fetch and return the created location
+      return await this.findOne(locationId);
     } catch (error: any) {
       this.logger.error('Cannot create location:', error);
       throwRpcException({
@@ -68,21 +72,63 @@ export class LocationService {
       createdBy,
     } = payload;
 
-    const [locations, total] = await this.locationRepository.findAndCount({
-      where: {
-        ...(name && { name: ILike(`%${name}%`) }),
-        ...(latitude && { latitude }),
-        ...(longitude && { longitude }),
-        ...(location && { location: ILike(`%${location}%`) }),
-        ...(createdBy && { createdBy }),
-        deletedAt: null, // Only return non-deleted locations by default
-      },
-      ...paginateAndOrder({
-        page,
-        size,
-        order,
-        sortBy,
-      }),
+    const queryBuilder = this.locationRepository
+      .createQueryBuilder('location')
+      .select([
+        'location.id',
+        'location.name',
+        'location.latitude',
+        'location.longitude',
+        'location.offsetRadious',
+        'location.description',
+        'location.createdBy',
+        'location.type',
+        'location.metadata',
+        'location.address',
+        'location.city',
+        'location.country',
+        'location.timezone',
+        'location.createdAt',
+        'location.updatedAt',
+        'location.deletedAt',
+      ])
+      .where('location.deletedAt IS NULL');
+
+    if (name) {
+      queryBuilder.andWhere('location.name LIKE :name', { name: `%${name}%` });
+    }
+    if (latitude) {
+      queryBuilder.andWhere('location.latitude = :latitude', { latitude });
+    }
+    if (longitude) {
+      queryBuilder.andWhere('location.longitude = :longitude', { longitude });
+    }
+    if (location) {
+      queryBuilder.andWhere('location.address LIKE :address', {
+        address: `%${location}%`,
+      });
+    }
+    if (createdBy) {
+      queryBuilder.andWhere('location.createdBy = :createdBy', { createdBy });
+    }
+
+    // Apply sorting
+    const sortColumn = sortBy || 'createdAt';
+    const sortOrder = order || 'DESC';
+    queryBuilder.orderBy(
+      `location.${sortColumn}`,
+      sortOrder.toUpperCase() as 'ASC' | 'DESC',
+    );
+
+    // Apply pagination
+    const skip = (page - 1) * size;
+    queryBuilder.skip(skip).take(size);
+
+    const [locations, total] = await queryBuilder.getManyAndCount();
+
+    // Set geom field based on coordinates
+    locations.forEach((loc) => {
+      loc.geom = { x: loc.longitude, y: loc.latitude };
     });
 
     return ListDataDto.build<Location>({
@@ -94,9 +140,28 @@ export class LocationService {
   }
 
   async findOne(id: string) {
-    const location = await this.locationRepository.findOne({
-      where: { id },
-    });
+    const location = await this.locationRepository
+      .createQueryBuilder('location')
+      .select([
+        'location.id',
+        'location.name',
+        'location.latitude',
+        'location.longitude',
+        'location.offsetRadious',
+        'location.description',
+        'location.createdBy',
+        'location.type',
+        'location.metadata',
+        'location.address',
+        'location.city',
+        'location.country',
+        'location.timezone',
+        'location.createdAt',
+        'location.updatedAt',
+        'location.deletedAt',
+      ])
+      .where('location.id = :id', { id })
+      .getOne();
 
     if (!location) {
       throwRpcException({
@@ -105,27 +170,50 @@ export class LocationService {
       });
     }
 
+    // Set geom field based on coordinates
+    location.geom = { x: location.longitude, y: location.latitude };
+
     return location;
   }
 
   async update(id: string, payload: UpdateLocationDto) {
+    // First verify the location exists
     const existingLocation = await this.findOne(id);
 
-    Object.assign(existingLocation, payload);
-
-    // Always update geom to ensure consistency
-    existingLocation.geom = {
-      x: existingLocation.longitude,
-      y: existingLocation.latitude,
-    };
     try {
-      const updatedLocation =
-        await this.locationRepository.save(existingLocation);
+      // Prepare update data
+      const updateData: any = { ...payload };
+      
+      // If coordinates are being updated, update the geom field too
+      if (payload.latitude !== undefined || payload.longitude !== undefined) {
+        const lat = payload.latitude ?? existingLocation.latitude;
+        const lng = payload.longitude ?? existingLocation.longitude;
+        
+        // Use raw SQL for the geom update
+        await this.locationRepository
+          .createQueryBuilder()
+          .update(Location)
+          .set({
+            ...updateData,
+            geom: () => `POINT(${lng}, ${lat})`,
+          })
+          .where('id = :id', { id })
+          .execute();
+      } else {
+        // Regular update without geom
+        await this.locationRepository
+          .createQueryBuilder()
+          .update(Location)
+          .set(updateData)
+          .where('id = :id', { id })
+          .execute();
+      }
 
       // Clear caches
       await this.clearLocationCaches(id);
 
-      return updatedLocation;
+      // Fetch and return the updated location
+      return await this.findOne(id);
     } catch (error: any) {
       this.logger.error('Cannot update location:', error);
       throwRpcException({
@@ -234,13 +322,40 @@ export class LocationService {
     ids: string[],
     includeInactive = false,
   ): Promise<Location[]> {
-    const where: any = { id: In(ids) };
+    const queryBuilder = this.locationRepository
+      .createQueryBuilder('location')
+      .select([
+        'location.id',
+        'location.name',
+        'location.latitude',
+        'location.longitude',
+        'location.offsetRadious',
+        'location.description',
+        'location.createdBy',
+        'location.type',
+        'location.metadata',
+        'location.address',
+        'location.city',
+        'location.country',
+        'location.timezone',
+        'location.createdAt',
+        'location.updatedAt',
+        'location.deletedAt',
+      ])
+      .where('location.id IN (:...ids)', { ids });
 
     if (!includeInactive) {
-      where.deletedAt = null;
+      queryBuilder.andWhere('location.deletedAt IS NULL');
     }
 
-    return this.locationRepository.find({ where });
+    const locations = await queryBuilder.getMany();
+
+    // Set geom field based on coordinates
+    locations.forEach((loc) => {
+      loc.geom = { x: loc.longitude, y: loc.latitude };
+    });
+
+    return locations;
   }
 
   async getLocationBoundaries(
@@ -313,6 +428,10 @@ export class LocationService {
 
     if (cached) {
       this.logger.debug(`Cache hit for location ${id}`);
+      // Ensure geom field is set
+      if (cached.latitude && cached.longitude) {
+        cached.geom = { x: cached.longitude, y: cached.latitude };
+      }
       return cached;
     }
 

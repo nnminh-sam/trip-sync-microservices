@@ -107,10 +107,10 @@ export class LocationRepository
    */
   private async ensureCompositeIndexes(): Promise<void> {
     const indexesToCheck = [
-      { name: 'idx_location_type_active', columns: ['type', 'is_active'] },
+      { name: 'idx_location_type', columns: ['type'] },
       {
-        name: 'idx_location_created_by_active',
-        columns: ['created_by', 'is_active'],
+        name: 'idx_location_created_by',
+        columns: ['created_by'],
       },
     ];
 
@@ -183,7 +183,7 @@ export class LocationRepository
         ST_Distance_Sphere(l.geom, POINT(?, ?)) as distance
       FROM location l
       WHERE ST_Distance_Sphere(l.geom, POINT(?, ?)) <= ?
-      AND l.is_active = true
+      AND l.deleted_at IS NULL
     `;
 
     const params: any[] = [
@@ -228,7 +228,7 @@ export class LocationRepository
       FROM location
       WHERE latitude BETWEEN ? AND ?
       AND longitude BETWEEN ? AND ?
-      AND is_active = true
+      AND deleted_at IS NULL
     `;
 
     const params: any[] = [
@@ -311,7 +311,7 @@ export class LocationRepository
         SELECT *, 
           ST_Distance_Sphere(geom, POINT(?, ?)) as distance
         FROM location
-        WHERE is_active = true
+        WHERE deleted_at IS NULL
       `;
 
       const params: any[] = [longitude, latitude];
@@ -381,7 +381,7 @@ export class LocationRepository
           ST_MakeEnvelope(POINT(?, ?), POINT(?, ?)),
           geom
         )
-        AND is_active = true
+        AND deleted_at IS NULL
       `;
 
       const params: any[] = [minLng, minLat, maxLng, maxLat];
@@ -399,7 +399,7 @@ export class LocationRepository
         FROM location
         WHERE latitude BETWEEN ? AND ?
         AND longitude BETWEEN ? AND ?
-        AND is_active = true
+        AND deleted_at IS NULL
       `;
 
       const params: any[] = [minLat, maxLat, minLng, maxLng];

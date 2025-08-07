@@ -1,8 +1,6 @@
 import { BaseModel } from 'src/models/base.model';
 import { Column, Entity, Index } from 'typeorm';
 import { LocationType } from '../types/location.types';
-import { throwRpcException } from 'src/utils';
-import { HttpStatus } from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 @Entity('location')
@@ -73,24 +71,8 @@ export class Location extends BaseModel {
     type: 'point',
     srid: 4326,
     nullable: false,
-    transformer: {
-      to: (value: { x: number; y: number }) => {
-        if (!value)
-          throwRpcException({
-            statusCode: HttpStatus.BAD_REQUEST,
-            message: 'Invalid location data',
-          });
-        return `POINT(${value.x} ${value.y})`;
-      },
-      from: (value: any) => {
-        if (!value) {
-          throwRpcException({
-            statusCode: HttpStatus.BAD_REQUEST,
-            message: 'Invalid location data',
-          });
-        }
-      },
-    },
+    spatialFeatureType: 'Point',
+    select: false, // Don't select by default to avoid ST_AsText issues
   })
   geom: { x: number; y: number };
 
@@ -116,6 +98,8 @@ export class Location extends BaseModel {
     type: 'polygon',
     srid: 4326,
     nullable: true,
+    spatialFeatureType: 'Polygon',
+    select: false, // Don't select by default to avoid ST_AsText issues
   })
   boundary: any;
 

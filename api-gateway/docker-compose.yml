@@ -7,11 +7,11 @@ services:
       - '8222:8222'
     restart: unless-stopped
 
-  redis:
+  gateway-redis:
     image: redis:7-alpine
-    container_name: redis
+    container_name: gateway-redis
     ports:
-      - '6379:6379'
+      - '6380:6379'
     volumes:
       - ./docker-volume/redis-data:/data
     restart: unless-stopped

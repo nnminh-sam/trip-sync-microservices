@@ -34,12 +34,6 @@ The Location Service is a microservice responsible for managing physical locatio
     city?: string;
     country?: string;
     timezone?: string;
-    metadata?: {
-      contactPerson?: string;
-      contactPhone?: string;
-      workingHours?: { start: string; end: string };
-      facilities?: string[];
-    };
     createdBy: string;         // UUID of creator
   }
   ```
@@ -155,6 +149,7 @@ The Location Service is a microservice responsible for managing physical locatio
     longitude: number;         // Current GPS longitude
   }
   ```
+- **Note**: Service method signature is `validateCoordinatesInRadius(latitude, longitude, locationId)` - parameters reordered in service
 - **Output**:
   ```typescript
   {
@@ -262,6 +257,7 @@ The Location Service is a microservice responsible for managing physical locatio
     longitude: number;         // Current longitude
   }
   ```
+- **Note**: Service method signature is `getDistanceFromLocation(latitude, longitude, locationId)` - parameters reordered in service
 - **Output**:
   ```typescript
   {
@@ -327,6 +323,7 @@ The Location Service is a microservice responsible for managing physical locatio
     longitude: number;
   }
   ```
+- **Note**: Service method signature is `isPointInLocationBoundary(latitude, longitude, locationId)` - parameters reordered in service
 - **Output**:
   ```typescript
   {
@@ -342,9 +339,10 @@ The Location Service is a microservice responsible for managing physical locatio
 - **Input**:
   ```typescript
   {
-    locationIds?: string[];    // Specific locations (optional)
+    locationIds?: string[];    // Array of location UUIDs (optional - returns all if not provided)
   }
   ```
+- **Note**: Service method only accepts `locationIds` parameter, no type filter
 - **Output**:
   ```typescript
   Array<{
@@ -401,28 +399,28 @@ The Location Service is a microservice responsible for managing physical locatio
 ### Location Table
 ```sql
 CREATE TABLE location (
-  id VARCHAR(36) PRIMARY KEY,
+  id VARCHAR(36) PRIMARY KEY,        -- UUID from BaseModel
   name VARCHAR(255) UNIQUE NOT NULL,
   latitude DECIMAL(10,8) NOT NULL,
   longitude DECIMAL(11,8) NOT NULL,
-  offset_radious FLOAT DEFAULT 100,
+  offset_radious FLOAT DEFAULT 100,  -- Note: typo in column name
   description TEXT,
-  created_by VARCHAR(255) NOT NULL,
-  geom POINT NOT NULL SRID 4326,
+  created_by VARCHAR(36) NOT NULL,   -- UUID, not VARCHAR(255)
+  geom POINT NOT NULL SRID 4326,     -- Spatial point, required for spatial index
   type ENUM('office','client','warehouse','field','other') DEFAULT 'office',
-  boundary POLYGON SRID 4326,
-  metadata JSON,
+  boundary POLYGON SRID 4326,        -- Optional polygon boundary
+  metadata JSON,                      -- Flexible JSON field
   address VARCHAR(255),
   city VARCHAR(100),
   country VARCHAR(100),
   timezone VARCHAR(50),
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME ON UPDATE CURRENT_TIMESTAMP,
-  deletedAt DATETIME,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,  -- From BaseModel
+  updatedAt DATETIME ON UPDATE CURRENT_TIMESTAMP, -- From BaseModel
+  deletedAt DATETIME,                 -- From BaseModel (soft delete)
   
-  SPATIAL INDEX idx_location_geom (geom),
-  INDEX idx_location_type (type),
-  INDEX idx_location_created_by (created_by)
+  SPATIAL INDEX idx_location_geom (geom),        -- For spatial queries
+  INDEX idx_location_type (type),                -- For type filtering
+  INDEX idx_location_created_by (created_by)     -- For user's locations
 );
 ```
 
@@ -435,7 +433,7 @@ CREATE TABLE location (
 // 1. Employee opens app at work location
 const position = await GPS.getCurrentPosition();
 
-// 2. Validate check-in
+// 2. Validate check-in (controller handles parameter reordering)
 const validation = await locationService.send('location.validateCoordinates', {
   locationId: assignedLocationId,
   latitude: position.latitude,
@@ -519,18 +517,25 @@ for (let i = 0; i < locations.length - 1; i++) {
   error: 'Not Found'
 }
 
-// Invalid coordinates
+// Invalid location data (from model transformer)
 {
   statusCode: 400,
-  message: 'Invalid coordinates: latitude must be between -90 and 90',
+  message: 'Invalid location data',
   error: 'Bad Request'
 }
 
 // Unique constraint violation
 {
   statusCode: 409,
-  message: 'Location with this name already exists',
+  message: 'Location name already exists',
   error: 'Conflict'
+}
+
+// Required field missing
+{
+  statusCode: 400,
+  message: 'Location ID is required',
+  error: 'Bad Request'
 }
 ```
 

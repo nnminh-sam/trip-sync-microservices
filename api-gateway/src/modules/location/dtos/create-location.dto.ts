@@ -1,41 +1,65 @@
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString, Max, Min } from 'class-validator';
+import { LocationType } from 'src/modules/location/dtos/location.types';
 
 export class CreateLocationDto {
-  @ApiProperty({
-    description: 'Name of the location',
-    example: 'TripSync HQ',
-  })
-  @IsString()
+  @ApiProperty({ description: 'Location name' })
   @IsNotEmpty()
+  @IsString()
   name: string;
 
-  @ApiProperty({
-    description: 'Latitude of the location',
-    example: 21.028511,
-  })
-  @IsNumber()
-  @Min(-90)
-  @Max(90)
+  @ApiProperty({ description: 'Latitude coordinate' })
   @IsNotEmpty()
+  @IsNumber()
   latitude: number;
 
-  @ApiProperty({
-    description: 'Longitude of the location',
-    example: 105.804817,
-  })
-  @IsNumber()
-  @Min(-180)
-  @Max(180)
+  @ApiProperty({ description: 'Longitude coordinate' })
   @IsNotEmpty()
+  @IsNumber()
   longitude: number;
 
-  @ApiProperty({
-    description: 'Offset radius for check-in/out accuracy in meters',
-    example: 50,
-  })
-  @IsNumber()
-  @Min(1)
+  @ApiProperty({ description: 'Offset radius in meters', default: 100 })
   @IsNotEmpty()
-  offsetRadius: number;
+  @IsNumber()
+  offsetRadious: number;
+
+  @ApiProperty({ description: 'Location description', required: false })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({
+    description: 'Location type',
+    enum: LocationType,
+    default: LocationType.OFFICE,
+  })
+  @IsOptional()
+  @IsEnum(LocationType)
+  type?: LocationType;
+
+  @ApiProperty({ description: 'Location address', required: false })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiProperty({ description: 'City', required: false })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiProperty({ description: 'Country', required: false })
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @ApiProperty({ description: 'Timezone', required: false })
+  @IsOptional()
+  @IsString()
+  timezone?: string;
 }
