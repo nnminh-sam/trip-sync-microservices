@@ -1,12 +1,12 @@
-import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Trip } from 'src/models/trip.model';
 import { TripLocation } from 'src/models/trip-location.model';
 import { CreateTripDto } from './dtos/create-trip.dto';
 import { UpdateTripDto } from './dtos/update-trip.dto';
 import { FilterTripDto } from './dtos/filter-trip.dto';
-import { throwRpcException, paginateAndOrder } from 'src/utils';
+import { throwRpcException } from 'src/utils';
 import { ListDataDto } from 'src/dtos/list-data.dto';
 import { AuthorizeClaimsPayloadDto } from './dtos/authorize-claims-payload.dto';
 import { RpcException } from '@nestjs/microservices';
