@@ -1,38 +1,59 @@
+import { IsNumber, IsOptional, IsString, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { LocationType } from 'src/modules/location/dtos/location.types';
 
 export class UpdateLocationDto {
-  @ApiProperty({
-    description: 'Name of the location',
-    example: 'TripSync HQ',
-    required: false,
-  })
+  @ApiProperty({ description: 'Location name', required: false })
   @IsOptional()
   @IsString()
   name?: string;
 
-  @ApiProperty({
-    description: 'Location latitude',
-    required: false,
-  })
+  @ApiProperty({ description: 'Latitude coordinate', required: false })
   @IsOptional()
   @IsNumber()
   latitude?: number;
 
-  @ApiProperty({
-    description: 'Location longitude',
-    required: false,
-  })
+  @ApiProperty({ description: 'Longitude coordinate', required: false })
   @IsOptional()
   @IsNumber()
   longitude?: number;
 
-  @ApiProperty({
-    description: 'Offset radius for check-in/out accuracy in meters',
-    example: 50,
-    required: false,
-  })
+  @ApiProperty({ description: 'Offset radius in meters', required: false })
   @IsOptional()
   @IsNumber()
   offsetRadious?: number;
+
+  @ApiProperty({ description: 'Location description', required: false })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({
+    description: 'Location type',
+    enum: LocationType,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(LocationType)
+  type?: LocationType;
+
+  @ApiProperty({ description: 'Location address', required: false })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiProperty({ description: 'City', required: false })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiProperty({ description: 'Country', required: false })
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @ApiProperty({ description: 'Timezone', required: false })
+  @IsOptional()
+  @IsString()
+  timezone?: string;
 }

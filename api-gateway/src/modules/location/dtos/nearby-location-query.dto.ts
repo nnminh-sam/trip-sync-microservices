@@ -1,7 +1,16 @@
-import { IsNumber, IsEnum, IsOptional, IsBoolean, Min, Max, IsLatitude, IsLongitude } from 'class-validator';
+import {
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsBoolean,
+  Min,
+  Max,
+  IsLatitude,
+  IsLongitude,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { LocationType } from 'src/types/location.types';
+import { LocationType } from 'src/modules/location/dtos/location.types';
 
 export class NearbyLocationQueryDto {
   @ApiProperty({ description: 'Latitude coordinate', example: 10.7769 })
@@ -16,12 +25,12 @@ export class NearbyLocationQueryDto {
   @Type(() => Number)
   longitude: number;
 
-  @ApiProperty({ 
-    description: 'Search radius in meters', 
-    minimum: 1, 
+  @ApiProperty({
+    description: 'Search radius in meters',
+    minimum: 1,
     maximum: 50000,
     example: 1000,
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsNumber()
@@ -30,12 +39,12 @@ export class NearbyLocationQueryDto {
   @Type(() => Number)
   radius?: number;
 
-  @ApiProperty({ 
-    description: 'Search radius in meters (alias for radius)', 
-    minimum: 1, 
+  @ApiProperty({
+    description: 'Search radius in meters (alias for radius)',
+    minimum: 1,
     maximum: 50000,
     example: 1000,
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsNumber()
@@ -44,21 +53,21 @@ export class NearbyLocationQueryDto {
   @Type(() => Number)
   radiusMeters?: number;
 
-  @ApiProperty({ 
-    enum: LocationType, 
+  @ApiProperty({
+    enum: LocationType,
     required: false,
-    description: 'Filter by location type' 
+    description: 'Filter by location type',
   })
   @IsOptional()
   @IsEnum(LocationType)
   type?: LocationType;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Maximum number of results to return',
     minimum: 1,
     maximum: 100,
     default: 10,
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsNumber()
@@ -67,10 +76,10 @@ export class NearbyLocationQueryDto {
   @Type(() => Number)
   limit?: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Include inactive locations',
     default: false,
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsBoolean()

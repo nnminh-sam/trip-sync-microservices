@@ -7,6 +7,7 @@ import { LocationService } from './location.service';
 import { LocationController } from './location.controller';
 import { Location } from 'src/models/location.model';
 import { LocationRepository } from 'src/modules/location/location.repository';
+import { EnvSchema } from 'src/config';
 
 @Module({
   imports: [
@@ -14,12 +15,17 @@ import { LocationRepository } from 'src/modules/location/location.repository';
     CacheModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        store: redisStore,
-        host: configService.get('REDIS_HOST', 'localhost'),
-        port: configService.get('REDIS_PORT', 6379),
-        ttl: 600, // 10 minutes default
-      }),
+      useFactory: (configService: ConfigService<EnvSchema>) => {
+        console.log(
+          `Connected to Redis service at ${configService.get('REDIS_HOST')}:${configService.get('REDIS_PORT')}`,
+        );
+        return {
+          store: redisStore,
+          host: configService.get('REDIS_HOST'),
+          port: configService.get('REDIS_PORT'),
+          ttl: 600,
+        };
+      },
     }),
   ],
   providers: [LocationService, LocationRepository],

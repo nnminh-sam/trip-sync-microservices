@@ -1,0 +1,831 @@
+{
+  "info": {
+    "name": "Location APIs",
+    "description": "Complete API test collection for Trip Sync Location Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "location_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "test_latitude",
+      "value": "10.7769331",
+      "type": "number"
+    },
+    {
+      "key": "test_longitude",
+      "value": "106.7009238",
+      "type": "number"
+    }
+  ],
+  "item": [
+    {
+      "name": "CRUD Operations",
+      "item": [
+        {
+          "name": "Create Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has location ID\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.collectionVariables.set(\"location_id\", jsonData.id);",
+                  "});",
+                  "",
+                  "pm.test(\"Location has correct name\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.name).to.eql(\"HQ Office Building\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"HQ Office Building\",\n  \"latitude\": 10.7769331,\n  \"longitude\": 106.7009238,\n  \"offsetRadious\": 100,\n  \"description\": \"Main headquarters building with parking facilities\",\n  \"type\": \"office\",\n  \"address\": \"123 Nguyen Hue Street, District 1\",\n  \"city\": \"Ho Chi Minh City\",\n  \"country\": \"Vietnam\",\n  \"timezone\": \"Asia/Ho_Chi_Minh\",\n  \"metadata\": {\n    \"contactPerson\": \"John Doe\",\n    \"contactPhone\": \"+84901234567\",\n    \"workingHours\": {\n      \"start\": \"08:00\",\n      \"end\": \"17:00\"\n    },\n    \"facilities\": [\"parking\", \"cafeteria\", \"gym\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations",
+              "host": ["{{base_url}}"],
+              "path": ["locations"]
+            },
+            "description": "Create a new location in the system"
+          }
+        },
+        {
+          "name": "Get All Locations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has data array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Response has pagination info\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('total');",
+                  "    pm.expect(jsonData).to.have.property('page');",
+                  "    pm.expect(jsonData).to.have.property('size');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/locations?page=1&size=10&order=DESC&sortBy=createdAt&type=office",
+              "host": ["{{base_url}}"],
+              "path": ["locations"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "order",
+                  "value": "DESC",
+                  "description": "Sort order (ASC/DESC)"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Sort field"
+                },
+                {
+                  "key": "type",
+                  "value": "office",
+                  "description": "Filter by location type"
+                },
+                {
+                  "key": "name",
+                  "value": "",
+                  "description": "Filter by name (partial match)",
+                  "disabled": true
+                },
+                {
+                  "key": "createdBy",
+                  "value": "",
+                  "description": "Filter by creator ID",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieve all locations with optional filtering and pagination"
+          }
+        },
+        {
+          "name": "Get Location by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has location details\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('name');",
+                  "    pm.expect(jsonData).to.have.property('latitude');",
+                  "    pm.expect(jsonData).to.have.property('longitude');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/locations/{{location_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "{{location_id}}"]
+            },
+            "description": "Get detailed information about a specific location"
+          }
+        },
+        {
+          "name": "Update Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Location updated successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.description).to.include(\"Updated\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated: Main headquarters building with new facilities\",\n  \"offsetRadious\": 150,\n  \"metadata\": {\n    \"contactPerson\": \"Jane Smith\",\n    \"contactPhone\": \"+84901234568\",\n    \"workingHours\": {\n      \"start\": \"07:30\",\n      \"end\": \"18:00\"\n    },\n    \"facilities\": [\"parking\", \"cafeteria\", \"gym\", \"conference rooms\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations/{{location_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "{{location_id}}"]
+            },
+            "description": "Update an existing location's information"
+          }
+        },
+        {
+          "name": "Delete Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Location deleted successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success');",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/locations/{{location_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "{{location_id}}"]
+            },
+            "description": "Soft delete a location (sets deletedAt timestamp)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Check-in/Check-out Operations",
+      "item": [
+        {
+          "name": "Validate Coordinates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Validation result received\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('isValid');",
+                  "    pm.expect(jsonData).to.have.property('distance');",
+                  "    pm.expect(jsonData).to.have.property('maxRadius');",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationId\": \"{{location_id}}\",\n  \"latitude\": {{test_latitude}},\n  \"longitude\": {{test_longitude}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations/validate-coordinates",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "validate-coordinates"]
+            },
+            "description": "Validate if GPS coordinates are within a location's check-in radius"
+          }
+        },
+        {
+          "name": "Validate Batch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Batch validation results received\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('results');",
+                  "    pm.expect(jsonData.results).to.be.an('array');",
+                  "    pm.expect(jsonData.results.length).to.be.greaterThan(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"locationId\": \"{{location_id}}\",\n    \"latitude\": 10.7769331,\n    \"longitude\": 106.7009238\n  },\n  {\n    \"locationId\": \"{{location_id}}\",\n    \"latitude\": 10.7789331,\n    \"longitude\": 106.7029238\n  },\n  {\n    \"locationId\": \"{{location_id}}\",\n    \"latitude\": 10.8000000,\n    \"longitude\": 106.7500000\n  }\n]"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations/validate-batch",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "validate-batch"]
+            },
+            "description": "Validate multiple location-coordinate pairs in batch"
+          }
+        }
+      ]
+    },
+    {
+      "name": "GPS and Distance Operations",
+      "item": [
+        {
+          "name": "Find Nearby Locations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is an array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": {{test_latitude}},\n  \"longitude\": {{test_longitude}},\n  \"radius\": 5000,\n  \"type\": \"office\",\n  \"limit\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations/find-nearby",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "find-nearby"]
+            },
+            "description": "Find locations near given coordinates (cached results)"
+          }
+        },
+        {
+          "name": "Find Within Radius",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Locations within radius returned\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": {{test_latitude}},\n  \"longitude\": {{test_longitude}},\n  \"radius\": 2000,\n  \"includeInactive\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations/find-within-radius",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "find-within-radius"]
+            },
+            "description": "Find all locations within a specific radius from coordinates"
+          }
+        },
+        {
+          "name": "Calculate Distance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Distance calculated\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('distance');",
+                  "    pm.expect(jsonData).to.have.property('distanceKm');",
+                  "    pm.expect(jsonData.distance).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromLat\": 10.7769331,\n  \"fromLng\": 106.7009238,\n  \"toLat\": 10.8231,\n  \"toLng\": 106.6297\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations/calculate-distance",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "calculate-distance"]
+            },
+            "description": "Calculate distance between two coordinate pairs"
+          }
+        },
+        {
+          "name": "Distance from Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Distance from location calculated\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('locationId');",
+                  "    pm.expect(jsonData).to.have.property('locationName');",
+                  "    pm.expect(jsonData).to.have.property('distance');",
+                  "    pm.expect(jsonData).to.have.property('isWithinRadius');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationId\": \"{{location_id}}\",\n  \"latitude\": 10.7789331,\n  \"longitude\": 106.7029238\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations/distance-from-location",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "distance-from-location"]
+            },
+            "description": "Calculate distance from coordinates to a specific location"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Area and Boundary Operations",
+      "item": [
+        {
+          "name": "Find in Area",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Locations in area returned\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData).to.have.property('total');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bounds\": {\n    \"minLat\": 10.7,\n    \"minLng\": 106.6,\n    \"maxLat\": 10.9,\n    \"maxLng\": 106.8\n  },\n  \"type\": \"office\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations/find-in-area",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "find-in-area"]
+            },
+            "description": "Find locations within geographical boundaries"
+          }
+        },
+        {
+          "name": "Find Nearest",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Nearest locations returned\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "    if (jsonData.length > 0) {",
+                  "        pm.expect(jsonData.length).to.be.at.most(5);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": {{test_latitude}},\n  \"longitude\": {{test_longitude}},\n  \"limit\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations/find-nearest",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "find-nearest"]
+            },
+            "description": "Find the N nearest locations to given coordinates"
+          }
+        },
+        {
+          "name": "Check Boundary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Boundary check result received\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('isInside');",
+                  "    pm.expect(jsonData).to.have.property('locationName');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationId\": \"{{location_id}}\",\n  \"latitude\": {{test_latitude}},\n  \"longitude\": {{test_longitude}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations/check-boundary",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "check-boundary"]
+            },
+            "description": "Check if a point is within a location's polygon boundary"
+          }
+        },
+        {
+          "name": "Get Boundaries",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Boundaries returned\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "    if (jsonData.length > 0) {",
+                  "        pm.expect(jsonData[0]).to.have.property('id');",
+                  "        pm.expect(jsonData[0]).to.have.property('name');",
+                  "        pm.expect(jsonData[0]).to.have.property('center');",
+                  "        pm.expect(jsonData[0]).to.have.property('radius');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationIds\": [\"{{location_id}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations/get-boundaries",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "get-boundaries"]
+            },
+            "description": "Get boundary information for specified locations"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Batch Operations",
+      "item": [
+        {
+          "name": "Find by IDs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Locations returned for IDs\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\"{{location_id}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations/find-by-ids",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "find-by-ids"]
+            },
+            "description": "Find multiple locations by their IDs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Health status received\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "    pm.expect(jsonData).to.have.property('database');",
+                  "    pm.expect(jsonData).to.have.property('redis');",
+                  "    pm.expect(jsonData).to.have.property('spatialSupport');",
+                  "    pm.expect(jsonData).to.have.property('timestamp');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/locations/health/status",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "health", "status"]
+            },
+            "description": "Check the health status of the location service"
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set authentication token if not already set",
+          "if (!pm.collectionVariables.get(\"access_token\")) {",
+          "    console.log(\"Warning: No access token set. Please authenticate first.\");",
+          "}",
+          "",
+          "// Log the request being made",
+          "console.log(`Making ${pm.request.method} request to: ${pm.request.url.toString()}`);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test for response time",
+          "pm.test(\"Response time is less than 2 seconds\", function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+          "});",
+          "",
+          "// Global test for content type",
+          "pm.test(\"Response has Content-Type header\", function () {",
+          "    pm.response.to.have.header(\"Content-Type\");",
+          "});"
+        ]
+      }
+    }
+  ]
+}

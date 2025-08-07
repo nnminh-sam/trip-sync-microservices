@@ -63,14 +63,4 @@ export class UpdateLocationDto {
   @IsOptional()
   @IsString()
   timezone?: string;
-
-  @ApiProperty({ description: 'Location metadata', required: false })
-  @IsOptional()
-  @IsObject()
-  metadata?: Record<string, any>;
-
-  @ApiProperty({ description: 'Is location active', required: false })
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
 }

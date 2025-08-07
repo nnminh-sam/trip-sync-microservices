@@ -19,7 +19,12 @@ import { Location } from 'src/models/location.model';
           entities: [Location],
           synchronize: true,
           logging: true,
-          migrationsRun: false, // Set to true if you want migrations to run automatically
+          // Spatial support configuration
+          legacySpatialSupport: false, // Use modern ST_ functions
+          extra: {
+            // Additional MySQL connection options
+            charset: 'utf8mb4_unicode_ci',
+          },
         };
       },
       inject: [ConfigService],

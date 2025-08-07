@@ -2,11 +2,8 @@ import {
   IsNotEmpty,
   IsNumber,
   IsString,
-  IsUUID,
   IsOptional,
   IsEnum,
-  IsObject,
-  IsBoolean,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { LocationType } from 'src/types/location.types';
@@ -65,19 +62,4 @@ export class CreateLocationDto {
   @IsOptional()
   @IsString()
   timezone?: string;
-
-  @ApiProperty({ description: 'Location metadata', required: false })
-  @IsOptional()
-  @IsObject()
-  metadata?: Record<string, any>;
-
-  @ApiProperty({ description: 'Is location active', default: true })
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
-
-  @ApiProperty({ description: 'Created by user ID' })
-  @IsNotEmpty()
-  @IsUUID()
-  createdBy: string;
 }
