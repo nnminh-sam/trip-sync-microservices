@@ -23,6 +23,27 @@ export class LocationRepository
   async onModuleInit() {
     await this.initializeSpatialSupport();
     await this.ensureSpatialIndexes();
+    await this.checkDatabaseSchema();
+  }
+
+  private async checkDatabaseSchema(): Promise<void> {
+    try {
+      // Check actual column names in the database
+      const columns = await this.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'location'
+        ORDER BY ORDINAL_POSITION
+      `);
+      
+      this.logger.log('Location table columns:');
+      columns.forEach((col: any) => {
+        this.logger.log(`  - ${col.COLUMN_NAME}`);
+      });
+    } catch (error) {
+      this.logger.error('Failed to check database schema', error);
+    }
   }
 
   /**
@@ -183,7 +204,7 @@ export class LocationRepository
         ST_Distance_Sphere(l.geom, POINT(?, ?)) as distance
       FROM location l
       WHERE ST_Distance_Sphere(l.geom, POINT(?, ?)) <= ?
-      AND l.deleted_at IS NULL
+      AND l.deletedAt IS NULL
     `;
 
     const params: any[] = [
@@ -228,7 +249,7 @@ export class LocationRepository
       FROM location
       WHERE latitude BETWEEN ? AND ?
       AND longitude BETWEEN ? AND ?
-      AND deleted_at IS NULL
+      AND deletedAt IS NULL
     `;
 
     const params: any[] = [
@@ -311,7 +332,7 @@ export class LocationRepository
         SELECT *, 
           ST_Distance_Sphere(geom, POINT(?, ?)) as distance
         FROM location
-        WHERE deleted_at IS NULL
+        WHERE deletedAt IS NULL
       `;
 
       const params: any[] = [longitude, latitude];
@@ -381,7 +402,7 @@ export class LocationRepository
           ST_MakeEnvelope(POINT(?, ?), POINT(?, ?)),
           geom
         )
-        AND deleted_at IS NULL
+        AND deletedAt IS NULL
       `;
 
       const params: any[] = [minLng, minLat, maxLng, maxLat];
@@ -399,7 +420,7 @@ export class LocationRepository
         FROM location
         WHERE latitude BETWEEN ? AND ?
         AND longitude BETWEEN ? AND ?
-        AND deleted_at IS NULL
+        AND deletedAt IS NULL
       `;
 
       const params: any[] = [minLat, maxLat, minLng, maxLng];
