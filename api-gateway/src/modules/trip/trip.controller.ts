@@ -10,6 +10,7 @@ import {
   HttpStatus,
   UsePipes,
   ValidationPipe,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -65,7 +66,7 @@ export class TripController {
   })
   async findAll(
     @RequestUserClaims() claims: TokenClaimsDto,
-    @Body() filter: FilterTripDto,
+    @Query() filter: FilterTripDto,
   ) {
     return this.tripService.findAll(claims, filter);
   }
