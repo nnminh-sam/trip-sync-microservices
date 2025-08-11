@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsOptional, IsString, IsUUID } from 'class-validator';
+import { BaseRequestFilterDto } from 'src/dtos/base-request-filter.dto';
 
-export class FilterTaskProofDto {
+export class FilterTaskProofDto extends BaseRequestFilterDto {
   @ApiProperty({
     description: "Proof's type",
     required: false,

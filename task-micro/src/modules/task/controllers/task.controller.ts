@@ -7,8 +7,9 @@ import { FilterTaskDto } from 'src/modules/task/dtos/filter-task.dto';
 import { CompleteTaskDto } from 'src/modules/task/dtos/complete-task.dto';
 import { CancelTaskDto } from 'src/modules/task/dtos/cancel-task.dto';
 import { TaskMessagePattern } from 'src/modules/task/task-message.pattern';
-import { TaskService } from 'src/modules/task/task.service';
+import { TaskService } from 'src/modules/task/services/task.service';
 import { throwRpcException } from 'src/utils';
+import { ApproveTaskDto } from 'src/modules/task/dtos/approve-task.dto';
 
 @Controller('task')
 export class TaskController {
@@ -65,6 +66,47 @@ export class TaskController {
       });
     }
     return await this.taskService.delete(id);
+  }
+
+  @MessagePattern(TaskMessagePattern.approve)
+  async approve(@Payload() payload: MessagePayloadDto<ApproveTaskDto>) {
+    const { id } = payload.request.path;
+    const { approverId } = payload.request.body;
+    if (!id || !approverId) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Required task ID and approver ID',
+      });
+    }
+    return await this.taskService.approveTask(id, approverId);
+  }
+
+  @MessagePattern(TaskMessagePattern.reject)
+  async reject(
+    @Payload()
+    payload: MessagePayloadDto<{ rejectorId: string; reason: string }>,
+  ) {
+    const { id } = payload.request.path;
+    const { rejectorId, reason } = payload.request.body;
+    if (!id || !rejectorId || !reason) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Required task ID, rejector ID, and reason',
+      });
+    }
+    return await this.taskService.rejectTask(id, rejectorId, reason);
+  }
+
+  @MessagePattern(TaskMessagePattern.start)
+  async start(@Payload() payload: MessagePayloadDto) {
+    const { id } = payload.request.path;
+    if (!id) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Required task ID',
+      });
+    }
+    return await this.taskService.startTask(id);
   }
 
   @MessagePattern(TaskMessagePattern.complete)

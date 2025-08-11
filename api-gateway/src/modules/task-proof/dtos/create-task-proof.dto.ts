@@ -56,7 +56,7 @@ export class CreateTaskProofDto {
     description: 'Upload timestamp',
   })
   @IsNotEmpty()
-  @IsDate()
+  // @IsDate()
   timestamp: Date;
 
   @ApiProperty({

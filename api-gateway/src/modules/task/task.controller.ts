@@ -1,4 +1,3 @@
-import { IsDate } from 'class-validator';
 import {
   Body,
   Controller,
@@ -7,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import {
@@ -14,24 +14,33 @@ import {
   ApiBody,
   ApiOperation,
   ApiParam,
-  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { Task } from 'src/models/task.model';
+import { TaskProof } from 'src/models/task-proof.model';
 import { CreateTaskProofDto } from 'src/modules/task-proof/dtos/create-task-proof.dto';
 import { FilterTaskProofDto } from 'src/modules/task-proof/dtos/filter-task-proof.dto';
+import { TaskProofService } from 'src/modules/task-proof/task-proof.service';
 import { CreateTaskDto } from 'src/modules/task/dtos/create-task.dto';
 import { FilterTaskDto } from 'src/modules/task/dtos/filter-task.dto';
 import { UpdateTaskDto } from 'src/modules/task/dtos/update-task.dto';
+import { ApproveTaskDto } from 'src/modules/task/dtos/approve-task.dto';
+import { RejectTaskDto } from 'src/modules/task/dtos/reject-task.dto';
+import { CompleteTaskDto } from 'src/modules/task/dtos/complete-task.dto';
+import { CancelTaskDto } from 'src/modules/task/dtos/cancel-task.dto';
+import { TaskService } from 'src/modules/task/task.service';
 
 @ApiBearerAuth()
 @ApiTags('Task')
 @Controller('tasks')
 export class TaskController {
-  constructor() {}
+  constructor(
+    private readonly taskService: TaskService,
+    private readonly taskProofService: TaskProofService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List/Filter tasks' })
@@ -45,7 +54,7 @@ export class TaskController {
     @RequestUserClaims() claims: TokenClaimsDto,
     @Query() payload: FilterTaskDto,
   ) {
-    return { claims, payload };
+    return await this.taskService.findAll(claims, payload);
   }
 
   @Post()
@@ -61,7 +70,7 @@ export class TaskController {
     @RequestUserClaims() claims: TokenClaimsDto,
     @Body() payload: CreateTaskDto,
   ) {
-    return { claims, payload };
+    return await this.taskService.create(claims, payload);
   }
 
   @Get(':id')
@@ -79,10 +88,7 @@ export class TaskController {
     @RequestUserClaims() claims: TokenClaimsDto,
     @Param('id') id: string,
   ) {
-    return {
-      claims,
-      id,
-    };
+    return await this.taskService.findOne(claims, id);
   }
 
   @Patch(':id')
@@ -101,11 +107,7 @@ export class TaskController {
     @Param('id') id: string,
     @Body() payload: UpdateTaskDto,
   ) {
-    return {
-      claims,
-      id,
-      payload,
-    };
+    return await this.taskService.update(claims, id, payload);
   }
 
   @Delete(':id')
@@ -123,10 +125,105 @@ export class TaskController {
     @RequestUserClaims() claims: TokenClaimsDto,
     @Param('id') id: string,
   ) {
-    return {
-      claims,
-      id,
-    };
+    return await this.taskService.delete(claims, id);
+  }
+
+  @Put(':id/approve')
+  @ApiOperation({ summary: 'Approve task' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Task approved',
+    model: Task,
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+  })
+  @ApiBody({ type: ApproveTaskDto })
+  async approve(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('id') id: string,
+    @Body() payload: ApproveTaskDto,
+  ) {
+    return await this.taskService.approve(claims, id, payload);
+  }
+
+  @Put(':id/reject')
+  @ApiOperation({ summary: 'Reject task' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Task rejected',
+    model: Task,
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+  })
+  @ApiBody({ type: RejectTaskDto })
+  async reject(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('id') id: string,
+    @Body() payload: RejectTaskDto,
+  ) {
+    return await this.taskService.reject(claims, id, payload);
+  }
+
+  @Put(':id/start')
+  @ApiOperation({ summary: 'Start task' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Task started',
+    model: Task,
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+  })
+  async start(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('id') id: string,
+  ) {
+    return await this.taskService.start(claims, id);
+  }
+
+  @Put(':id/complete')
+  @ApiOperation({ summary: 'Complete task' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Task completed',
+    model: Task,
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+  })
+  @ApiBody({ type: CompleteTaskDto })
+  async complete(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('id') id: string,
+    @Body() payload: CompleteTaskDto,
+  ) {
+    return await this.taskService.complete(claims, id, payload);
+  }
+
+  @Put(':id/cancel')
+  @ApiOperation({ summary: 'Cancel task' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Task canceled',
+    model: Task,
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+  })
+  @ApiBody({ type: CancelTaskDto })
+  async cancel(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('id') id: string,
+    @Body() payload: CancelTaskDto,
+  ) {
+    return await this.taskService.cancel(claims, id, payload);
   }
 
   @Get(':id/proofs')
@@ -134,7 +231,8 @@ export class TaskController {
   @ApiResponseConstruction({
     status: 200,
     description: 'List of proofs',
-    model: Task,
+    model: TaskProof,
+    isArray: true,
   })
   @ApiParam({
     name: 'id',
@@ -145,11 +243,7 @@ export class TaskController {
     @Param('id') id: string,
     @Query() payload: FilterTaskProofDto,
   ) {
-    return {
-      claims,
-      id,
-      payload,
-    };
+    return await this.taskProofService.findByTask(claims, id, payload);
   }
 
   @Post(':id/proofs')
@@ -157,19 +251,18 @@ export class TaskController {
   @ApiResponseConstruction({
     status: 201,
     description: 'Proof created',
-    model: Task,
+    model: TaskProof,
   })
   @ApiParam({
     name: 'id',
     type: String,
   })
+  @ApiBody({ type: CreateTaskProofDto })
   async createProof(
     @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('id') id: string,
     @Body() payload: CreateTaskProofDto,
   ) {
-    return {
-      claims,
-      payload,
-    };
+    return await this.taskProofService.create(claims, id, payload);
   }
 }

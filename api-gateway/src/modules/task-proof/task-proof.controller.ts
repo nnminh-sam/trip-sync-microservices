@@ -9,12 +9,13 @@ import { ApiResponseConstruction } from 'src/common/decorators/api-response-cons
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { TaskProof } from 'src/models/task-proof.model';
+import { TaskProofService } from 'src/modules/task-proof/task-proof.service';
 
 @ApiBearerAuth()
 @ApiTags('Proof')
 @Controller('proofs')
 export class TaskProofController {
-  constructor() {}
+  constructor(private readonly taskProofService: TaskProofService) {}
 
   @Get(':id')
   @ApiOperation({ summary: 'Get proof by ID' })
@@ -28,10 +29,7 @@ export class TaskProofController {
     @RequestUserClaims() claims: TokenClaimsDto,
     @Param('id') id: string,
   ) {
-    return {
-      claims,
-      id,
-    };
+    return await this.taskProofService.findOne(claims, id);
   }
 
   @Delete(':id')
@@ -46,9 +44,6 @@ export class TaskProofController {
     @RequestUserClaims() claims: TokenClaimsDto,
     @Param('id') id: string,
   ) {
-    return {
-      claims,
-      id,
-    };
+    return await this.taskProofService.delete(claims, id);
   }
 }

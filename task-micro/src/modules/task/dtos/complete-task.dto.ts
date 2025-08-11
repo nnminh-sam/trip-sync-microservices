@@ -7,16 +7,23 @@ import {
   IsDate,
   ValidateNested,
   IsOptional,
+  IsUrl,
+  IsEnum,
 } from 'class-validator';
+import { MediaTypeEnum } from 'src/models/media-type.enum';
 
 export class CompletionProofDto {
   @IsNotEmpty()
   @IsString()
+  name: string;
+
+  @IsNotEmpty()
+  @IsUrl()
   mediaUrl: string;
 
   @IsNotEmpty()
-  @IsString()
-  mediaType: 'photo' | 'video';
+  @IsEnum(MediaTypeEnum)
+  mediaType: MediaTypeEnum;
 
   @IsNotEmpty()
   @IsNumber()
@@ -25,17 +32,12 @@ export class CompletionProofDto {
   @IsNotEmpty()
   @IsNumber()
   longitude: number;
-
-  @IsNotEmpty()
-  @IsDate()
-  @Type(() => Date)
-  timestamp: Date;
 }
 
 export class CompleteTaskDto {
   @IsNotEmpty()
   @IsUUID()
-  userId: string;
+  assigneeId: string;
 
   @IsNotEmpty()
   @ValidateNested()

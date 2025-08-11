@@ -1,12 +1,19 @@
-import { HttpStatus, Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import {
+  HttpStatus,
+  Injectable,
+  Logger,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ListDataDto } from 'src/dtos/list-data.dto';
 import { TaskProof } from 'src/models/task-proof.model';
 import { Task } from 'src/models/task.model';
-import { CreateTaskProofDto } from 'src/modules/task-proof/dtos/create-task-proof.dto';
-import { BulkCreateTaskProofDto } from 'src/modules/task-proof/dtos/bulk-create-task-proof.dto';
-import { FilterTaskProofDto } from 'src/modules/task-proof/dtos/filter-task-proof.dto';
-import { TaskService } from 'src/modules/task/task.service';
+import { BulkCreateTaskProofDto } from 'src/modules/task/dtos/bulk-create-task-proof.dto';
+import { CreateTaskProofDto } from 'src/modules/task/dtos/create-task-proof.dto';
+import { FilterTaskProofDto } from 'src/modules/task/dtos/filter-task-proof.dto';
+
+import { TaskService } from 'src/modules/task/services/task.service';
 import { paginateAndOrder, throwRpcException } from 'src/utils';
 import { Repository, DataSource } from 'typeorm';
 
@@ -25,19 +32,17 @@ export class TaskProofService {
   async create(taskId: string, payload: CreateTaskProofDto) {
     const task = await this.taskService.findOne(taskId);
 
-    // Calculate locationPoint from latitude and longitude
     const proofData = {
       ...payload,
-      taskId, // Ensure taskId is set
-      locationPoint: payload.latitude && payload.longitude
-        ? { x: payload.longitude, y: payload.latitude }
-        : null,
-    };
+      taskId,
+    } as TaskProof;
 
     const proof = this.taskProofRepository.create(proofData);
     try {
       const savedProof = await this.taskProofRepository.save(proof);
-      return savedProof;
+      // Return the proof without locationPoint
+      const { locationPoint, ...proofWithoutLocation } = savedProof as any;
+      return proofWithoutLocation;
     } catch (error: any) {
       this.logger.error('Cannot create proof: ', error);
       throwRpcException({
@@ -69,6 +74,20 @@ export class TaskProofService {
         ...(uploadedBy && { uploadedBy }),
         ...(timestamp && { timestamp }),
       },
+      select: [
+        'id',
+        'taskId',
+        'type',
+        'mediaUrl',
+        'mediaType',
+        'latitude',
+        'longitude',
+        'timestamp',
+        'uploadedBy',
+        'createdAt',
+        'updatedAt',
+        'deletedAt',
+      ],
       ...paginateAndOrder({
         page,
         size,
@@ -88,6 +107,21 @@ export class TaskProofService {
   async findOne(id: string) {
     const proof = await this.taskProofRepository.findOne({
       where: { id },
+      select: [
+        'id',
+        'taskId',
+        'type',
+        'mediaUrl',
+        'mediaType',
+        'latitude',
+        'longitude',
+        'timestamp',
+        'uploadedBy',
+        'createdAt',
+        'updatedAt',
+        'deletedAt',
+        // Explicitly exclude locationPoint to avoid spatial query issues
+      ],
     });
     if (!proof) {
       throwRpcException({
@@ -122,9 +156,9 @@ export class TaskProofService {
    * @returns Object with validation result and distance
    */
   async validateProofLocation(
-    proof: TaskProof, 
-    task: Task, 
-    maxDistanceKm: number = 1
+    proof: TaskProof,
+    task: Task,
+    maxDistanceKm: number = 1,
   ): Promise<{ isValid: boolean; distance?: number; message?: string }> {
     try {
       // Check if proof has location data
@@ -138,7 +172,7 @@ export class TaskProofService {
       // For now, we'll just validate that location data exists
       // In Phase 4, when we integrate with Location Service,
       // we'll add actual distance calculation and validation
-      
+
       // Placeholder for future location validation logic
       // TODO: Integrate with Location Service to:
       // 1. Get task's trip location coordinates
@@ -164,7 +198,10 @@ export class TaskProofService {
    * @param payload Bulk create payload containing multiple proofs
    * @returns Array of created task proofs
    */
-  async bulkCreate(taskId: string, payload: BulkCreateTaskProofDto): Promise<TaskProof[]> {
+  async bulkCreate(
+    taskId: string,
+    payload: BulkCreateTaskProofDto,
+  ): Promise<TaskProof[]> {
     const task = await this.taskService.findOne(taskId);
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -178,23 +215,29 @@ export class TaskProofService {
         const proof = queryRunner.manager.create(TaskProof, {
           ...proofData,
           taskId,
-          locationPoint: proofData.latitude && proofData.longitude
-            ? { x: proofData.longitude, y: proofData.latitude }
-            : null,
+          // Skip locationPoint to avoid GeomFromText error
+          // locationPoint will remain null for now
         });
 
         const savedProof = await queryRunner.manager.save(proof);
-        createdProofs.push(savedProof);
+        // Remove locationPoint from response
+        const { locationPoint, ...proofWithoutLocation } = savedProof as any;
+        createdProofs.push(proofWithoutLocation);
       }
 
       await queryRunner.commitTransaction();
 
-      this.logger.log(`Created ${createdProofs.length} proofs for task ${taskId}`);
+      this.logger.log(
+        `Created ${createdProofs.length} proofs for task ${taskId}`,
+      );
       return createdProofs;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      
-      this.logger.error(`Failed to bulk create proofs for task ${taskId}`, error);
+
+      this.logger.error(
+        `Failed to bulk create proofs for task ${taskId}`,
+        error,
+      );
       throwRpcException({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Failed to create proofs',

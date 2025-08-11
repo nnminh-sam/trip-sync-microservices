@@ -1,43 +1,70 @@
-import { Injectable, HttpStatus } from '@nestjs/common';
+import { TaskAttribute } from './../../../models/task.model';
+import { Injectable, HttpStatus, Logger } from '@nestjs/common';
+import { TaskStatusEnum } from 'src/models/task-status.enum';
 import { Task } from 'src/models/task.model';
 import { throwRpcException } from 'src/utils';
-
-export enum TaskStatus {
-  PENDING = 'pending',
-  COMPLETED = 'completed',
-  CANCELED = 'canceled',
-}
 
 export interface StatusTransitionResult {
   isValid: boolean;
   reason?: string;
-  requiredFields?: string[];
+  requiredFields?: TaskAttribute[];
 }
 
 @Injectable()
 export class TaskStatusManagerService {
-  /**
-   * Validates if a status transition is allowed
-   */
+  private readonly logger: Logger = new Logger(TaskStatusManagerService.name);
+
   validateStatusTransition(
-    currentStatus: TaskStatus,
-    newStatus: TaskStatus,
+    currentStatus: TaskStatusEnum,
+    newStatus: TaskStatusEnum,
     task?: Task,
   ): StatusTransitionResult {
-    // Same status is always valid (no-op)
     if (currentStatus === newStatus) {
       return { isValid: true };
     }
 
-    // Define valid transitions
-    const validTransitions: Record<TaskStatus, TaskStatus[]> = {
-      [TaskStatus.PENDING]: [TaskStatus.COMPLETED, TaskStatus.CANCELED],
-      [TaskStatus.COMPLETED]: [], // Cannot transition from completed
-      [TaskStatus.CANCELED]: [], // Cannot transition from canceled
+    // * Define valid transitions
+    const validTransitions: Record<TaskStatusEnum, TaskStatusEnum[]> = {
+      [TaskStatusEnum.PENDING]: [
+        TaskStatusEnum.IN_PROGRESS,
+        TaskStatusEnum.CANCELED,
+      ],
+      [TaskStatusEnum.IN_PROGRESS]: [
+        TaskStatusEnum.SUBMITTED,
+        TaskStatusEnum.CANCELED,
+      ],
+
+      [TaskStatusEnum.SUBMITTED]: [
+        TaskStatusEnum.APPROVED,
+        TaskStatusEnum.REJECTED,
+        TaskStatusEnum.CANCELED,
+      ],
+      [TaskStatusEnum.APPROVED]: [
+        TaskStatusEnum.PENDING,
+        TaskStatusEnum.SUBMITTED,
+        TaskStatusEnum.CANCELED,
+      ],
+      [TaskStatusEnum.REJECTED]: [
+        TaskStatusEnum.PENDING,
+        TaskStatusEnum.SUBMITTED,
+        TaskStatusEnum.CANCELED,
+      ],
+      [TaskStatusEnum.CANCELED]: [
+        TaskStatusEnum.PENDING,
+        TaskStatusEnum.SUBMITTED,
+        TaskStatusEnum.APPROVED,
+        TaskStatusEnum.REJECTED,
+      ],
     };
 
-    const allowedTransitions = validTransitions[currentStatus] || [];
-    
+    const allowedTransitions = validTransitions[currentStatus];
+    if (!allowedTransitions) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: `Invalid current status: ${currentStatus}`,
+      });
+    }
+
     if (!allowedTransitions.includes(newStatus)) {
       return {
         isValid: false,
@@ -45,41 +72,53 @@ export class TaskStatusManagerService {
       };
     }
 
-    // Additional validation for specific transitions
-    if (newStatus === TaskStatus.CANCELED) {
+    // * Require fields when task is approved
+    if (newStatus === TaskStatusEnum.APPROVED) {
+      return {
+        isValid: true,
+        requiredFields: ['approvedBy', 'approvedAt'],
+      };
+    }
+
+    if (newStatus === TaskStatusEnum.REJECTED) {
+      return {
+        isValid: true,
+        requiredFields: ['rejectionReason', 'rejectedBy', 'rejectedAt'],
+      };
+    }
+
+    // * Require fields when cancelling a task
+    if (newStatus === TaskStatusEnum.CANCELED) {
       return {
         isValid: true,
         requiredFields: ['cancelReason'],
       };
     }
 
-    if (newStatus === TaskStatus.COMPLETED) {
-      // Task completion requires at least one completion proof
+    // * Require fields when submitting a task
+    if (newStatus === TaskStatusEnum.SUBMITTED) {
       return {
         isValid: true,
-        requiredFields: ['completionProof'],
+        requiredFields: ['proofs'],
       };
     }
 
     return { isValid: true };
   }
 
-  /**
-   * Apply status change and update related timestamps
-   */
   applyStatusChange(
     task: Task,
-    newStatus: TaskStatus,
-    additionalData?: {
-      cancelReason?: string;
-      completedBy?: string;
-      canceledBy?: string;
-    },
+    newStatus: TaskStatusEnum,
+    additionalData?: Partial<Task>,
   ): Task {
-    const oldStatus = task.status as TaskStatus;
-    
-    // Validate transition
-    const validation = this.validateStatusTransition(oldStatus, newStatus, task);
+    const oldStatus: TaskStatusEnum = task.status;
+
+    // * Validate transition
+    const validation = this.validateStatusTransition(
+      oldStatus,
+      newStatus,
+      task,
+    );
     if (!validation.isValid) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
@@ -87,16 +126,59 @@ export class TaskStatusManagerService {
       });
     }
 
-    // Update status
+    // * Update status
     task.status = newStatus;
 
-    // Update timestamps and required fields based on new status
+    // * Update timestamps and required fields based on new status
     switch (newStatus) {
-      case TaskStatus.COMPLETED:
+      case TaskStatusEnum.APPROVED:
+        task.approvedAt = new Date();
+        if (!additionalData?.approvedBy) {
+          throwRpcException({
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'Approver is required when approving a task',
+          });
+        }
+        task.approvedBy = additionalData.approvedBy;
+        task.rejectedAt = null;
+        task.rejectedBy = null;
+        task.rejectionReason = null;
+        task.canceledAt = null;
+        task.canceledBy = null;
+        break;
+
+      case TaskStatusEnum.REJECTED:
+        if (!additionalData?.rejectionReason) {
+          throwRpcException({
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'Rejection reason is required when rejecting a task',
+          });
+        }
+        if (!additionalData?.rejectedBy) {
+          throwRpcException({
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'Rejection by is required when rejecting a task',
+          });
+        }
+        task.rejectedAt = new Date();
+        task.rejectedBy = additionalData.rejectedBy;
+        task.rejectionReason = additionalData.rejectionReason;
+        task.approvedAt = null;
+        task.approvedBy = null;
+        task.cancelReason = null;
+        task.canceledAt = null;
+        task.canceledBy = null;
+        break;
+
+      case TaskStatusEnum.IN_PROGRESS:
+        task.startedAt = new Date();
+        break;
+
+      case TaskStatusEnum.SUBMITTED:
         task.completedAt = new Date();
         break;
 
-      case TaskStatus.CANCELED:
+      case TaskStatusEnum.CANCELED:
         if (!additionalData?.cancelReason) {
           throwRpcException({
             statusCode: HttpStatus.BAD_REQUEST,
@@ -105,12 +187,23 @@ export class TaskStatusManagerService {
         }
         task.canceledAt = new Date();
         task.cancelReason = additionalData.cancelReason;
+        task.canceledBy = additionalData.canceledBy;
+        task.approvedAt = null;
+        task.approvedBy = null;
+        task.rejectedAt = null;
+        task.rejectedBy = null;
+        task.rejectionReason = null;
         break;
 
-      case TaskStatus.PENDING:
-        // Reset completion/cancellation fields if reverting to pending
-        // (though this transition is not currently allowed)
+      // * Reset fields if reverting to pending
+      case TaskStatusEnum.PENDING:
+        task.startedAt = null;
         task.completedAt = null;
+        task.approvedAt = null;
+        task.approvedBy = null;
+        task.rejectedAt = null;
+        task.rejectedBy = null;
+        task.rejectionReason = null;
         task.canceledAt = null;
         task.cancelReason = null;
         break;
@@ -119,12 +212,12 @@ export class TaskStatusManagerService {
     return task;
   }
 
-  /**
-   * Check if a task can be modified based on its current status
-   */
   canModifyTask(task: Task): boolean {
-    // Only pending tasks can be modified
-    return task.status === TaskStatus.PENDING;
+    // * Only pending and rejected tasks can be modified
+    return (
+      task.status === TaskStatusEnum.PENDING ||
+      task.status === TaskStatusEnum.REJECTED
+    );
   }
 
   /**
@@ -143,28 +236,36 @@ export class TaskStatusManagerService {
     return true;
   }
 
-  /**
-   * Get human-readable status description
-   */
-  getStatusDescription(status: TaskStatus): string {
-    const descriptions: Record<TaskStatus, string> = {
-      [TaskStatus.PENDING]: 'Task is pending and awaiting action',
-      [TaskStatus.COMPLETED]: 'Task has been completed successfully',
-      [TaskStatus.CANCELED]: 'Task has been canceled',
+  getStatusDescription(status: TaskStatusEnum): string {
+    const descriptions: Record<TaskStatusEnum, string> = {
+      [TaskStatusEnum.PENDING]:
+        'Task is pending and awaiting for assignee to do',
+      [TaskStatusEnum.IN_PROGRESS]: 'Task is processing by the assignee',
+      [TaskStatusEnum.SUBMITTED]: 'Task has been submitted by the assignee',
+      [TaskStatusEnum.APPROVED]: 'Task is approved by the reviewer',
+      [TaskStatusEnum.REJECTED]: 'Task is rejected by the reviewer',
+      [TaskStatusEnum.CANCELED]: 'Task has been canceled',
     };
 
     return descriptions[status] || 'Unknown status';
   }
 
-  /**
-   * Check if status transition requires proof
-   */
-  requiresProof(currentStatus: TaskStatus, newStatus: TaskStatus): boolean {
-    if (newStatus === TaskStatus.COMPLETED) {
+  requiresProof(
+    currentStatus: TaskStatusEnum,
+    newStatus: TaskStatusEnum,
+  ): boolean {
+    if (!this.validateStatusTransition(currentStatus, newStatus).isValid) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid status transition',
+      });
+    }
+
+    if (newStatus === TaskStatusEnum.SUBMITTED) {
       return this.requiresCompletionProof();
     }
-    
-    if (newStatus === TaskStatus.CANCELED) {
+
+    if (newStatus === TaskStatusEnum.CANCELED) {
       return this.requiresCancellationProof();
     }
 

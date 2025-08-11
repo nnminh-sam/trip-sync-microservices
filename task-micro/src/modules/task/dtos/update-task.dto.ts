@@ -1,4 +1,6 @@
-import { IsDate, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsDate, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { TaskStatusEnum } from 'src/models/task-status.enum';
 
 export class UpdateTaskDto {
   @IsOptional()
@@ -10,8 +12,9 @@ export class UpdateTaskDto {
   description?: string;
 
   @IsOptional()
-  @IsString()
-  status?: 'pending' | 'completed' | 'canceled';
+  @IsEnum(TaskStatusEnum)
+  @Transform(({ value }) => value.toUpperCase())
+  status?: TaskStatusEnum;
 
   @IsOptional()
   @IsString()
@@ -20,4 +23,20 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsDate()
   deadline?: Date;
+
+  @IsOptional()
+  @IsUUID()
+  approvedBy?: string;
+
+  @IsOptional()
+  @IsUUID()
+  rejectedBy?: string;
+
+  @IsOptional()
+  @IsString()
+  rejectionReason?: string;
+
+  @IsOptional()
+  @IsString()
+  cancelReason?: string;
 }

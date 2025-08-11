@@ -1,0 +1,322 @@
+{
+  "info": {
+    "name": "Task APIs",
+    "description": "API collection for Task module endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "host",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "version",
+      "value": "v1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Tasks",
+      "item": [
+        {
+          "name": "List/Filter tasks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/{{version}}/tasks",
+              "host": ["{{host}}"],
+              "path": ["{{version}}", "tasks"],
+              "query": [
+                {
+                  "key": "tripLocationId",
+                  "value": "",
+                  "description": "Trip's location ID, UUID value",
+                  "disabled": true
+                },
+                {
+                  "key": "title",
+                  "value": "",
+                  "description": "Task's title",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Task's status (pending, completed, canceled)",
+                  "disabled": true
+                },
+                {
+                  "key": "deadline",
+                  "value": "",
+                  "description": "Task's deadline",
+                  "disabled": true
+                },
+                {
+                  "key": "completedAt",
+                  "value": "",
+                  "description": "Task's completion timestamp",
+                  "disabled": true
+                },
+                {
+                  "key": "canceledAt",
+                  "value": "",
+                  "description": "Task's cancelation timestamp",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get a list of tasks with optional filtering"
+          },
+          "response": []
+        },
+        {
+          "name": "Create task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripLocationId\": \"\",\n  \"title\": \"\",\n  \"description\": \"\",\n  \"status\": \"pending\",\n  \"note\": \"\",\n  \"deadline\": \"2025-01-01T00:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/{{version}}/tasks",
+              "host": ["{{host}}"],
+              "path": ["{{version}}", "tasks"]
+            },
+            "description": "Create a new task"
+          },
+          "response": []
+        },
+        {
+          "name": "Get task by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/{{version}}/tasks/:id",
+              "host": ["{{host}}"],
+              "path": ["{{version}}", "tasks", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Task ID (UUID)"
+                }
+              ]
+            },
+            "description": "Get task details by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update task",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"\",\n  \"description\": \"\",\n  \"status\": \"completed\",\n  \"note\": \"\",\n  \"deadline\": \"2025-01-01T00:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/{{version}}/tasks/:id",
+              "host": ["{{host}}"],
+              "path": ["{{version}}", "tasks", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Task ID (UUID)"
+                }
+              ]
+            },
+            "description": "Update an existing task"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete task",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/{{version}}/tasks/:id",
+              "host": ["{{host}}"],
+              "path": ["{{version}}", "tasks", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Task ID (UUID)"
+                }
+              ]
+            },
+            "description": "Delete a task by ID"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Task Proofs",
+      "item": [
+        {
+          "name": "Get task proofs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/{{version}}/tasks/:id/proofs",
+              "host": ["{{host}}"],
+              "path": ["{{version}}", "tasks", ":id", "proofs"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Task ID (UUID)"
+                }
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "Proof's type (completion, cancellation)",
+                  "disabled": true
+                },
+                {
+                  "key": "mediaType",
+                  "value": "",
+                  "description": "Proof's media type (photo, video)",
+                  "disabled": true
+                },
+                {
+                  "key": "uploadedBy",
+                  "value": "",
+                  "description": "Uploader ID, UUID value",
+                  "disabled": true
+                },
+                {
+                  "key": "timestamp",
+                  "value": "",
+                  "description": "Upload timestamp",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get list of proofs for a specific task"
+          },
+          "response": []
+        },
+        {
+          "name": "Create task proof",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"taskId\": \"\",\n  \"type\": \"completion\",\n  \"mediaUrl\": \"\",\n  \"mediaType\": \"photo\",\n  \"latitude\": 0,\n  \"longitude\": 0,\n  \"timestamp\": \"2025-01-01T00:00:00Z\",\n  \"uploadedBy\": \"\",\n  \"locationPoint\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/{{version}}/tasks/:id/proofs",
+              "host": ["{{host}}"],
+              "path": ["{{version}}", "tasks", ":id", "proofs"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Task ID (UUID)"
+                }
+              ]
+            },
+            "description": "Create a proof for a task"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

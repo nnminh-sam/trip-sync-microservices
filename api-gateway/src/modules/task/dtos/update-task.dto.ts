@@ -40,6 +40,6 @@ export class UpdateTaskDto {
     required: false,
   })
   @IsOptional()
-  @IsDate()
+  // @IsDate()
   deadline?: Date;
 }

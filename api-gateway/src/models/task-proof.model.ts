@@ -1,17 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseModel } from 'src/models/base.model';
+import { MediaTypeEnum } from 'src/models/media-type.enum';
+import { TaskProofTypeEnum } from 'src/models/task-proof-type.enum';
 import { Task } from 'src/models/task.model';
 import { User } from 'src/models/user.model';
-
-export enum ProofType {
-  COMPLETION = 'completion',
-  CANCELLATION = 'cancellation',
-}
-
-export enum MediaType {
-  PHOTO = 'photo',
-  VIDEO = 'video',
-}
 
 export class TaskProof extends BaseModel {
   @ApiProperty({
@@ -27,10 +19,15 @@ export class TaskProof extends BaseModel {
 
   @ApiProperty({
     description: "Proof's type",
-    enum: ProofType,
-    example: ProofType.COMPLETION,
+    enum: TaskProofTypeEnum,
+    example: TaskProofTypeEnum.COMPLETION,
   })
-  type: ProofType;
+  type: TaskProofTypeEnum;
+
+  @ApiProperty({
+    description: "Proof's name",
+  })
+  name: string;
 
   @ApiProperty({
     description: "Proof's media URL",
@@ -39,10 +36,10 @@ export class TaskProof extends BaseModel {
 
   @ApiProperty({
     description: "Proof's media type",
-    enum: MediaType,
-    example: MediaType.PHOTO,
+    enum: MediaTypeEnum,
+    example: MediaTypeEnum.JPEG,
   })
-  mediaType: MediaType;
+  mediaType: MediaTypeEnum;
 
   @ApiProperty({
     description: "Proof's submit latitude value",
