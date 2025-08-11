@@ -24,14 +24,6 @@ export class CreateTaskDto {
   description: string;
 
   @ApiProperty({
-    description: "Task's status",
-    examples: ['pending', 'completed', 'canceled'],
-  })
-  @IsNotEmpty()
-  @IsString()
-  status: 'pending' | 'completed' | 'canceled';
-
-  @ApiProperty({
     description: "Task's note",
   })
   @IsNotEmpty()
@@ -42,6 +34,6 @@ export class CreateTaskDto {
     description: "Task's deadline",
   })
   @IsNotEmpty()
-  @IsDate()
+  // @IsDate()
   deadline: Date;
 }

@@ -1,10 +1,10 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { MessagePayloadDto } from 'src/dtos/message-payload.dto';
-import { CreateTaskProofDto } from 'src/modules/task-proof/dtos/create-task-proof.dto';
-import { FilterTaskProofDto } from 'src/modules/task-proof/dtos/filter-task-proof.dto';
-import { ProofMessagePattern } from 'src/modules/task-proof/proof-message.pattern';
-import { TaskProofService } from 'src/modules/task-proof/task-proof.service';
+import { CreateTaskProofDto } from 'src/modules/task/dtos/create-task-proof.dto';
+import { FilterTaskProofDto } from 'src/modules/task/dtos/filter-task-proof.dto';
+import { ProofMessagePattern } from 'src/modules/task/proof-message.pattern';
+import { TaskProofService } from 'src/modules/task/services/task-proof.service';
 
 @Controller('task-proof')
 export class TaskProofController {

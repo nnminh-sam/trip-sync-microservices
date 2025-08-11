@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsOptional, IsString, IsUUID } from 'class-validator';
+import { BaseRequestFilterDto } from 'src/dtos/base-request-filter.dto';
 
-export class FilterTaskDto {
+export class FilterTaskDto extends BaseRequestFilterDto {
   @ApiProperty({
     description: "Trip's location ID, UUID value",
     required: false,

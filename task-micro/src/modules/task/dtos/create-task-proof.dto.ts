@@ -6,6 +6,8 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
+import { MediaTypeEnum } from 'src/models/media-type.enum';
+import { TaskProofTypeEnum } from 'src/models/task-proof-type.enum';
 
 export class CreateTaskProofDto {
   @IsNotEmpty()
@@ -14,7 +16,7 @@ export class CreateTaskProofDto {
 
   @IsNotEmpty()
   @IsString()
-  type: 'completion' | 'cancellation';
+  type: TaskProofTypeEnum;
 
   @IsNotEmpty()
   @IsString()
@@ -22,7 +24,7 @@ export class CreateTaskProofDto {
 
   @IsNotEmpty()
   @IsString()
-  mediaType: 'photo' | 'video';
+  mediaType: MediaTypeEnum;
 
   @IsNotEmpty()
   @IsNumber()

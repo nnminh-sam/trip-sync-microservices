@@ -7,16 +7,22 @@ import {
   IsDate,
   ValidateNested,
   MinLength,
+  IsEnum,
 } from 'class-validator';
+import { MediaTypeEnum } from 'src/models/media-type.enum';
 
 export class CancellationProofDto {
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+
   @IsNotEmpty()
   @IsString()
   mediaUrl: string;
 
   @IsNotEmpty()
-  @IsString()
-  mediaType: 'photo' | 'video';
+  @IsEnum(MediaTypeEnum)
+  mediaType: MediaTypeEnum;
 
   @IsNotEmpty()
   @IsNumber()
@@ -25,21 +31,18 @@ export class CancellationProofDto {
   @IsNotEmpty()
   @IsNumber()
   longitude: number;
-
-  @IsNotEmpty()
-  @IsDate()
-  @Type(() => Date)
-  timestamp: Date;
 }
 
 export class CancelTaskDto {
   @IsNotEmpty()
   @IsUUID()
-  userId: string;
+  cancelerId: string;
 
   @IsNotEmpty()
   @IsString()
-  @MinLength(10, { message: 'Cancel reason must be at least 10 characters long' })
+  @MinLength(10, {
+    message: 'Cancel reason must be at least 10 characters long',
+  })
   cancelReason: string;
 
   @IsNotEmpty()
