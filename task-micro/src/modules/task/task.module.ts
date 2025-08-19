@@ -12,6 +12,7 @@ import { TaskProofController } from 'src/modules/task/controllers/task-proof.con
 import { TaskProofService } from 'src/modules/task/services/task-proof.service';
 import { FileUploadService } from './services/file-upload.service';
 import { FileUploadController } from './controllers/file-upload.controller';
+import { HttpFileUploadController } from './controllers/http-file-upload.controller';
 import gcsConfig from 'src/config/gcs.config';
 
 @Module({
@@ -21,7 +22,7 @@ import gcsConfig from 'src/config/gcs.config';
     ConfigModule.forFeature(gcsConfig),
   ],
   providers: [TaskService, TaskStatusManagerService, TaskProofService, FileUploadService],
-  controllers: [TaskController, TaskProofController, FileUploadController],
+  controllers: [TaskController, TaskProofController, FileUploadController, HttpFileUploadController],
   exports: [TaskService, TaskStatusManagerService, TaskProofService, FileUploadService],
 })
 export class TaskModule {}

@@ -15,6 +15,7 @@ export interface EnvSchema {
   SYSAD_LASTNAME: string;
   SYSAD_EMAIL: string;
   SYSAD_PASSWORD: string;
+  HTTP_PORT: number;
 }
 
 export const validationSchema = Joi.object<EnvSchema>({
@@ -32,4 +33,5 @@ export const validationSchema = Joi.object<EnvSchema>({
   SYSAD_LASTNAME: Joi.string().required(),
   SYSAD_EMAIL: Joi.string().required(),
   SYSAD_PASSWORD: Joi.string().required(),
+  HTTP_PORT: Joi.number().required(),
 });

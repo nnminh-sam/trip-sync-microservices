@@ -1,4 +1,4 @@
-import { validationSchema, EnvSchema } from 'src/config/configuration';
+import { EnvSchema, validationSchema } from './configuration';
 
 type EnvKeys = keyof EnvSchema;
 
