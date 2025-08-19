@@ -30,6 +30,7 @@ import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { Task } from 'src/models/task.model';
 import { TaskProof } from 'src/models/task-proof.model';
 import { CreateTaskProofDto } from 'src/modules/task-proof/dtos/create-task-proof.dto';
+import { BulkCreateTaskProofDto } from 'src/modules/task-proof/dtos/bulk-create-task-proof.dto';
 import { FilterTaskProofDto } from 'src/modules/task-proof/dtos/filter-task-proof.dto';
 import { TaskProofService } from 'src/modules/task-proof/task-proof.service';
 import { CreateTaskDto } from 'src/modules/task/dtos/create-task.dto';
@@ -273,6 +274,30 @@ export class TaskController {
     @Body() payload: CreateTaskProofDto,
   ) {
     return await this.taskProofService.create(claims, id, payload);
+  }
+
+  @Post(':id/proofs/bulk')
+  @ApiOperation({ summary: 'Create multiple task proofs at once' })
+  @ApiResponseConstruction({
+    status: 201,
+    description: 'Proofs created successfully',
+    model: TaskProof,
+    isArray: true,
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Task ID',
+  })
+  @ApiBody({ type: BulkCreateTaskProofDto })
+  async createBulkProofs(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('id') taskId: string,
+    @Body() payload: BulkCreateTaskProofDto,
+  ) {
+    // Ensure the taskId in the URL matches the one in the payload
+    payload.taskId = taskId;
+    return await this.taskProofService.createBulk(claims, payload);
   }
 
   @Post(':id/files/upload')

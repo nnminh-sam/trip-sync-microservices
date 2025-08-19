@@ -1,23 +1,27 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsDate, IsEnum, IsOptional, IsUUID } from 'class-validator';
 import { BaseRequestFilterDto } from 'src/dtos/base-request-filter.dto';
+import { TaskProofTypeEnum } from 'src/models/task-proof-type.enum';
+import { MediaTypeEnum } from 'src/models/media-type.enum';
 
 export class FilterTaskProofDto extends BaseRequestFilterDto {
   @ApiProperty({
     description: "Proof's type",
     required: false,
+    enum: TaskProofTypeEnum,
   })
   @IsOptional()
-  @IsString()
-  type?: 'completion' | 'cancellation';
+  @IsEnum(TaskProofTypeEnum)
+  type?: TaskProofTypeEnum;
 
   @ApiProperty({
     description: "Proof's media type",
     required: false,
+    enum: MediaTypeEnum,
   })
   @IsOptional()
-  @IsString()
-  mediaType?: 'photo' | 'video';
+  @IsEnum(MediaTypeEnum)
+  mediaType?: MediaTypeEnum;
 
   @ApiProperty({
     description: 'Uploader ID, UUID, value',
@@ -34,4 +38,12 @@ export class FilterTaskProofDto extends BaseRequestFilterDto {
   @IsOptional()
   @IsDate()
   timestamp?: Date;
+
+  @ApiProperty({
+    description: 'Task ID to filter proofs by',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  taskId?: string;
 }

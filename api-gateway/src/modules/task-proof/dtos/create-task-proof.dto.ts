@@ -1,11 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDate,
+  IsEnum,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   IsUUID,
 } from 'class-validator';
+import { TaskProofTypeEnum } from 'src/models/task-proof-type.enum';
+import { MediaTypeEnum } from 'src/models/media-type.enum';
 
 export class CreateTaskProofDto {
   @ApiProperty({
@@ -17,11 +21,11 @@ export class CreateTaskProofDto {
 
   @ApiProperty({
     description: "Proof's type",
-    examples: ['completion', 'cancellation'],
+    enum: TaskProofTypeEnum,
   })
   @IsNotEmpty()
-  @IsString()
-  type: 'completion' | 'cancellation';
+  @IsEnum(TaskProofTypeEnum)
+  type: TaskProofTypeEnum;
 
   @ApiProperty({
     description: "Media's URL",
@@ -32,11 +36,11 @@ export class CreateTaskProofDto {
 
   @ApiProperty({
     description: "Media's type",
-    examples: ['photo', 'video'],
+    enum: MediaTypeEnum,
   })
   @IsNotEmpty()
-  @IsString()
-  mediaType: 'photo' | 'video';
+  @IsEnum(MediaTypeEnum)
+  mediaType: MediaTypeEnum;
 
   @ApiProperty({
     description: 'Uploader latitude',
@@ -56,7 +60,7 @@ export class CreateTaskProofDto {
     description: 'Upload timestamp',
   })
   @IsNotEmpty()
-  // @IsDate()
+  @IsDate()
   timestamp: Date;
 
   @ApiProperty({
@@ -66,10 +70,24 @@ export class CreateTaskProofDto {
   @IsUUID()
   uploadedBy: string;
 
-  @ApiProperty({
-    description: 'Uploader spatial location point for geospatial indexing',
+  @ApiPropertyOptional({
+    description: 'Uploader spatial location point for geospatial indexing (WKT format)',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  locationPoint: string;
+  locationPoint?: string;
+
+  @ApiPropertyOptional({
+    description: 'Description or notes about the proof',
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Location accuracy in meters',
+  })
+  @IsOptional()
+  @IsNumber()
+  accuracy?: number;
 }

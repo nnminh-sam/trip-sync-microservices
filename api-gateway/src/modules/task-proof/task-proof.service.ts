@@ -3,6 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { NATSClient } from 'src/client/clients';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { CreateTaskProofDto } from 'src/modules/task-proof/dtos/create-task-proof.dto';
+import { BulkCreateTaskProofDto } from 'src/modules/task-proof/dtos/bulk-create-task-proof.dto';
 import { FilterTaskProofDto } from 'src/modules/task-proof/dtos/filter-task-proof.dto';
 import { TaskProofMessagePattern } from 'src/modules/task-proof/task-proof-message.pattern';
 import { NatsClientSender } from 'src/utils';
@@ -120,6 +121,36 @@ export class TaskProofService {
       return result;
     } catch (error) {
       this.logger.error(`delete failed for id: ${id}`, error.stack || error);
+      throw error;
+    }
+  }
+
+  async createBulk(
+    claims: TokenClaimsDto,
+    bulkCreateTaskProofDto: BulkCreateTaskProofDto,
+  ) {
+    this.logger.log(
+      `createBulk called with payload: ${JSON.stringify(bulkCreateTaskProofDto)}`,
+    );
+    try {
+      const result = await this.sender.send({
+        messagePattern: 'createBulk',
+        payload: {
+          claims,
+          request: {
+            body: bulkCreateTaskProofDto,
+          },
+        },
+      });
+      this.logger.log(
+        `createBulk success for task ${bulkCreateTaskProofDto.taskId}`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `createBulk failed for task ${bulkCreateTaskProofDto.taskId}`,
+        error.stack || error,
+      );
       throw error;
     }
   }

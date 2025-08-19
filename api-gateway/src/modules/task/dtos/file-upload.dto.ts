@@ -2,10 +2,15 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class FileUploadDto {
-  @ApiPropertyOptional({ description: 'Task ID' })
+  @ApiProperty({ description: 'Task ID' })
   @IsUUID()
-  @IsOptional()
-  task_id?: string;
+  @IsNotEmpty()
+  task_id: string;
+
+  @ApiProperty({ description: 'User ID who uploads the file' })
+  @IsUUID()
+  @IsNotEmpty()
+  uploaded_by: string;
 
   @ApiPropertyOptional({ description: 'File description' })
   @IsString()
@@ -49,10 +54,15 @@ export class FileUploadResponseDto {
 }
 
 export class BulkFileUploadDto {
-  @ApiPropertyOptional({ description: 'Task ID' })
+  @ApiProperty({ description: 'Task ID' })
   @IsUUID()
-  @IsOptional()
-  task_id?: string;
+  @IsNotEmpty()
+  task_id: string;
+
+  @ApiProperty({ description: 'User ID who uploads the files' })
+  @IsUUID()
+  @IsNotEmpty()
+  uploaded_by: string;
 
   @ApiPropertyOptional({ description: 'Files description' })
   @IsString()
