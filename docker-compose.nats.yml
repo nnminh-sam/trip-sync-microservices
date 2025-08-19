@@ -8,7 +8,7 @@ services:
       - "4222:4222" # Client connections
       - "8222:8222" # HTTP monitoring
       - "6222:6222" # Cluster connections (if needed)
-    command: ["-c", "/etc/nats/nats-server.conf"]
+    command: ["-m", "52428800", "-c", "/etc/nats/nats-server.conf"]
     volumes:
       - ./nats-server.conf:/etc/nats/nats-server.conf:ro
       - nats-data:/data

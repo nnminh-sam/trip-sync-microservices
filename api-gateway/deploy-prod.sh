@@ -10,13 +10,25 @@ echo "🚀 Starting API Gateway Production Deployment..."
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+
+# Prepare volumes
+echo -e "${BLUE}📁 Preparing volumes...${NC}"
+./prepare-volumes.sh
 
 # Check if .env.production exists
 if [ ! -f .env.production ]; then
     echo -e "${RED}❌ Error: .env.production file not found!${NC}"
     echo "Please copy .env.production.example to .env.production and configure it."
     exit 1
+fi
+
+# Fix NATS_SERVER if it points to localhost
+if grep -q "NATS_SERVER=nats://localhost" .env.production; then
+    echo -e "${YELLOW}⚠️  Fixing NATS_SERVER to use container name...${NC}"
+    sed -i.bak 's|NATS_SERVER=nats://localhost|NATS_SERVER=nats://nats|g' .env.production
+    echo -e "${GREEN}✅ NATS_SERVER updated to nats://nats:4222${NC}"
 fi
 
 # Validate environment variables
