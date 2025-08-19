@@ -9,6 +9,7 @@ import { ApproveTaskDto } from 'src/modules/task/dtos/approve-task.dto';
 import { RejectTaskDto } from 'src/modules/task/dtos/reject-task.dto';
 import { CompleteTaskDto } from 'src/modules/task/dtos/complete-task.dto';
 import { CancelTaskDto } from 'src/modules/task/dtos/cancel-task.dto';
+import { FileUploadDto, BulkFileUploadDto } from 'src/modules/task/dtos/file-upload.dto';
 import { TaskMessagePattern } from 'src/modules/task/task-message.pattern';
 import { NatsClientSender } from 'src/utils';
 
@@ -251,6 +252,157 @@ export class TaskService {
     } catch (error) {
       this.logger.error(
         `cancel failed for id: ${id}`,
+        error.stack || error,
+      );
+      throw error;
+    }
+  }
+
+  async uploadFile(
+    claims: TokenClaimsDto,
+    taskId: string,
+    file: Express.Multer.File,
+    dto: FileUploadDto,
+  ) {
+    this.logger.log(`uploadFile called for task: ${taskId}`);
+    try {
+      const fileData = {
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        encoding: file.encoding,
+        mimetype: file.mimetype,
+        buffer: file.buffer.toString('base64'),
+        size: file.size,
+      };
+
+      const result = await this.natsClient.send('task.upload.single', {
+        claims,
+        request: {
+          body: {
+            file: fileData,
+            data: {
+              task_id: taskId,
+              uploaded_by: claims.sub,
+              description: dto.description,
+            },
+          },
+        },
+      }).toPromise();
+
+      this.logger.log(`uploadFile success for task: ${taskId}`);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `uploadFile failed for task: ${taskId}`,
+        error.stack || error,
+      );
+      throw error;
+    }
+  }
+
+  async uploadMultipleFiles(
+    claims: TokenClaimsDto,
+    taskId: string,
+    files: Express.Multer.File[],
+    dto: BulkFileUploadDto,
+  ) {
+    this.logger.log(`uploadMultipleFiles called for task: ${taskId}`);
+    try {
+      const filesData = files.map(file => ({
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        encoding: file.encoding,
+        mimetype: file.mimetype,
+        buffer: file.buffer.toString('base64'),
+        size: file.size,
+      }));
+
+      const result = await this.natsClient.send('task.upload.multiple', {
+        claims,
+        request: {
+          body: {
+            files: filesData,
+            data: {
+              task_id: taskId,
+              uploaded_by: claims.sub,
+              description: dto.description,
+            },
+          },
+        },
+      }).toPromise();
+
+      this.logger.log(`uploadMultipleFiles success for task: ${taskId}`);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `uploadMultipleFiles failed for task: ${taskId}`,
+        error.stack || error,
+      );
+      throw error;
+    }
+  }
+
+  async listTaskFiles(claims: TokenClaimsDto, taskId: string) {
+    this.logger.log(`listTaskFiles called for task: ${taskId}`);
+    try {
+      const result = await this.natsClient.send('task.files.list', {
+        claims,
+        request: {
+          path: { taskId },
+        },
+      }).toPromise();
+
+      this.logger.log(`listTaskFiles success for task: ${taskId}`);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `listTaskFiles failed for task: ${taskId}`,
+        error.stack || error,
+      );
+      throw error;
+    }
+  }
+
+  async deleteFile(claims: TokenClaimsDto, fileName: string) {
+    this.logger.log(`deleteFile called for file: ${fileName}`);
+    try {
+      const result = await this.natsClient.send('task.file.delete', {
+        claims,
+        request: {
+          body: { fileName },
+        },
+      }).toPromise();
+
+      this.logger.log(`deleteFile success for file: ${fileName}`);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `deleteFile failed for file: ${fileName}`,
+        error.stack || error,
+      );
+      throw error;
+    }
+  }
+
+  async getSignedUrl(
+    claims: TokenClaimsDto,
+    fileName: string,
+    expiresInMinutes?: number,
+  ) {
+    this.logger.log(`getSignedUrl called for file: ${fileName}`);
+    try {
+      const result = await this.natsClient.send('task.file.signedUrl', {
+        claims,
+        request: {
+          body: { fileName, expiresInMinutes },
+        },
+      }).toPromise();
+
+      this.logger.log(`getSignedUrl success for file: ${fileName}`);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `getSignedUrl failed for file: ${fileName}`,
         error.stack || error,
       );
       throw error;

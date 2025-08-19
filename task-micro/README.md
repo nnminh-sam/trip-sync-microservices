@@ -24,7 +24,56 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Task Microservice - Part of the Trip Sync business trip management system. This microservice handles task-related operations for employee work trips and reporting.
+
+## Overview
+
+The Task Microservice is responsible for managing work tasks during business trips, including:
+- Task creation and assignment within trips
+- Progress tracking and status updates  
+- Evidence attachment (photos, videos, documents)
+- Task completion reporting with proof of work
+- Integration with Google Cloud Storage for media files
+
+## Business Context
+
+This service supports **business trip management** for organizations tracking employee work outside the office:
+
+### Mobile App Features (Employees)
+- **Task Progress Updates**: Report objectives achieved, ongoing work, cancellation proposals
+- **Evidence Documentation**: Upload photos/videos with location and timestamp as proof of work
+- **Task Check-in/Check-out**: Mark task start and completion times
+- **Auto-submission**: Automatic report generation based on task progress
+
+### Web App Features (Managers)
+- **Task Monitoring**: Track task status and completion rates
+- **Evidence Review**: Access submitted photos, videos, and documents
+- **Performance Analytics**: Analyze task efficiency and completion patterns
+- **Data Export**: Generate reports in CSV/Excel format
+
+## Key Features
+
+- **Media Management**: Integration with Google Cloud Storage for evidence files
+- **Real-time Updates**: Task status changes propagate to connected services
+- **Validation**: Comprehensive input validation for all task operations
+- **Audit Trail**: Complete history of task modifications and evidence submissions
+
+## Environment Configuration
+
+Create a `.env` file with the following variables:
+
+```env
+# Google Cloud Storage
+GCS_PROJECT_ID=tripsync-466402
+GCS_BUCKET_NAME=tripsync
+GCS_KEY_FILE=secret.json
+MAX_FILE_SIZE=20
+ALLOWED_MIME_TYPES=png,jpg,jpeg,docx,doc
+
+# Microservice Configuration
+PORT=3002
+RABBITMQ_URL=amqp://localhost:5672
+```
 
 ## Installation
 
@@ -45,6 +94,71 @@ $ yarn run start:dev
 $ yarn run start:prod
 ```
 
+## API Endpoints
+
+The Task Microservice uses message patterns for communication:
+
+### Task Management
+- `task.create` - Create a new task within a trip
+- `task.update` - Update task details and status
+- `task.delete` - Remove a task
+- `task.findAll` - List tasks with filters
+- `task.findOne` - Get specific task details
+
+### Evidence & Reporting
+- `task.upload-file` - Upload evidence files (photos/videos)
+- `task.attach-evidence` - Link evidence to task
+- `task.report` - Submit task completion report
+- `task.progress` - Update task progress percentage
+
+## Data Models
+
+### Task Entity
+```typescript
+{
+  id: string
+  trip_id: string
+  title: string
+  description: string
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
+  assignee_id: string
+  created_by: string
+  progress: number
+  evidence_urls: string[]
+  location: { lat: number, lng: number }
+  check_in_time: Date
+  check_out_time: Date
+  completed_at: Date
+  created_at: Date
+  updated_at: Date
+}
+```
+
+### Task Report
+```typescript
+{
+  task_id: string
+  objectives_achieved: string[]
+  ongoing_work: string[]
+  cancellation_reason?: string
+  evidence_attachments: Array<{
+    type: 'photo' | 'video' | 'document'
+    url: string
+    location: { lat: number, lng: number }
+    timestamp: Date
+  }>
+  auto_submitted: boolean
+  submitted_at: Date
+}
+```
+
+## Integration Points
+
+- **Trip Microservice**: Validates trip existence and permissions
+- **User Microservice**: Authenticates users and manages roles
+- **Report Microservice**: Aggregates task data for reporting
+- **Google Cloud Storage**: Stores evidence files and media
+
 ## Test
 
 ```bash
@@ -58,16 +172,6 @@ $ yarn run test:e2e
 $ yarn run test:cov
 ```
 
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
 ## License
 
-Nest is [MIT licensed](LICENSE).
+MIT
