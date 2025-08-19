@@ -16,8 +16,7 @@ services:
         '-http_port',
         '8222', # HTTP monitoring port
         '-T', # Add timestamps to logs
-        '-l',
-        '/var/log/nats.log', # Log file
+        '-DV', # Debug and Verbose logging
       ]
     volumes:
       - nats-data:/data
