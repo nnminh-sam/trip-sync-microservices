@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  nats:
+    image: nats:2.10-alpine
+    container_name: nats2
+    ports:
+      - "4222:4222" # Client connections
+      - "8222:8222" # HTTP monitoring
+      - "6222:6222" # Cluster connections (if needed)
+    command: ["-c", "/etc/nats/nats-server.conf"]
+    volumes:
+      - ./nats-server.conf:/etc/nats/nats-server.conf:ro
+      - nats-data:/data
+    environment:
+      - NATS_MAX_PAYLOAD=52428800 # 50MB
+    restart: unless-stopped
+    networks:
+      - trip-sync-network
+
+volumes:
+  nats-data:
+    driver: local
+
+networks:
+  trip-sync-network:
+    driver: bridge
