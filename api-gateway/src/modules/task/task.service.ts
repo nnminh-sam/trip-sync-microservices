@@ -266,6 +266,15 @@ export class TaskService {
   ) {
     this.logger.log(`uploadFile called for task: ${taskId}`);
     try {
+      // Check file size before encoding (base64 increases size by ~33%)
+      const maxNatsPayload = 50 * 1024 * 1024; // 50MB
+      const estimatedBase64Size = Math.ceil(file.size * 1.37); // Base64 overhead
+      
+      if (estimatedBase64Size > maxNatsPayload * 0.9) { // Leave 10% buffer
+        this.logger.warn(`File too large for NATS transport: ${file.size} bytes (${estimatedBase64Size} after encoding)`);
+        throw new Error(`File size exceeds maximum allowed for transport: ${Math.round(file.size / 1024 / 1024)}MB`);
+      }
+
       const fileData = {
         fieldname: file.fieldname,
         originalname: file.originalname,
@@ -274,6 +283,8 @@ export class TaskService {
         buffer: file.buffer.toString('base64'),
         size: file.size,
       };
+
+      this.logger.log(`Sending file data: ${file.originalname} (${file.size} bytes, ${fileData.buffer.length} base64 chars)`);
 
       const result = await this.natsClient.send('task.upload.single', {
         claims,
@@ -308,6 +319,16 @@ export class TaskService {
   ) {
     this.logger.log(`uploadMultipleFiles called for task: ${taskId}`);
     try {
+      // Check total size before encoding
+      const maxNatsPayload = 50 * 1024 * 1024; // 50MB
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+      const estimatedBase64Size = Math.ceil(totalSize * 1.37); // Base64 overhead
+      
+      if (estimatedBase64Size > maxNatsPayload * 0.9) { // Leave 10% buffer
+        this.logger.warn(`Files too large for NATS transport: ${totalSize} bytes (${estimatedBase64Size} after encoding)`);
+        throw new Error(`Total file size exceeds maximum allowed for transport: ${Math.round(totalSize / 1024 / 1024)}MB`);
+      }
+
       const filesData = files.map(file => ({
         fieldname: file.fieldname,
         originalname: file.originalname,
