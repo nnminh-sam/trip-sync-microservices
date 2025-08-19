@@ -3,7 +3,7 @@ version: "3.8"
 services:
   nats:
     image: nats:2.10-alpine
-    container_name: nats2
+    container_name: nats
     ports:
       - "4222:4222" # Client connections
       - "8222:8222" # HTTP monitoring
