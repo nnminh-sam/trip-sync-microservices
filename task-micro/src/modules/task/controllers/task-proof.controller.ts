@@ -12,7 +12,6 @@ export class TaskProofController {
 
   @MessagePattern(ProofMessagePattern.create)
   async create(@Payload() payload: MessagePayloadDto<CreateTaskProofDto>) {
-    console.log('🚀 ~ TaskProofController ~ create ~ payload:', payload);
     const { taskId } = payload.request.path;
     const dto = payload.request.body;
     // TODO: Call User service for Authorization
