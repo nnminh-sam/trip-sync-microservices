@@ -1,11 +1,25 @@
+version: '3.8'
+
 services:
   nats:
     image: nats:2.10-alpine
     container_name: nats
     ports:
-      - '4222:4222'
-      - '8222:8222'
+      - '4222:4222'  # Client connections
+      - '8222:8222'  # HTTP monitoring
+      - '6222:6222'  # Cluster connections (if needed)
+    command: ["--max_payload", "52428800"]  # 50MB max payload
+    environment:
+      - NATS_MAX_PAYLOAD=52428800  # 50MB
+    volumes:
+      - nats-data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "4222"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   redis:
     image: redis:7-alpine
@@ -23,7 +37,26 @@ services:
       - '80:80'
     env_file:
       - .env.production
+    environment:
+      - NATS_MAX_PAYLOAD=52428800  # Ensure client also knows about increased limit
     depends_on:
       - nats
       - redis
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  nats-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  default:
+    name: trip-sync-network
+    driver: bridge
