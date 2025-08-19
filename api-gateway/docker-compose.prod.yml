@@ -14,12 +14,10 @@ services:
         '-http_port',
         '8222', # HTTP monitoring port
         '-T', # Add timestamps to logs
-        '-l',
-        '/var/log/nats.log', # Log file
+        '-DV', # Debug and Verbose logging
       ]
     volumes:
       - nats-data:/data
-      - nats-logs:/var/log
     restart: unless-stopped
     healthcheck:
       test:
@@ -123,27 +121,10 @@ services:
 volumes:
   nats-data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${PWD}/docker-volume/nats-data
-  nats-logs:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${PWD}/docker-volume/nats-logs
   redis-data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${PWD}/docker-volume/redis-data
 
 networks:
   default:
     name: trip-sync-network
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.28.0.0/16
