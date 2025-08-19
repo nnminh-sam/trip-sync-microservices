@@ -31,13 +31,17 @@ export class RoleController {
       },
     });
     const result = await this.roleService.create(payload.request.body);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.CREATE,
-      entity: 'role',
-      entityId: result.id,
-      description: `Created role with ID: ${result.id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.CREATE,
+        entity: 'role',
+        entityId: result.id,
+        description: `Created role with ID: ${result.id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -55,12 +59,16 @@ export class RoleController {
       },
     });
     const result = await this.roleService.findAll(payload.request.body);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.READ,
-      entity: 'role',
-      description: `Read roles`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.READ,
+        entity: 'role',
+        description: `Read roles`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -85,13 +93,17 @@ export class RoleController {
       });
     }
     const result = await this.roleService.findOne(id);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.READ,
-      entity: 'role',
-      entityId: result.id,
-      description: `Read role with ID: ${result.id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.READ,
+        entity: 'role',
+        entityId: result.id,
+        description: `Read role with ID: ${result.id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -117,13 +129,17 @@ export class RoleController {
     }
 
     const result = await this.roleService.findByName(name);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.READ,
-      entity: 'role',
-      entityId: result.id,
-      description: `Read role with ID: ${result.id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.READ,
+        entity: 'role',
+        entityId: result.id,
+        description: `Read role with ID: ${result.id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -150,13 +166,17 @@ export class RoleController {
     }
 
     const result = await this.roleService.update(id, payload.request.body);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.UPDATE,
-      entity: 'role',
-      entityId: result.id,
-      description: `Updated role with ID: ${result.id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.UPDATE,
+        entity: 'role',
+        entityId: result.id,
+        description: `Updated role with ID: ${result.id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -182,13 +202,17 @@ export class RoleController {
       });
     }
     const result = await this.roleService.remove(id);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.CREATE,
-      entity: 'role',
-      entityId: id,
-      description: `Deleted role with ID: ${id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.CREATE,
+        entity: 'role',
+        entityId: id,
+        description: `Deleted role with ID: ${id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 }

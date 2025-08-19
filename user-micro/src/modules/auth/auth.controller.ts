@@ -25,12 +25,16 @@ export class AuthController {
   async updatePassword(@Payload() payload: MessagePayloadDto) {
     const { claims } = payload;
     const result = await this.authService.updatePassword(claims.sub);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.UPDATE,
-      entity: 'user',
-      description: `Updated password for user with ID: ${claims.sub}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.UPDATE,
+        entity: 'user',
+        description: `Updated password for user with ID: ${claims.sub}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 

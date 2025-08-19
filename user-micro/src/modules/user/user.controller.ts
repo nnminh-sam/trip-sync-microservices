@@ -29,13 +29,17 @@ export class UserController {
       });
     }
     const user = await this.userService.findById(claims.sub);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.READ,
-      entity: 'user',
-      entityId: user.id,
-      description: `Read user with ID: ${user.id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.READ,
+        entity: 'user',
+        entityId: user.id,
+        description: `Read user with ID: ${user.id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return user;
   }
 
@@ -53,12 +57,16 @@ export class UserController {
       },
     });
     const result = await this.userService.find(payload.request.body);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.READ,
-      entity: 'user',
-      description: `Read users`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.READ,
+        entity: 'user',
+        description: `Read users`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -77,13 +85,17 @@ export class UserController {
         },
       });
       const result = await this.userService.create(payload.request.body);
-      this.auditLogService.log(claims, {
-        userId: claims.sub,
-        action: AuditAction.CREATE,
-        entity: 'user',
-        entityId: result.id,
-        description: `Created new user with ID: ${result.id}`,
-      });
+      try {
+        this.auditLogService.log(claims, {
+          userId: claims.sub,
+          action: AuditAction.CREATE,
+          entity: 'user',
+          entityId: result.id,
+          description: `Created new user with ID: ${result.id}`,
+        });
+      } catch (error) {
+        console.error('Audit log service call failed:', error);
+      }
       return result;
     } catch (error) {
       console.error('Error in user controller create:', error);
@@ -101,13 +113,17 @@ export class UserController {
       payload.claims.sub,
       payload.request.body,
     );
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.UPDATE,
-      entity: 'user',
-      entityId: result.id,
-      description: `Updated user with ID: ${result.id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.UPDATE,
+        entity: 'user',
+        entityId: result.id,
+        description: `Updated user with ID: ${result.id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -125,13 +141,17 @@ export class UserController {
       },
     });
     const result = await this.userService.delete(payload.request.path.id);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.DELETE,
-      entity: 'user',
-      entityId: result.id,
-      description: `Deleted user with ID: ${result.id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.DELETE,
+        entity: 'user',
+        entityId: result.id,
+        description: `Deleted user with ID: ${result.id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -149,13 +169,17 @@ export class UserController {
       },
     });
     const result = await this.userService.deactivate(payload.request.path.id);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.UPDATE,
-      entity: 'user',
-      entityId: result.id,
-      description: `Deactivated user with ID: ${result.id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.UPDATE,
+        entity: 'user',
+        entityId: result.id,
+        description: `Deactivated user with ID: ${result.id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -173,13 +197,17 @@ export class UserController {
       },
     });
     const result = await this.userService.activate(payload.request.path.id);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.UPDATE,
-      entity: 'user',
-      entityId: result.id,
-      description: `Activated user with ID: ${result.id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.UPDATE,
+        entity: 'user',
+        entityId: result.id,
+        description: `Activated user with ID: ${result.id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 }

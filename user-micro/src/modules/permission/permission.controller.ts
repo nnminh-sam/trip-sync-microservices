@@ -34,13 +34,17 @@ export class PermissionController {
       },
     });
     const result = await this.permissionService.create(payload.request.body);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.CREATE,
-      entity: 'permission',
-      entityId: result.id,
-      description: `Created new permission with ID: ${result.id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.CREATE,
+        entity: 'permission',
+        entityId: result.id,
+        description: `Created new permission with ID: ${result.id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -58,12 +62,16 @@ export class PermissionController {
       },
     });
     const result = await this.permissionService.findAll(payload.request.body);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.READ,
-      entity: 'permission',
-      description: `Read permissions`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.READ,
+        entity: 'permission',
+        description: `Read permissions`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -88,13 +96,17 @@ export class PermissionController {
       });
     }
     const result = await this.permissionService.findOne(id);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.READ,
-      entity: 'permission',
-      entityId: result.id,
-      description: `Read permission with ID: ${result.id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.READ,
+        entity: 'permission',
+        entityId: result.id,
+        description: `Read permission with ID: ${result.id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -122,13 +134,17 @@ export class PermissionController {
       });
     }
     const result = await this.permissionService.update(id, payload.request.body);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.UPDATE,
-      entity: 'permission',
-      entityId: result.id,
-      description: `Updated permission with ID: ${result.id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.UPDATE,
+        entity: 'permission',
+        entityId: result.id,
+        description: `Updated permission with ID: ${result.id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -153,13 +169,17 @@ export class PermissionController {
       });
     }
     const result = await this.permissionService.remove(id);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.DELETE,
-      entity: 'permission',
-      entityId: id,
-      description: `Deleted permission with ID: ${id}`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.DELETE,
+        entity: 'permission',
+        entityId: id,
+        description: `Deleted permission with ID: ${id}`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 
@@ -179,12 +199,16 @@ export class PermissionController {
       },
     });
     const result = await this.permissionService.bulkCreate(payload.request.body);
-    this.auditLogService.log(claims, {
-      userId: claims.sub,
-      action: AuditAction.CREATE,
-      entity: 'permission',
-      description: `Bulk created ${result.length} permissions`,
-    });
+    try {
+      this.auditLogService.log(claims, {
+        userId: claims.sub,
+        action: AuditAction.CREATE,
+        entity: 'permission',
+        description: `Bulk created ${result.length} permissions`,
+      });
+    } catch (error) {
+      console.error('Audit log service call failed:', error);
+    }
     return result;
   }
 }
