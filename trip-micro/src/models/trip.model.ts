@@ -2,18 +2,22 @@ import { Column, Entity, OneToMany } from 'typeorm';
 import { BaseModel } from './base.model';
 import { TripLocation } from './trip-location.model';
 import { TripApproval } from './trip-approval.model';
+import { TripStatusEnum } from 'src/models/trip-status.enum';
 
 @Entity({ name: 'trips' })
 export class Trip extends BaseModel {
+  @Column({ type: 'varchar', unique: true })
+  title: string;
+
   @Column({ nullable: true })
   assignee_id: string;
 
   @Column({
     type: 'enum',
-    enum: ['pending', 'approved', 'canceled', 'in_progress', 'completed'],
-    default: 'pending',
+    enum: TripStatusEnum,
+    default: TripStatusEnum.PENDING,
   })
-  status: 'pending' | 'approved' | 'canceled' | 'in_progress' | 'completed';
+  status: TripStatusEnum;
 
   @Column({ type: 'varchar' })
   purpose: string;

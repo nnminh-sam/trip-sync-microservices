@@ -7,7 +7,7 @@ import { FilterTripDto } from './dtos/filter-trip.dto';
 import { TripMessagePattern } from './trip-message.pattern';
 import { MessagePayloadDto } from 'src/dtos/message-payload.dto';
 import { throwRpcException } from 'src/utils';
-import { ApproveTripDto } from './dtos/approve-trip.dto'
+import { ApproveTripDto } from './dtos/approve-trip.dto';
 @Controller()
 export class TripController {
   constructor(private readonly tripService: TripService) {}
@@ -25,7 +25,7 @@ export class TripController {
       },
     });
 
-    return await this.tripService.create(payload.request.body);
+    return await this.tripService.create(payload.request.body, payload.claims);
   }
 
   @MessagePattern(TripMessagePattern.FIND_ALL)
@@ -41,7 +41,7 @@ export class TripController {
       },
     });
 
-    return await this.tripService.findAll(payload.request.body);
+    return await this.tripService.findAll(payload.request.body, payload.claims);
   }
 
   @MessagePattern(TripMessagePattern.FIND_ONE)
@@ -65,7 +65,7 @@ export class TripController {
       });
     }
 
-    return await this.tripService.findOne(id);
+    return await this.tripService.findOne(id, payload.claims);
   }
 
   @MessagePattern(TripMessagePattern.UPDATE)
@@ -89,7 +89,11 @@ export class TripController {
       });
     }
 
-    return await this.tripService.update(id, payload.request.body);
+    return await this.tripService.update(
+      id,
+      payload.request.body,
+      payload.claims,
+    );
   }
 
   @MessagePattern(TripMessagePattern.DELETE)
@@ -113,60 +117,59 @@ export class TripController {
       });
     }
 
-    return await this.tripService.remove(id);
+    return await this.tripService.remove(id, payload.claims);
   }
 
-@MessagePattern(TripMessagePattern.APPROVE)
-async approve(@Payload() payload: MessagePayloadDto<ApproveTripDto>) {
-  await this.tripService.authorizeClaims({
-    claims: payload.claims,
-    required: {
-      roles: ['manager', 'system admin'],
-      permission: {
-        action: 'approve',
-        resource: 'trip',
+  @MessagePattern(TripMessagePattern.APPROVE)
+  async approve(@Payload() payload: MessagePayloadDto<ApproveTripDto>) {
+    await this.tripService.authorizeClaims({
+      claims: payload.claims,
+      required: {
+        roles: ['manager', 'system admin'],
+        permission: {
+          action: 'approve',
+          resource: 'trip',
+        },
       },
-    },
-  });
+    });
 
-  const { id } = payload.request.path;
-  const dto = payload.request.body;
-  const approverId = payload.claims.sub;
+    const { id } = payload.request.path;
+    const dto = payload.request.body;
+    const approverId = payload.claims.sub;
 
-  return this.tripService.approve(id, approverId, dto);
-}
+    return this.tripService.approve(id, approverId, dto, payload.claims);
+  }
 
-@MessagePattern(TripMessagePattern.LOCATIONS)
-async getTripLocations(@Payload() payload: MessagePayloadDto) {
-  await this.tripService.authorizeClaims({
-    claims: payload.claims,
-    required: {
-      roles: ['manager', 'system admin', 'employee'],
-      permission: {
-        action: 'read',
-        resource: 'trip',
+  @MessagePattern(TripMessagePattern.LOCATIONS)
+  async getTripLocations(@Payload() payload: MessagePayloadDto) {
+    await this.tripService.authorizeClaims({
+      claims: payload.claims,
+      required: {
+        roles: ['manager', 'system admin', 'employee'],
+        permission: {
+          action: 'read',
+          resource: 'trip',
+        },
       },
-    },
-  });
+    });
 
-  const { id } = payload.request.path;
-  return this.tripService.getTripLocations(id);
-}
-@MessagePattern(TripMessagePattern.APPROVALS)
-async getTripApprovals(@Payload() payload: MessagePayloadDto) {
-  await this.tripService.authorizeClaims({
-    claims: payload.claims,
-    required: {
-      roles: ['manager', 'system admin', 'employee'],
-      permission: {
-        action: 'read',
-        resource: 'trip',
+    const { id } = payload.request.path;
+    return this.tripService.getTripLocations(id, payload.claims);
+  }
+  @MessagePattern(TripMessagePattern.APPROVALS)
+  async getTripApprovals(@Payload() payload: MessagePayloadDto) {
+    await this.tripService.authorizeClaims({
+      claims: payload.claims,
+      required: {
+        roles: ['manager', 'system admin', 'employee'],
+        permission: {
+          action: 'read',
+          resource: 'trip',
+        },
       },
-    },
-  });
+    });
 
-  const { id } = payload.request.path;
-  return this.tripService.getTripApprovals(id);
-}
-
+    const { id } = payload.request.path;
+    return await this.tripService.getTripApprovals(id);
+  }
 }

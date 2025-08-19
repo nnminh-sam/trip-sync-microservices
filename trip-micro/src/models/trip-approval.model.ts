@@ -1,6 +1,7 @@
 import { Column, Entity, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseModel } from './base.model';
 import { Trip } from './trip.model';
+import { TripApprovalStatusEnum } from 'src/models/trip-approval-status.enum';
 
 @Entity({ name: 'trip_approvals' })
 export class TripApproval extends BaseModel {
@@ -12,10 +13,10 @@ export class TripApproval extends BaseModel {
 
   @Column({
     type: 'enum',
-    enum: ['pending', 'approved', 'rejected', 'auto_approved'],
-    default: 'pending',
+    enum: TripApprovalStatusEnum,
+    default: TripApprovalStatusEnum.PENDING,
   })
-  status: 'pending' | 'approved' | 'rejected' | 'auto_approved';
+  status: TripApprovalStatusEnum;
 
   @Column({ type: 'text', nullable: true })
   note: string;
