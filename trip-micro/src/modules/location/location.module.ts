@@ -5,5 +5,6 @@ import { ClientModule } from 'src/client/client.module';
 @Module({
   imports: [ClientModule],
   providers: [LocationService],
+  exports: [LocationService],
 })
 export class LocationModule {}

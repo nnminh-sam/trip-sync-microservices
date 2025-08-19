@@ -1,13 +1,9 @@
-// src/modules/trip/dtos/approve-trip.dto.ts
 import { IsEnum, IsOptional, IsString, IsBoolean } from 'class-validator';
-const ApprovalStatusValues = ['pending', 'approved', 'rejected', 'auto_approved'] as const;
-type ApprovalStatus = (typeof ApprovalStatusValues)[number];
+import { TripApprovalStatusEnum } from 'src/models/trip-approval-status.enum';
 
 export class ApproveTripDto {
-  @IsEnum(ApprovalStatusValues, {
-    message: `status must be one of the following values: ${Object.values(ApprovalStatusValues).join(', ')}`,
-  })
-  status: ApprovalStatus;
+  @IsEnum(TripApprovalStatusEnum)
+  status: TripApprovalStatusEnum;
 
   @IsString()
   note: string;

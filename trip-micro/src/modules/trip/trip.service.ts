@@ -12,6 +12,9 @@ import { AuthorizeClaimsPayloadDto } from './dtos/authorize-claims-payload.dto';
 import { RpcException } from '@nestjs/microservices';
 import { TripApproval } from 'src/models/trip-approval.model';
 import { ApproveTripDto } from './dtos/approve-trip.dto';
+import { TripApprovalStatusEnum } from 'src/models/trip-approval-status.enum';
+import { TripStatusEnum } from 'src/models/trip-status.enum';
+import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 
 @Injectable()
 export class TripService {
@@ -78,13 +81,14 @@ export class TripService {
     }
   }
 
-  async create(dto: CreateTripDto): Promise<Trip> {
+  async create(dto: CreateTripDto, claims: TokenClaimsDto): Promise<Trip> {
     this.logger.log('Creating a new trip');
     try {
       const locationIds = dto.locations.map((loc) => loc.location_id);
       await this.validateLocationIds(locationIds);
 
       const trip = this.tripRepo.create({
+        title: dto.title,
         assignee_id: dto.assignee_id,
         purpose: dto.purpose,
         goal: dto.goal,
@@ -103,13 +107,27 @@ export class TripService {
       );
 
       await this.tripLocationRepo.save(tripLocations);
-      return await this.findOne(savedTrip.id);
+      return await this.findOne(savedTrip.id, claims);
     } catch (error) {
       if (error instanceof RpcException) {
         throw error;
       }
 
       this.logger.error('Failed to create trip', error.stack);
+      
+      // Handle unique constraint violation for title
+      if (error.code === '23505' || error.message?.includes('duplicate key')) {
+        throwRpcException({
+          message: 'A trip with this title already exists',
+          statusCode: HttpStatus.CONFLICT,
+          details: {
+            field: 'title',
+            value: dto.title,
+            error: 'Title must be unique',
+          },
+        });
+      }
+      
       throwRpcException({
         message: 'Failed to create trip',
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -118,7 +136,10 @@ export class TripService {
     }
   }
 
-  async findAll(filter: FilterTripDto): Promise<ListDataDto<any>> {
+  async findAll(
+    filter: FilterTripDto,
+    claims: TokenClaimsDto,
+  ): Promise<ListDataDto<any>> {
     const {
       assignee_id,
       from_date,
@@ -130,10 +151,10 @@ export class TripService {
       order = 'ASC',
     } = filter;
 
-    // Join bảng locations
     const query = this.tripRepo
       .createQueryBuilder('trip')
-      .leftJoinAndSelect('trip.locations', 'location');
+      .leftJoinAndSelect('trip.locations', 'location')
+      .leftJoinAndSelect('trip.approvals', 'approval');
 
     if (assignee_id) {
       query.andWhere('trip.assignee_id = :assignee_id', { assignee_id });
@@ -172,17 +193,43 @@ export class TripService {
               );
             }
             return {
+              id: loc.id,
               location_id: loc.location_id,
               arrival_order: loc.arrival_order,
               scheduled_at: loc.scheduled_at,
               name,
+              createdAt: loc.createdAt,
+              updatedAt: loc.updatedAt,
             };
           }),
         );
 
+        // Format approvals data
+        const formattedApprovals =
+          trip.approvals?.map((approval) => ({
+            id: approval.id,
+            trip_id: approval.trip_id,
+            approver_id: approval.approver_id,
+            status: approval.status,
+            note: approval.note,
+            is_auto: approval.is_auto,
+            createdAt: approval.createdAt,
+            updatedAt: approval.updatedAt,
+          })) || [];
+
         return {
-          ...trip,
+          id: trip.id,
+          title: trip.title,
+          assignee_id: trip.assignee_id,
+          status: trip.status,
+          purpose: trip.purpose,
+          goal: trip.goal,
+          schedule: trip.schedule,
+          created_by: trip.created_by,
+          createdAt: trip.createdAt,
+          updatedAt: trip.updatedAt,
           locations: enrichedLocations,
+          approvals: formattedApprovals,
         };
       }),
     );
@@ -195,7 +242,7 @@ export class TripService {
     });
   }
 
-  async findOne(id: string): Promise<any> {
+  async findOne(id: string, claims: TokenClaimsDto): Promise<any> {
     const trip = await this.tripRepo.findOne({
       where: { id },
       relations: ['locations'],
@@ -239,6 +286,7 @@ export class TripService {
 
     return {
       id: trip.id,
+      title: trip.title,
       purpose: trip.purpose,
       goal: trip.goal,
       schedule: trip.schedule,
@@ -251,8 +299,12 @@ export class TripService {
     };
   }
 
-  async update(id: string, dto: UpdateTripDto): Promise<Trip> {
-    const trip = await this.findOne(id);
+  async update(
+    id: string,
+    dto: UpdateTripDto,
+    claims: TokenClaimsDto,
+  ): Promise<Trip> {
+    const trip = await this.findOne(id, claims);
 
     if (!trip) {
       throwRpcException({
@@ -270,6 +322,7 @@ export class TripService {
 
     try {
       Object.assign(trip, {
+        title: dto.title,
         purpose: dto.purpose,
         goal: dto.goal,
         schedule: dto.schedule,
@@ -295,9 +348,23 @@ export class TripService {
         await this.tripLocationRepo.save(newTripLocations);
       }
 
-      return await this.findOne(id);
+      return await this.findOne(id, claims);
     } catch (error) {
       this.logger.error(`Failed to update trip: ${id}`, error.stack);
+      
+      // Handle unique constraint violation for title
+      if (error.code === '23505' || error.message?.includes('duplicate key')) {
+        throwRpcException({
+          message: 'A trip with this title already exists',
+          statusCode: HttpStatus.CONFLICT,
+          details: {
+            field: 'title',
+            value: dto.title,
+            error: 'Title must be unique',
+          },
+        });
+      }
+      
       throwRpcException({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Failed to update trip',
@@ -305,8 +372,11 @@ export class TripService {
     }
   }
 
-  async remove(id: string): Promise<{ success: boolean; id: string }> {
-    const trip = await this.findOne(id);
+  async remove(
+    id: string,
+    claims: TokenClaimsDto,
+  ): Promise<{ success: boolean; id: string }> {
+    const trip = await this.findOne(id, claims);
 
     if (!trip) {
       throwRpcException({
@@ -336,8 +406,9 @@ export class TripService {
     tripId: string,
     approverId: string,
     dto: ApproveTripDto,
+    claims: TokenClaimsDto,
   ): Promise<Trip> {
-    const trip = await this.findOne(tripId);
+    const trip = await this.findOne(tripId, claims);
 
     if (trip.status !== 'pending') {
       throwRpcException({
@@ -356,20 +427,23 @@ export class TripService {
 
     await this.tripApprovalRepo.save(approval);
 
-    if (dto.status === 'approved') {
+    if (dto.status === TripApprovalStatusEnum.APPROVED) {
       trip.assignee_id = dto.assignee_id;
-      trip.status = 'approved';
+      trip.status = TripStatusEnum.APPROVED;
     }
 
-    if (dto.status === 'rejected') {
-      trip.status = 'canceled';
+    if (dto.status === TripApprovalStatusEnum.REJECTED) {
+      trip.status = TripStatusEnum.CANCELED;
     }
 
     await this.tripRepo.save(trip);
-    return await this.findOne(tripId);
+    return await this.findOne(tripId, claims);
   }
 
-  async getTripLocations(tripId: string): Promise<any[]> {
+  async getTripLocations(
+    tripId: string,
+    claims: TokenClaimsDto,
+  ): Promise<any[]> {
     const trip = await this.tripRepo.findOne({ where: { id: tripId } });
     if (!trip) {
       throwRpcException({
