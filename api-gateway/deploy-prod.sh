@@ -24,13 +24,13 @@ if [ ! -f .env.production ]; then
     exit 1
 fi
 
+
 # Fix NATS_SERVER if it points to localhost
 if grep -q "NATS_SERVER=nats://localhost" .env.production; then
     echo -e "${YELLOW}⚠️  Fixing NATS_SERVER to use container name...${NC}"
     sed -i.bak 's|NATS_SERVER=nats://localhost|NATS_SERVER=nats://nats|g' .env.production
     echo -e "${GREEN}✅ NATS_SERVER updated to nats://nats:4222${NC}"
 fi
-
 # Validate environment variables
 echo "📋 Validating environment configuration..."
 required_vars=("NATS_SERVER" "JWT_SECRET")

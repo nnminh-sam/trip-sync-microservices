@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   nats:
     image: nats:2.10-alpine
@@ -29,6 +31,7 @@ services:
           '--spider',
           'http://localhost:8222/healthz',
         ]
+
       interval: 30s
       timeout: 10s
       retries: 3
