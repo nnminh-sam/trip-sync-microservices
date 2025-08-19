@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EnvSchema } from 'src/config';
 import { Task } from 'src/models/task.model';
 import { TaskProof } from 'src/models/task-proof.model';
+import { TaskFile } from 'src/models/task-file.model';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { TaskProof } from 'src/models/task-proof.model';
           username: configService.get<string>('MYSQL_USER'),
           password: configService.get<string>('MYSQL_PASSWORD'),
           database: configService.get<string>('MYSQL_DATABASE'),
-          entities: [Task, TaskProof],
+          entities: [Task, TaskProof, TaskFile],
           synchronize: true,
           logging: true,
         };

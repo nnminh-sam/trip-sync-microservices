@@ -1,0 +1,771 @@
+{
+  "info": {
+    "_postman_id": "f8c7d3e2-9a4b-4e5c-8d6f-1b2c3d4e5f6g",
+    "name": "Task File Upload APIs",
+    "description": "Collection for testing Task File Upload functionality with Google Cloud Storage",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has access token\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('access_token');",
+                  "    ",
+                  "    // Save token to environment",
+                  "    pm.environment.set(\"access_token\", jsonData.data.access_token);",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 500ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticate user and get access token"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Task Management",
+      "item": [
+        {
+          "name": "Create Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Task created successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    ",
+                  "    // Save task ID for later use",
+                  "    pm.environment.set(\"task_id\", jsonData.data.id);",
+                  "});",
+                  "",
+                  "pm.test(\"Task has correct title\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.title).to.include(\"Test Task\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Generate unique task title",
+                  "const timestamp = new Date().getTime();",
+                  "pm.environment.set(\"task_title\", `Test Task ${timestamp}`);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{task_title}}\",\n  \"description\": \"Task for testing file uploads\",\n  \"tripLocationId\": \"{{trip_location_id}}\",\n  \"deadline\": \"2025-12-31T23:59:59Z\",\n  \"note\": \"Test task for file upload functionality\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/tasks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            },
+            "description": "Create a new task for testing file uploads"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Task Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Task retrieved successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.expect(jsonData.data.id).to.equal(pm.environment.get(\"task_id\"));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id}}"
+              ]
+            },
+            "description": "Get details of the created task"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "File Upload Operations",
+      "item": [
+        {
+          "name": "Upload Single File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"File uploaded successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.expect(jsonData.data).to.have.property('filename');",
+                  "    pm.expect(jsonData.data).to.have.property('public_url');",
+                  "    pm.expect(jsonData.data).to.have.property('gcs_url');",
+                  "    ",
+                  "    // Save file details for later use",
+                  "    pm.environment.set(\"uploaded_file_id\", jsonData.data.id);",
+                  "    pm.environment.set(\"uploaded_filename\", jsonData.data.filename);",
+                  "});",
+                  "",
+                  "pm.test(\"File has correct task_id\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.task_id).to.equal(pm.environment.get(\"task_id\"));",
+                  "});",
+                  "",
+                  "pm.test(\"File has correct MIME type\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.mimetype).to.be.oneOf([",
+                  "        'image/jpeg',",
+                  "        'image/png',",
+                  "        'image/gif',",
+                  "        'application/pdf',",
+                  "        'application/msword',",
+                  "        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'",
+                  "    ]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/test-file.pdf",
+                  "description": "Select a test file (PDF, Image, or Document)"
+                },
+                {
+                  "key": "description",
+                  "value": "Test file upload for task documentation",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}/files/upload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id}}",
+                "files",
+                "upload"
+              ]
+            },
+            "description": "Upload a single file to the task"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Multiple Files",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Multiple files uploaded successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "    pm.expect(jsonData.data.length).to.be.at.least(1);",
+                  "});",
+                  "",
+                  "pm.test(\"Each file has required properties\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.data.forEach(function(file) {",
+                  "        pm.expect(file).to.have.property('id');",
+                  "        pm.expect(file).to.have.property('filename');",
+                  "        pm.expect(file).to.have.property('public_url');",
+                  "        pm.expect(file).to.have.property('task_id');",
+                  "        pm.expect(file.task_id).to.equal(pm.environment.get(\"task_id\"));",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": ["/path/to/file1.jpg", "/path/to/file2.png"],
+                  "description": "Select multiple files (max 10)"
+                },
+                {
+                  "key": "description",
+                  "value": "Bulk upload test files",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}/files/upload-multiple",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id}}",
+                "files",
+                "upload-multiple"
+              ]
+            },
+            "description": "Upload multiple files to the task (max 10 files)"
+          },
+          "response": []
+        },
+        {
+          "name": "List Task Files",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Files list retrieved successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"List contains uploaded files\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data.length > 0) {",
+                  "        pm.expect(jsonData.data[0]).to.have.property('name');",
+                  "        pm.expect(jsonData.data[0]).to.have.property('size');",
+                  "        pm.expect(jsonData.data[0]).to.have.property('contentType');",
+                  "        pm.expect(jsonData.data[0]).to.have.property('created');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}/files",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id}}",
+                "files"
+              ]
+            },
+            "description": "Get list of all files uploaded to the task"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Signed URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Signed URL generated successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('url');",
+                  "    pm.expect(jsonData.data).to.have.property('expiresIn');",
+                  "});",
+                  "",
+                  "pm.test(\"URL is valid Google Cloud Storage URL\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.url).to.include('storage.googleapis.com');",
+                  "    pm.expect(jsonData.data.url).to.include('X-Goog-Signature');",
+                  "});",
+                  "",
+                  "pm.test(\"Expiration time is correct\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.expiresIn).to.equal(30);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tasks/files/{{uploaded_filename}}/signed-url?expiresInMinutes=30",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "files",
+                "{{uploaded_filename}}",
+                "signed-url"
+              ],
+              "query": [
+                {
+                  "key": "expiresInMinutes",
+                  "value": "30",
+                  "description": "URL expiration time in minutes (default: 60)"
+                }
+              ]
+            },
+            "description": "Generate a temporary signed URL for secure file download"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"File deleted successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('success');",
+                  "    pm.expect(jsonData.data.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('message');",
+                  "    pm.expect(jsonData.data.message).to.include('deleted successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tasks/files/{{uploaded_filename}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "files",
+                "{{uploaded_filename}}"
+              ]
+            },
+            "description": "Delete a file from Google Cloud Storage"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Scenarios",
+      "item": [
+        {
+          "name": "Upload Invalid File Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message for invalid file type\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData.message).to.include('not allowed');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/test.exe",
+                  "description": "Upload an invalid file type (e.g., .exe)"
+                },
+                {
+                  "key": "description",
+                  "value": "Testing invalid file type",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}/files/upload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id}}",
+                "files",
+                "upload"
+              ]
+            },
+            "description": "Test uploading a file with invalid MIME type"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Oversized File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message for oversized file\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData.message).to.include('exceeds maximum');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/large-file.zip",
+                  "description": "Upload a file larger than 10MB"
+                },
+                {
+                  "key": "description",
+                  "value": "Testing oversized file",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}/files/upload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id}}",
+                "files",
+                "upload"
+              ]
+            },
+            "description": "Test uploading a file that exceeds the size limit (10MB)"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload to Non-existent Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message for non-existent task\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData.message.toLowerCase()).to.include('not found');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/test-file.pdf",
+                  "description": "Any valid file"
+                },
+                {
+                  "key": "description",
+                  "value": "Testing non-existent task",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/tasks/00000000-0000-0000-0000-000000000000/files/upload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "00000000-0000-0000-0000-000000000000",
+                "files",
+                "upload"
+              ]
+            },
+            "description": "Test uploading to a task that doesn't exist"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Non-existent File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404 or 500\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([404, 500]);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message for non-existent file\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tasks/files/non-existent-file.pdf",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "files",
+                "non-existent-file.pdf"
+              ]
+            },
+            "description": "Test deleting a file that doesn't exist"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Cleanup",
+      "item": [
+        {
+          "name": "Delete Test Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 204 or 200\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});",
+                  "",
+                  "// Clean up environment variables",
+                  "pm.environment.unset(\"task_id\");",
+                  "pm.environment.unset(\"uploaded_file_id\");",
+                  "pm.environment.unset(\"uploaded_filename\");",
+                  "pm.environment.unset(\"task_title\");"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id}}"
+              ]
+            },
+            "description": "Clean up by deleting the test task"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "console.log('Executing request: ' + pm.info.requestName);",
+          "",
+          "// Check if access token exists for authenticated requests",
+          "if (pm.info.requestName !== 'Login' && !pm.environment.get('access_token')) {",
+          "    console.warn('No access token found. Please run Login request first.');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script",
+          "pm.test(\"Response time is acceptable\", function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+          "});",
+          "",
+          "// Log response for debugging",
+          "if (pm.response.code >= 400) {",
+          "    console.log('Error Response:', pm.response.text());",
+          "}"
+        ]
+      }
+    }
+  ]
+}

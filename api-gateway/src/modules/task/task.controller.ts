@@ -8,14 +8,22 @@ import {
   Post,
   Put,
   Query,
+  UseInterceptors,
+  UploadedFile,
+  UploadedFiles,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import {
+  FileInterceptor,
+  FilesInterceptor,
+} from '@nestjs/platform-express';
 import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
@@ -31,6 +39,7 @@ import { ApproveTaskDto } from 'src/modules/task/dtos/approve-task.dto';
 import { RejectTaskDto } from 'src/modules/task/dtos/reject-task.dto';
 import { CompleteTaskDto } from 'src/modules/task/dtos/complete-task.dto';
 import { CancelTaskDto } from 'src/modules/task/dtos/cancel-task.dto';
+import { FileUploadDto, BulkFileUploadDto, FileUploadResponseDto } from 'src/modules/task/dtos/file-upload.dto';
 import { TaskService } from 'src/modules/task/task.service';
 
 @ApiBearerAuth()
@@ -264,5 +273,157 @@ export class TaskController {
     @Body() payload: CreateTaskProofDto,
   ) {
     return await this.taskProofService.create(claims, id, payload);
+  }
+
+  @Post(':id/files/upload')
+  @ApiOperation({ summary: 'Upload a single file for a task' })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponseConstruction({
+    status: 201,
+    description: 'File uploaded successfully',
+    model: FileUploadResponseDto,
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Task ID',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+        description: {
+          type: 'string',
+          description: 'Optional file description',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @UseInterceptors(FileInterceptor('file', {
+    limits: {
+      fileSize: 100 * 1024 * 1024, // 100MB max - let task service handle actual validation
+    },
+  }))
+  async uploadFile(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('id') taskId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: FileUploadDto,
+  ) {
+    return await this.taskService.uploadFile(claims, taskId, file, dto);
+  }
+
+  @Post(':id/files/upload-multiple')
+  @ApiOperation({ summary: 'Upload multiple files for a task' })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponseConstruction({
+    status: 201,
+    description: 'Files uploaded successfully',
+    model: FileUploadResponseDto,
+    isArray: true,
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Task ID',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+        description: {
+          type: 'string',
+          description: 'Optional files description',
+        },
+      },
+      required: ['files'],
+    },
+  })
+  @UseInterceptors(FilesInterceptor('files', 20, {
+    limits: {
+      fileSize: 100 * 1024 * 1024, // 100MB per file max - let task service handle actual validation
+    },
+  }))
+  async uploadMultipleFiles(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('id') taskId: string,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body() dto: BulkFileUploadDto,
+  ) {
+    return await this.taskService.uploadMultipleFiles(claims, taskId, files, dto);
+  }
+
+  @Get(':id/files')
+  @ApiOperation({ summary: 'List all files for a task' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'List of task files',
+    isArray: true,
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Task ID',
+  })
+  async listTaskFiles(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('id') taskId: string,
+  ) {
+    return await this.taskService.listTaskFiles(claims, taskId);
+  }
+
+  @Delete('files/:fileName')
+  @ApiOperation({ summary: 'Delete a file' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'File deleted successfully',
+  })
+  @ApiParam({
+    name: 'fileName',
+    type: String,
+    description: 'File name to delete',
+  })
+  async deleteFile(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('fileName') fileName: string,
+  ) {
+    return await this.taskService.deleteFile(claims, fileName);
+  }
+
+  @Get('files/:fileName/signed-url')
+  @ApiOperation({ summary: 'Get a signed URL for file download' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Signed URL generated',
+  })
+  @ApiParam({
+    name: 'fileName',
+    type: String,
+    description: 'File name',
+  })
+  @ApiParam({
+    name: 'expiresInMinutes',
+    type: Number,
+    required: false,
+    description: 'URL expiration time in minutes (default: 60)',
+  })
+  async getSignedUrl(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('fileName') fileName: string,
+    @Query('expiresInMinutes') expiresInMinutes?: number,
+  ) {
+    return await this.taskService.getSignedUrl(claims, fileName, expiresInMinutes);
   }
 }

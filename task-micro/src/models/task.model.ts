@@ -1,5 +1,6 @@
 import { BaseModel } from 'src/models/base.model';
 import { TaskProof } from 'src/models/task-proof.model';
+import { TaskFile } from 'src/models/task-file.model';
 import { TaskStatusEnum } from 'src/models/task-status.enum';
 import { Column, Entity, Index, OneToMany } from 'typeorm';
 
@@ -68,6 +69,9 @@ export class Task extends BaseModel {
 
   @OneToMany(() => TaskProof, (proof) => proof.task, { cascade: true })
   proofs: TaskProof[];
+
+  @OneToMany(() => TaskFile, (file) => file.task, { cascade: true })
+  files: TaskFile[];
 }
 
 export type TaskAttribute = keyof Task;
