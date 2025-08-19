@@ -81,12 +81,27 @@ export class TripService {
     }
   }
 
+  private shouldAutoApproveTrip(dto: CreateTripDto): boolean {
+    // Check if all required fields are provided for auto-approval
+    const hasPurpose = dto.purpose && dto.purpose.trim().length > 0;
+    const hasGoal = dto.goal && dto.goal.trim().length > 0;
+    const hasSchedule = dto.schedule && dto.schedule.trim().length > 0;
+    const hasAssigneeId = dto.assignee_id && dto.assignee_id.trim().length > 0;
+    const hasLocations = dto.locations && dto.locations.length > 0;
+
+    // All criteria must be met for auto-approval
+    return hasPurpose && hasGoal && hasSchedule && hasAssigneeId && hasLocations;
+  }
+
   async create(dto: CreateTripDto, claims: TokenClaimsDto): Promise<Trip> {
     this.logger.log('Creating a new trip');
     try {
       const locationIds = dto.locations.map((loc) => loc.location_id);
       await this.validateLocationIds(locationIds);
 
+      // Check if trip should be auto-approved
+      const shouldAutoApprove = this.shouldAutoApproveTrip(dto);
+      
       const trip = this.tripRepo.create({
         title: dto.title,
         assignee_id: dto.assignee_id,
@@ -94,6 +109,7 @@ export class TripService {
         goal: dto.goal,
         schedule: dto.schedule,
         created_by: dto.created_by,
+        status: shouldAutoApprove ? TripStatusEnum.APPROVED : TripStatusEnum.PENDING,
       });
       const savedTrip = await this.tripRepo.save(trip);
 
@@ -107,6 +123,21 @@ export class TripService {
       );
 
       await this.tripLocationRepo.save(tripLocations);
+
+      // Create auto-approval record if trip was auto-approved
+      if (shouldAutoApprove) {
+        const approval = this.tripApprovalRepo.create({
+          trip_id: savedTrip.id,
+          approver_id: claims.sub, // Use the creator as the approver for auto-approval
+          status: TripApprovalStatusEnum.APPROVED,
+          note: 'Auto-approved: All required fields provided',
+          is_auto: true,
+        });
+        await this.tripApprovalRepo.save(approval);
+        
+        this.logger.log(`Trip ${savedTrip.id} was auto-approved - all required fields provided`);
+      }
+
       return await this.findOne(savedTrip.id, claims);
     } catch (error) {
       if (error instanceof RpcException) {

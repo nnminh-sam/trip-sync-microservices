@@ -22,12 +22,18 @@ export class EvidenceAttachmentDto {
   @IsString()
   url: string;
 
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
   @ValidateNested()
   @Type(() => LocationDto)
-  location: LocationDto;
+  location?: LocationDto;
 
+  @IsOptional()
   @IsDateString()
-  timestamp: string;
+  timestamp?: string;
 }
 
 export class CancellationProposalDto {

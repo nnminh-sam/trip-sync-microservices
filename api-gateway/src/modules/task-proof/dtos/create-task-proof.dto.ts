@@ -60,7 +60,7 @@ export class CreateTaskProofDto {
     description: 'Upload timestamp',
   })
   @IsNotEmpty()
-  @IsDate()
+  @IsString()
   timestamp: Date;
 
   @ApiProperty({
@@ -71,7 +71,8 @@ export class CreateTaskProofDto {
   uploadedBy: string;
 
   @ApiPropertyOptional({
-    description: 'Uploader spatial location point for geospatial indexing (WKT format)',
+    description:
+      'Uploader spatial location point for geospatial indexing (WKT format)',
   })
   @IsOptional()
   @IsString()

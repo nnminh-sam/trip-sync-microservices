@@ -80,6 +80,20 @@ export class ReportService {
     }
   }
 
+  async attachTaskEvidence(claims: TokenClaimsDto, taskId: string, evidence: any[]) {
+    this.logger.log(`Attaching evidence to task ${taskId}`);
+    try {
+      const result = await this.sender.send({
+        messagePattern: 'taskEvidence',
+        payload: { claims, request: { body: { task_id: taskId, evidence } } },
+      });
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to attach task evidence`, error.stack);
+      throw error;
+    }
+  }
+
   // Location Tracking
   async trackLocation(claims: TokenClaimsDto, data: { employee_id: string; trip_id: string } & LocationPointDto) {
     this.logger.log(`Tracking location for employee ${data.employee_id}`);
@@ -105,6 +119,20 @@ export class ReportService {
       return result;
     } catch (error) {
       this.logger.error('Failed to get location history', error.stack);
+      throw error;
+    }
+  }
+
+  async getLiveLocations(claims: TokenClaimsDto, tripIds: string[]) {
+    this.logger.log(`Getting live locations for ${tripIds.length} trips`);
+    try {
+      const result = await this.sender.send({
+        messagePattern: 'locationLive',
+        payload: { claims, request: { body: { trip_ids: tripIds } } },
+      });
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to get live locations', error.stack);
       throw error;
     }
   }
@@ -166,6 +194,20 @@ export class ReportService {
     }
   }
 
+  async exportAggregateReport(claims: TokenClaimsDto, request: ExportRequestDto) {
+    this.logger.log('Exporting aggregate report');
+    try {
+      const result = await this.sender.send({
+        messagePattern: 'exportAggregate',
+        payload: { claims, request: { body: request } },
+      });
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to export aggregate report', error.stack);
+      throw error;
+    }
+  }
+
   // Dashboard and Analytics
   async getDashboardSummary(claims: TokenClaimsDto, params?: any) {
     this.logger.log('Getting dashboard summary');
@@ -191,6 +233,35 @@ export class ReportService {
       return result;
     } catch (error) {
       this.logger.error('Failed to get performance metrics', error.stack);
+      throw error;
+    }
+  }
+
+  // Aggregation
+  async aggregateTripData(claims: TokenClaimsDto, request: ExportRequestDto) {
+    this.logger.log('Aggregating trip data');
+    try {
+      const result = await this.sender.send({
+        messagePattern: 'aggregateTrips',
+        payload: { claims, request: { body: request } },
+      });
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to aggregate trip data', error.stack);
+      throw error;
+    }
+  }
+
+  async aggregateTaskData(claims: TokenClaimsDto, request: ExportRequestDto) {
+    this.logger.log('Aggregating task data');
+    try {
+      const result = await this.sender.send({
+        messagePattern: 'aggregateTasks',
+        payload: { claims, request: { body: request } },
+      });
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to aggregate task data', error.stack);
       throw error;
     }
   }

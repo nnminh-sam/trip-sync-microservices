@@ -35,7 +35,7 @@ export class CreateTaskProofDto {
   longitude: number;
 
   @IsNotEmpty()
-  @IsDate()
+  @IsString()
   timestamp: Date;
 
   @IsNotEmpty()
