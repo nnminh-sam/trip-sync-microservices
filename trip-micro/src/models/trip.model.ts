@@ -6,6 +6,7 @@ import { TripStatusEnum } from 'src/models/trip-status.enum';
 
 @Entity({ name: 'trips' })
 export class Trip extends BaseModel {
+
   @Column({ type: 'varchar', unique: true })
   title: string;
 
