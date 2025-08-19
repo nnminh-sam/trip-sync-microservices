@@ -38,7 +38,7 @@ export class CheckInOut extends BaseModel {
   @Column('decimal', { precision: 8, scale: 2 })
   distance_from_location: number;
 
-  @Column('timestamp with time zone')
+  @Column('timestamp')
   timestamp: Date;
 
   @Column('uuid', { nullable: true })
@@ -50,7 +50,7 @@ export class CheckInOut extends BaseModel {
   @Column('text', { nullable: true })
   note?: string;
 
-  @Column('jsonb', { nullable: true })
+  @Column('json', { nullable: true })
   metadata?: {
     accuracy?: number;
     provider?: string;

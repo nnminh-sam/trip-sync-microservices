@@ -29,13 +29,13 @@ export class GPSLog extends BaseModel {
   @Column('decimal', { precision: 5, scale: 2, nullable: true })
   heading?: number;
 
-  @Column('timestamp with time zone')
+  @Column('timestamp')
   timestamp: Date;
 
   @Column('text', { nullable: true })
   address?: string;
 
-  @Column('jsonb', { nullable: true })
+  @Column('json', { nullable: true })
   metadata?: {
     battery_level?: number;
     network_type?: string;

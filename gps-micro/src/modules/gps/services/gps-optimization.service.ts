@@ -72,10 +72,8 @@ export class GPSOptimizationService {
     const timeDiff = 
       (new Date(dto.timestamp).getTime() - lastLog.timestamp.getTime()) / 1000;
 
-    // Check if user is stationary
-    const isStationary = 
-      distance < cfg.sameLocationRadius && 
-      (!dto.speed || dto.speed < cfg.stationarySpeedThreshold);
+    // Check if user is stationary (only based on distance now)
+    const isStationary = distance < cfg.sameLocationRadius;
 
     if (isStationary) {
       // User is stationary

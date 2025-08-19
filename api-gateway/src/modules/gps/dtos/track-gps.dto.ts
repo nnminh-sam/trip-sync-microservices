@@ -41,40 +41,6 @@ export class TrackGPSDto {
   })
   @IsDateString()
   timestamp: string;
-
-  @ApiProperty({
-    description: 'GPS accuracy in meters',
-    example: 5.0,
-    required: false,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  accuracy?: number;
-
-  @ApiProperty({
-    description: 'Speed in km/h',
-    example: 60.5,
-    required: false,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  speed?: number;
-
-  @ApiProperty({
-    description: 'Heading/bearing in degrees (0-360)',
-    example: 45.0,
-    required: false,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(360)
-  @Type(() => Number)
-  heading?: number;
 }
 
 export class BatchTrackGPSDto {
@@ -123,24 +89,4 @@ export class BatchTrackGPSResponseDto {
     example: 'GPS locations logged successfully',
   })
   message: string;
-
-  @ApiProperty({
-    description: 'Array of duplicate timestamps that were skipped',
-    required: false,
-    type: [String],
-  })
-  @IsOptional()
-  duplicates?: string[];
-
-  @ApiProperty({
-    description: 'Array of failed entries with error details',
-    required: false,
-    type: [Object],
-  })
-  @IsOptional()
-  failed?: Array<{
-    index: number;
-    timestamp: string;
-    error: string;
-  }>;
 }

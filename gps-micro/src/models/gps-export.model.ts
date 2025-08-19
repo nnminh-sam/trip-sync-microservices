@@ -36,7 +36,7 @@ export class GPSExport extends BaseModel {
   })
   format: ExportFormat;
 
-  @Column('jsonb')
+  @Column('json')
   filter: {
     startDate: string;
     endDate: string;
@@ -44,7 +44,7 @@ export class GPSExport extends BaseModel {
     tripIds?: string[];
   };
 
-  @Column('jsonb', { nullable: true })
+  @Column('json', { nullable: true })
   options?: {
     includeUserDetails?: boolean;
     includeTripDetails?: boolean;
@@ -63,16 +63,16 @@ export class GPSExport extends BaseModel {
   @Column('integer', { nullable: true })
   total_records?: number;
 
-  @Column('timestamp with time zone', { nullable: true })
+  @Column('timestamp', { nullable: true })
   completed_at?: Date;
 
-  @Column('timestamp with time zone', { nullable: true })
+  @Column('timestamp', { nullable: true })
   expires_at?: Date;
 
   @Column('text', { nullable: true })
   error_message?: string;
 
-  @Column('jsonb', { nullable: true })
+  @Column('json', { nullable: true })
   metadata?: {
     processing_time?: number;
     memory_used?: number;

@@ -11,13 +11,14 @@ import { EnvSchema } from 'src/config';
         return {
           type: 'mysql',
           host: configService.get<string>('MYSQL_HOST'),
-          port: 3306,
+          port: 3308,
           username: configService.get<string>('MYSQL_USER'),
           password: configService.get<string>('MYSQL_PASSWORD'),
           database: configService.get<string>('MYSQL_DATABASE'),
-          entities: [],
+          entities: [__dirname + '/../**/*.model{.ts,.js}'],
           synchronize: true,
           logging: true,
+          autoLoadEntities: true,
         };
       },
       inject: [ConfigService],

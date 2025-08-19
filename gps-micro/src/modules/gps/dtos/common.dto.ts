@@ -35,40 +35,6 @@ export class GPSLocationDto extends GPSCoordinatesDto {
   })
   @IsDateString()
   timestamp: string;
-
-  @ApiProperty({
-    description: 'GPS accuracy in meters',
-    example: 5.0,
-    required: false,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  accuracy?: number;
-
-  @ApiProperty({
-    description: 'Speed in km/h',
-    example: 60.5,
-    required: false,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  speed?: number;
-
-  @ApiProperty({
-    description: 'Heading/bearing in degrees (0-360)',
-    example: 45.0,
-    required: false,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(360)
-  @Type(() => Number)
-  heading?: number;
 }
 
 export class TripLocationIdDto {
