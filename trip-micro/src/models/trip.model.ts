@@ -10,10 +10,10 @@ export class Trip extends BaseModel {
 
   @Column({
     type: 'enum',
-    enum: ['pending', 'accepted', 'canceled', 'in_progress', 'completed'],
+    enum: ['pending', 'approved', 'canceled', 'in_progress', 'completed'],
     default: 'pending',
   })
-  status: 'pending' | 'accepted' | 'canceled' | 'in_progress' | 'completed';
+  status: 'pending' | 'approved' | 'canceled' | 'in_progress' | 'completed';
 
   @Column({ type: 'varchar' })
   purpose: string;

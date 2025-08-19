@@ -1,6 +1,6 @@
 // src/modules/trip/dtos/approve-trip.dto.ts
 import { IsEnum, IsOptional, IsString, IsBoolean } from 'class-validator';
-const ApprovalStatusValues = ['pending', 'approved', 'rejected', 'auto_approved'] as const;
+const ApprovalStatusValues = ['approved', 'rejected', 'auto_approved'] as const;
 type ApprovalStatus = (typeof ApprovalStatusValues)[number];
 
 export class ApproveTripDto {

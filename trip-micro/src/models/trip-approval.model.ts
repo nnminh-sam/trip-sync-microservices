@@ -10,7 +10,11 @@ export class TripApproval extends BaseModel {
   @Column()
   approver_id: string; // FK -> user-micro
 
-  @Column({ type: 'enum', enum: ['pending', 'approved', 'rejected', 'auto_approved'], default: 'pending' })
+  @Column({
+    type: 'enum',
+    enum: ['pending', 'approved', 'rejected', 'auto_approved'],
+    default: 'pending',
+  })
   status: 'pending' | 'approved' | 'rejected' | 'auto_approved';
 
   @Column({ type: 'text', nullable: true })
