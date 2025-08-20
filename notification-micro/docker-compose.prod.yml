@@ -1,0 +1,31 @@
+services:
+  mysql:
+    container_name: 'mysql'
+    image: mysql:8.0
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - '3306:3306'
+    command: ['--default-authentication-plugin=mysql_native_password']
+    volumes:
+      - ./docker-volumes/mysql_data:/var/lib/mysql
+
+  task-service:
+    build: .
+    container_name: task-service
+    ports:
+      - '80:80'
+    env_file:
+      - .env.production
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

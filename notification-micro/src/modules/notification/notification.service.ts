@@ -7,6 +7,7 @@ import { Notification } from 'src/models/notification.model';
 import { CreateNotificationDto } from './dtos/create-notification.dto';
 import { UpdateNotificationDto } from './dtos/update-notification.dto';
 import { FilterNotificationDto } from './dtos/filter-notification.dto';
+import { NotificationGateway } from './notification.gateway';
 
 @Injectable()
 export class NotificationService {
@@ -15,6 +16,7 @@ export class NotificationService {
   constructor(
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
+    private readonly notificationGateway: NotificationGateway,
   ) {}
 
   async findAll(payload: FilterNotificationDto) {
@@ -55,7 +57,20 @@ export class NotificationService {
         is_read: false,
       });
 
-      return await this.notificationRepo.save(entity);
+      const savedNotification = await this.notificationRepo.save(entity);
+
+      // Emit WebSocket event for real-time notification
+      this.notificationGateway.emitNotificationToUser({
+        receiverId: savedNotification.user_id,
+        title: savedNotification.title,
+        message: savedNotification.message,
+        priority: savedNotification.priority,
+        type: savedNotification.type,
+      });
+
+      this.logger.log(`Notification created and emitted for user ${savedNotification.user_id}`);
+
+      return savedNotification;
     } catch (error) {
       this.logger.error('Cannot create notification', error);
       throwRpcException({
