@@ -1,7 +1,7 @@
 services:
   nats:
     image: nats:2.10-alpine
-    container_name: nats
+    container_name: trip-sync-nats
     ports:
       - '4222:4222'
       - '8222:8222'
@@ -9,7 +9,7 @@ services:
 
   gateway-redis:
     image: redis:7-alpine
-    container_name: gateway-redis
+    container_name: trip-sync-gateway-redis
     ports:
       - '6380:6379'
     volumes:

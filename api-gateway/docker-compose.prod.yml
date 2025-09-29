@@ -7,20 +7,19 @@ services:
     ports:
       - '4222:4222' # Client connections
       - '8222:8222' # HTTP monitoring
-      - '6222:6222' # Cluster connections (if needed)
-    command: [
-        '-p',
-        '4222', # Port
-        '-m',
-        '52428800', # 50MB max payload
-        '-http_port',
-        '8222', # HTTP monitoring port
-      ]
     volumes:
-      - nats-data:/data
+      - ./docker-volume/nats-data:/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8222/healthz"]
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost:8222/healthz',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -44,7 +43,7 @@ services:
       - redis-data:/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -73,7 +72,15 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost:80/health',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
