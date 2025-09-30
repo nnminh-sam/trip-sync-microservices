@@ -1,5 +1,11 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { NATSClient } from 'src/client/clients';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { CreateUserDto } from 'src/modules/user/dtos/create-user.dto';
@@ -36,7 +42,10 @@ export class UserService {
         `findById failed for id: ${claims.sub}`,
         error.stack || error,
       );
-      throw error;
+      if (error instanceof RpcException) {
+        throw new InternalServerErrorException('User service unavailable');
+      }
+      throw new NotFoundException('User not found');
     }
   }
 

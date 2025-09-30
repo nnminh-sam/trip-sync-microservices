@@ -15,9 +15,9 @@ async function bootstrap() {
       servers: [natsServer],
     },
   });
-  
+
   await app.startAllMicroservices();
-  
+
   console.log(`User microservice is listening on NATS: ${natsServer}`);
 }
 bootstrap();

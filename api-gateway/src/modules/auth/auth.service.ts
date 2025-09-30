@@ -2,13 +2,14 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { NATSClient } from 'src/client/clients';
 import { AuthMessagePattern } from 'src/modules/auth/auth-message.pattern';
 import { LoginDto } from 'src/modules/auth/dtos/login-payload.dto';
-import { NatsClientSender } from 'src/utils';
+import { CatchErrors, NatsClientSender } from 'src/utils';
 import { RedisService } from '../../database/redis.service';
 import { JwtService } from '@nestjs/jwt';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
@@ -16,6 +17,8 @@ import { ExchangeTokenDto } from 'src/modules/auth/dtos/exchange-token.dto';
 import { v4 as uuid } from 'uuid';
 import { AuthorizeClaimPayloadDto } from 'src/modules/auth/dtos/authorize-claim-payload.dto';
 import { AuthResponseDto } from 'src/modules/auth/dtos/auth-response.dto';
+import { firstValueFrom } from 'rxjs';
+import { MessagePayloadDto } from 'src/dtos/message-payload.dto';
 
 @Injectable()
 export class AuthService {
@@ -71,41 +74,43 @@ export class AuthService {
     return this.jwtService.decode(token);
   }
 
+  @CatchErrors({
+    rpcMessage: 'User service unavailable',
+    defaultMessage: 'Authorization failed',
+  })
   async authorizeClaims(
     claims: TokenClaimsDto,
     authorizeClaimPayload: AuthorizeClaimPayloadDto,
   ) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'authorizeClaims',
-        payload: {
-          claims,
-          request: {
-            body: {
-              claims,
-              required: {
-                roles: authorizeClaimPayload.roles,
-                permission: {
-                  action: authorizeClaimPayload.action,
-                  resource: authorizeClaimPayload.resource,
-                },
+    return await this.sender.send({
+      messagePattern: 'authorizeClaims',
+      payload: {
+        claims,
+        request: {
+          body: {
+            claims,
+            required: {
+              roles: authorizeClaimPayload.roles,
+              permission: {
+                action: authorizeClaimPayload.action,
+                resource: authorizeClaimPayload.resource,
               },
             },
           },
         },
-      });
-    } catch (error) {
-      this.logger.error('Error authorizing claims', error);
-      throw error;
-    }
+      },
+    });
   }
 
+  @CatchErrors({
+    rpcMessage: 'User service unavailable',
+    defaultMessage: 'Login failed',
+  })
   async login(loginDto: LoginDto) {
-    const user = await this.sender.send({
+    const user = await this.sender.send<LoginDto>({
       messagePattern: 'login',
       payload: { request: { body: loginDto } },
     });
-
     const tokens = await this.generateTokens({
       email: user.email,
       id: user.id,

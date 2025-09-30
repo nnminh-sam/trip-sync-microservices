@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { LoggingInterceptor } from 'src/common/interceptors/logging.interceptor';
 import { RpcExceptionFilter } from 'src/common/filters/rpc-exception.filter';
+import { HttpExceptionFilter } from 'src/common/filters/http-exception.filter';
 import { ResponseWrapperInterceptor } from 'src/common/interceptors/response-wrapper.interceptor';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
@@ -58,6 +59,7 @@ async function bootstrap() {
     }),
   );
 
+  app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalFilters(new RpcExceptionFilter());
 
   // Enable CORS for all origins

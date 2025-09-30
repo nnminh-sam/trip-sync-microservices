@@ -10,7 +10,6 @@ import { RoleService } from 'src/modules/role/role.service';
 import { ConfigService } from '@nestjs/config';
 import { EnvSchema } from 'src/config';
 import * as bcrypt from 'bcryptjs';
-import { EmailService } from 'src/modules/email/email.service';
 import { ListDataDto } from 'src/dtos/list-data.dto';
 import { Gender } from 'src/models/enums/gender.enum';
 import * as crypto from 'crypto';
@@ -24,7 +23,6 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly roleService: RoleService,
-    private readonly emailService: EmailService,
   ) {}
 
   async onStartUp() {
@@ -448,21 +446,21 @@ export class UserService {
     this.logger.log(`Password updated successfully for user ID: ${userId}`);
 
     // Send password reset email
-    try {
-      this.emailService.sendPasswordResetEmail({
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        newPassword: newPassword,
-      });
-      this.logger.log(`Password reset email sent to user: ${user.email}`);
-    } catch (error) {
-      this.logger.error(
-        `Failed to send password reset email to user: ${user.email}`,
-        error.stack,
-      );
-      // Continue even if email fails - password is already reset
-    }
+    // try {
+    //   this.emailService.sendPasswordResetEmail({
+    //     email: user.email,
+    //     firstName: user.firstName,
+    //     lastName: user.lastName,
+    //     newPassword: newPassword,
+    //   });
+    //   this.logger.log(`Password reset email sent to user: ${user.email}`);
+    // } catch (error) {
+    //   this.logger.error(
+    //     `Failed to send password reset email to user: ${user.email}`,
+    //     error.stack,
+    //   );
+    //   // Continue even if email fails - password is already reset
+    // }
 
     const userWithoutPassword = { ...updatedUser };
     delete userWithoutPassword.password;
