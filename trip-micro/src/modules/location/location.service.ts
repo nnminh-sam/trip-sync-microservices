@@ -1,426 +1,522 @@
-import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
-import { NATSClient } from 'src/client/clients';
-import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
+import { HttpStatus, Injectable, Logger, Inject } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { CreateLocationDto } from 'src/modules/location/dtos/create-location.dto';
+import { FilterLocationDto } from 'src/modules/location/dtos/filter-location.dto';
+import { UpdateLocationDto } from 'src/modules/location/dtos/update-location.dto';
+import { paginateAndOrder, throwRpcException } from 'src/utils';
+import { ILike, Repository, In } from 'typeorm';
+import { Location } from 'src/models/location.model';
+import { ListDataDto } from 'src/dtos/list-data.dto';
+import { LocationRepository } from './location.repository';
 import {
-  CreateLocationDto,
-  FilterLocationDto,
-  UpdateLocationDto,
-  ValidateCoordinatesDto,
-  BatchLocationQueryDto,
-  NearbyLocationQueryDto,
-  DistanceQueryDto,
-} from 'src/modules/location/dtos';
-import { LocationMessagePattern } from 'src/modules/location/location-message.pattern';
-import { NatsClientSender, throwRpcException } from 'src/utils';
+  ValidationResult,
+  DistanceResult,
+  LocationBoundary,
+  GeoBounds,
+  LocationType,
+} from 'src/types/location.types';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class LocationService {
-  private readonly logger = new Logger(LocationService.name);
-  private readonly sender: NatsClientSender<typeof LocationMessagePattern>;
-
+  private readonly logger: Logger = new Logger(LocationService.name);
   constructor(
-    @Inject(NATSClient.name)
-    private readonly natsClient: ClientProxy,
-  ) {
-    this.sender = new NatsClientSender(natsClient, LocationMessagePattern);
-  }
+    @InjectRepository(Location)
+    private readonly locationRepository: Repository<Location>,
+    @Inject(LocationRepository)
+    private readonly customLocationRepository: LocationRepository,
+    @Inject(CACHE_MANAGER)
+    private cacheManager: Cache,
+  ) {}
 
-  async createLocation(claims: TokenClaimsDto, payload: CreateLocationDto) {
+  async create(payload: CreateLocationDto) {
     try {
-      return await this.sender.send({
-        messagePattern: 'create',
-        payload: {
-          claims,
-          request: { body: payload },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to create location: ${error.message}`,
-        error.stack,
-      );
+      // Use insert query to avoid the geom field issue
+      const result = await this.locationRepository
+        .createQueryBuilder()
+        .insert()
+        .into(Location)
+        .values({
+          ...payload,
+          geom: () => `POINT(${payload.longitude}, ${payload.latitude})`,
+        })
+        .execute();
+
+      const locationId = result.identifiers[0].id;
+
+      // Clear relevant caches
+      await this.clearLocationCaches();
+
+      // Fetch and return the created location
+      return await this.findOne(locationId);
+    } catch (error: any) {
+      this.logger.error('Cannot create location:', error);
       throwRpcException({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to create location',
+        message: 'Server unavailable',
       });
     }
   }
 
-  async findAllLocations(claims: TokenClaimsDto, payload: FilterLocationDto) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'findAll',
-        payload: {
-          claims,
-          request: { body: payload },
-        },
+  async findAll(payload: FilterLocationDto) {
+    const {
+      page,
+      size,
+      order,
+      sortBy,
+      name,
+      latitude,
+      longitude,
+      location,
+      createdBy,
+    } = payload;
+
+    const queryBuilder = this.locationRepository
+      .createQueryBuilder('location')
+      .select([
+        'location.id',
+        'location.name',
+        'location.latitude',
+        'location.longitude',
+        'location.offsetRadious',
+        'location.description',
+        'location.createdBy',
+        'location.type',
+        'location.metadata',
+        'location.address',
+        'location.city',
+        'location.country',
+        'location.timezone',
+        'location.createdAt',
+        'location.updatedAt',
+        'location.deletedAt',
+      ])
+      .where('location.deletedAt IS NULL');
+
+    if (name) {
+      queryBuilder.andWhere('location.name LIKE :name', { name: `%${name}%` });
+    }
+    if (latitude) {
+      queryBuilder.andWhere('location.latitude = :latitude', { latitude });
+    }
+    if (longitude) {
+      queryBuilder.andWhere('location.longitude = :longitude', { longitude });
+    }
+    if (location) {
+      queryBuilder.andWhere('location.address LIKE :address', {
+        address: `%${location}%`,
       });
-    } catch (error) {
-      this.logger.error(
-        `Failed to find locations: ${error.message}`,
-        error.stack,
-      );
+    }
+    if (createdBy) {
+      queryBuilder.andWhere('location.createdBy = :createdBy', { createdBy });
+    }
+
+    // Apply sorting
+    const sortColumn = sortBy || 'createdAt';
+    const sortOrder = order || 'DESC';
+    queryBuilder.orderBy(
+      `location.${sortColumn}`,
+      sortOrder.toUpperCase() as 'ASC' | 'DESC',
+    );
+
+    // Apply pagination
+    const skip = (page - 1) * size;
+    queryBuilder.skip(skip).take(size);
+
+    const [locations, total] = await queryBuilder.getManyAndCount();
+
+    // Set geom field based on coordinates
+    locations.forEach((loc) => {
+      loc.geom = { x: loc.longitude, y: loc.latitude };
+    });
+
+    return ListDataDto.build<Location>({
+      data: locations,
+      total,
+      page,
+      size,
+    });
+  }
+
+  async findOne(id: string) {
+    const location = await this.locationRepository
+      .createQueryBuilder('location')
+      .select([
+        'location.id',
+        'location.name',
+        'location.latitude',
+        'location.longitude',
+        'location.offsetRadious',
+        'location.description',
+        'location.createdBy',
+        'location.type',
+        'location.metadata',
+        'location.address',
+        'location.city',
+        'location.country',
+        'location.timezone',
+        'location.createdAt',
+        'location.updatedAt',
+        'location.deletedAt',
+      ])
+      .where('location.id = :id', { id })
+      .getOne();
+
+    if (!location) {
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'Location not found',
+      });
+    }
+
+    // Set geom field based on coordinates
+    location.geom = { x: location.longitude, y: location.latitude };
+
+    return location;
+  }
+
+  async update(id: string, payload: UpdateLocationDto) {
+    // First verify the location exists
+    const existingLocation = await this.findOne(id);
+
+    try {
+      // Prepare update data
+      const updateData: any = { ...payload };
+      
+      // If coordinates are being updated, update the geom field too
+      if (payload.latitude !== undefined || payload.longitude !== undefined) {
+        const lat = payload.latitude ?? existingLocation.latitude;
+        const lng = payload.longitude ?? existingLocation.longitude;
+        
+        // Use raw SQL for the geom update
+        await this.locationRepository
+          .createQueryBuilder()
+          .update(Location)
+          .set({
+            ...updateData,
+            geom: () => `POINT(${lng}, ${lat})`,
+          })
+          .where('id = :id', { id })
+          .execute();
+      } else {
+        // Regular update without geom
+        await this.locationRepository
+          .createQueryBuilder()
+          .update(Location)
+          .set(updateData)
+          .where('id = :id', { id })
+          .execute();
+      }
+
+      // Clear caches
+      await this.clearLocationCaches(id);
+
+      // Fetch and return the updated location
+      return await this.findOne(id);
+    } catch (error: any) {
+      this.logger.error('Cannot update location:', error);
       throwRpcException({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to find locations',
+        message: 'Server unavailable',
       });
     }
   }
 
-  async findOneLocation(claims: TokenClaimsDto, id: string) {
+  async delete(id: string) {
+    const existingLocation = await this.findOne(id);
     try {
-      return await this.sender.send({
-        messagePattern: 'findOne',
-        payload: {
-          claims,
-          request: { path: { id } },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to find location: ${error.message}`,
-        error.stack,
-      );
+      // Soft delete by setting deletedAt timestamp
+      existingLocation.deletedAt = new Date();
+      await this.locationRepository.save(existingLocation);
+
+      // Clear caches
+      await this.clearLocationCaches(id);
+
+      return { success: true, message: 'Location deactivated successfully' };
+    } catch (error: any) {
+      this.logger.error('Cannot delete location:', error);
       throwRpcException({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to find location',
+        message: 'Server unavailable',
       });
     }
   }
 
-  async updateLocation(
-    claims: TokenClaimsDto,
-    id: string,
-    payload: UpdateLocationDto,
-  ) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'update',
-        payload: {
-          claims,
-          request: {
-            path: { id },
-            body: payload,
-          },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to update location: ${error.message}`,
-        error.stack,
-      );
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to update location',
-      });
-    }
-  }
+  // New spatial validation methods
+  async validateCoordinatesInRadius(
+    latitude: number,
+    longitude: number,
+    locationId: string,
+  ): Promise<ValidationResult> {
+    const location = await this.findOne(locationId);
 
-  async deleteLocation(claims: TokenClaimsDto, id: string) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'delete',
-        payload: {
-          claims,
-          request: { path: { id } },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to delete location: ${error.message}`,
-        error.stack,
-      );
+    if (!location) {
       throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to delete location',
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'Location not found',
       });
     }
-  }
 
-  async validateCoordinates(
-    claims: TokenClaimsDto,
-    payload: ValidateCoordinatesDto,
-  ) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'validateCoordinates',
-        payload: {
-          claims,
-          request: { body: payload },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to validate coordinates: ${error.message}`,
-        error.stack,
-      );
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to validate coordinates',
-      });
-    }
-  }
+    const distance = await this.customLocationRepository.calculateDistance(
+      latitude,
+      longitude,
+      location.latitude,
+      location.longitude,
+    );
 
-  async validateBatchLocations(
-    claims: TokenClaimsDto,
-    payload: BatchLocationQueryDto,
-  ) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'validateBatch',
-        payload: {
-          claims,
-          request: { body: payload },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to validate batch locations: ${error.message}`,
-        error.stack,
-      );
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to validate batch locations',
-      });
-    }
-  }
+    const isValid = distance <= location.offsetRadious;
 
-  async findNearbyLocations(
-    claims: TokenClaimsDto,
-    payload: NearbyLocationQueryDto,
-  ) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'findNearby',
-        payload: {
-          claims,
-          request: { body: payload },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to find nearby locations: ${error.message}`,
-        error.stack,
-      );
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to find nearby locations',
-      });
-    }
+    return {
+      isValid,
+      distance,
+      maxRadius: location.offsetRadious,
+      locationName: location.name,
+      message: isValid
+        ? 'Coordinates are within location radius'
+        : `Coordinates are ${Math.round(distance - location.offsetRadious)}m outside location radius`,
+    };
   }
 
   async findLocationsWithinRadius(
-    claims: TokenClaimsDto,
-    payload: NearbyLocationQueryDto,
-  ) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'findWithinRadius',
-        payload: {
-          claims,
-          request: { body: payload },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to find locations within radius: ${error.message}`,
-        error.stack,
-      );
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to find locations within radius',
-      });
-    }
+    latitude: number,
+    longitude: number,
+    radiusMeters: number,
+    type?: LocationType,
+  ): Promise<Location[]> {
+    return this.customLocationRepository.findLocationsWithinRadius(
+      latitude,
+      longitude,
+      radiusMeters,
+      type,
+    );
   }
 
-  async calculateDistance(claims: TokenClaimsDto, payload: DistanceQueryDto) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'calculateDistance',
-        payload: {
-          claims,
-          request: { body: payload },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to calculate distance: ${error.message}`,
-        error.stack,
-      );
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to calculate distance',
-      });
+  async findNearbyLocationsCached(
+    latitude: number,
+    longitude: number,
+    radiusMeters: number,
+    type?: LocationType,
+  ): Promise<Location[]> {
+    const cacheKey = `nearby:${latitude}:${longitude}:${radiusMeters}:${type || 'all'}`;
+    const cached = await this.cacheManager.get<Location[]>(cacheKey);
+
+    if (cached) {
+      this.logger.debug(`Cache hit for nearby locations`);
+      return cached;
     }
+
+    const locations = await this.findLocationsWithinRadius(
+      latitude,
+      longitude,
+      radiusMeters,
+      type,
+    );
+
+    await this.cacheManager.set(cacheKey, locations, 300); // 5 minutes TTL
+    return locations;
   }
 
-  async getDistanceFromLocation(
-    claims: TokenClaimsDto,
-    payload: ValidateCoordinatesDto,
-  ) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'getDistanceFromLocation',
-        payload: {
-          claims,
-          request: { body: payload },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to get distance from location: ${error.message}`,
-        error.stack,
-      );
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to get distance from location',
-      });
-    }
-  }
+  // Batch operations
+  async findLocationsByIds(
+    ids: string[],
+    includeInactive = false,
+  ): Promise<Location[]> {
+    const queryBuilder = this.locationRepository
+      .createQueryBuilder('location')
+      .select([
+        'location.id',
+        'location.name',
+        'location.latitude',
+        'location.longitude',
+        'location.offsetRadious',
+        'location.description',
+        'location.createdBy',
+        'location.type',
+        'location.metadata',
+        'location.address',
+        'location.city',
+        'location.country',
+        'location.timezone',
+        'location.createdAt',
+        'location.updatedAt',
+        'location.deletedAt',
+      ])
+      .where('location.id IN (:...ids)', { ids });
 
-  async findLocationsInArea(
-    claims: TokenClaimsDto,
-    payload: {
-      bounds: {
-        minLat: number;
-        minLng: number;
-        maxLat: number;
-        maxLng: number;
-      };
-      type?: string;
-    },
-  ) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'findInArea',
-        payload: {
-          claims,
-          request: { body: payload },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to find locations in area: ${error.message}`,
-        error.stack,
-      );
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to find locations in area',
-      });
+    if (!includeInactive) {
+      queryBuilder.andWhere('location.deletedAt IS NULL');
     }
-  }
 
-  async findNearestLocations(
-    claims: TokenClaimsDto,
-    payload: { latitude: number; longitude: number; limit?: number },
-  ) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'findNearest',
-        payload: {
-          claims,
-          request: { body: payload },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to find nearest locations: ${error.message}`,
-        error.stack,
-      );
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to find nearest locations',
-      });
-    }
-  }
+    const locations = await queryBuilder.getMany();
 
-  async isPointInLocationBoundary(
-    claims: TokenClaimsDto,
-    payload: { locationId: string; latitude: number; longitude: number },
-  ) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'isPointInBoundary',
-        payload: {
-          claims,
-          request: { body: payload },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to check point in boundary: ${error.message}`,
-        error.stack,
-      );
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to check point in boundary',
-      });
-    }
+    // Set geom field based on coordinates
+    locations.forEach((loc) => {
+      loc.geom = { x: loc.longitude, y: loc.latitude };
+    });
+
+    return locations;
   }
 
   async getLocationBoundaries(
-    claims: TokenClaimsDto,
-    payload: { locationIds?: string[] },
-  ) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'getBoundaries',
-        payload: {
-          claims,
-          request: { body: payload },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to get location boundaries: ${error.message}`,
-        error.stack,
-      );
+    locationIds: string[],
+  ): Promise<LocationBoundary[]> {
+    const locations = await this.findLocationsByIds(locationIds);
+
+    return locations.map((location) => ({
+      id: location.id,
+      name: location.name,
+      center: {
+        latitude: location.latitude,
+        longitude: location.longitude,
+      },
+      radius: location.offsetRadious,
+      boundary: location.boundary,
+      type: location.type,
+    }));
+  }
+
+  // Distance calculations
+  async calculateDistance(
+    fromLat: number,
+    fromLng: number,
+    toLat: number,
+    toLng: number,
+  ): Promise<number> {
+    return this.customLocationRepository.calculateDistance(
+      fromLat,
+      fromLng,
+      toLat,
+      toLng,
+    );
+  }
+
+  async getDistanceFromLocation(
+    latitude: number,
+    longitude: number,
+    locationId: string,
+  ): Promise<DistanceResult> {
+    const location = await this.findOne(locationId);
+
+    if (!location) {
       throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to get location boundaries',
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'Location not found',
       });
+    }
+
+    const distance = await this.calculateDistance(
+      latitude,
+      longitude,
+      location.latitude,
+      location.longitude,
+    );
+
+    return {
+      locationId,
+      locationName: location.name,
+      distance,
+      unit: 'meters',
+      isWithinRadius: distance <= location.offsetRadious,
+    };
+  }
+
+  // Cached operations
+  async findOneCached(id: string): Promise<Location> {
+    const cacheKey = `location:${id}`;
+    const cached = await this.cacheManager.get<Location>(cacheKey);
+
+    if (cached) {
+      this.logger.debug(`Cache hit for location ${id}`);
+      // Ensure geom field is set
+      if (cached.latitude && cached.longitude) {
+        cached.geom = { x: cached.longitude, y: cached.latitude };
+      }
+      return cached;
+    }
+
+    const location = await this.findOne(id);
+
+    if (location) {
+      await this.cacheManager.set(cacheKey, location, 3600); // 1 hour TTL
+    }
+
+    return location;
+  }
+
+  // Advanced spatial queries
+  async findLocationsInArea(
+    bounds: GeoBounds,
+    options: { page: number; size: number; type?: LocationType },
+  ): Promise<{ data: Location[]; total: number }> {
+    const locations =
+      await this.customLocationRepository.findLocationsInBoundingBox(
+        bounds.minLat,
+        bounds.minLng,
+        bounds.maxLat,
+        bounds.maxLng,
+        options.type,
+      );
+
+    // Apply pagination
+    const start = (options.page - 1) * options.size;
+    const end = start + options.size;
+    const paginatedData = locations.slice(start, end);
+
+    return {
+      data: paginatedData,
+      total: locations.length,
+    };
+  }
+
+  async findNearestLocations(
+    latitude: number,
+    longitude: number,
+    limit: number = 10,
+    maxDistance?: number,
+  ): Promise<Location[]> {
+    return this.customLocationRepository.findNearestLocations(
+      latitude,
+      longitude,
+      limit,
+      maxDistance,
+    );
+  }
+
+  async isPointInLocationBoundary(
+    latitude: number,
+    longitude: number,
+    locationId: string,
+  ): Promise<boolean> {
+    return this.customLocationRepository.isPointInLocationBoundary(
+      latitude,
+      longitude,
+      locationId,
+    );
+  }
+
+  // Cache management
+  private async clearLocationCaches(locationId?: string) {
+    if (locationId) {
+      await this.cacheManager.del(`location:${locationId}`);
+    }
+
+    // Clear all nearby caches (simple implementation)
+    // Note: Direct access to cache keys is not available in newer versions
+    // This is a simplified approach that clears specific patterns
+    try {
+      // Since we can't enumerate keys directly, we'll need to manage cache invalidation differently
+      // For now, we'll just log the warning and rely on TTL for cache expiration
+      this.logger.debug(
+        'Cache invalidation triggered - relying on TTL for nearby cache expiration',
+      );
+    } catch (error) {
+      this.logger.warn('Unable to clear nearby caches:', error);
     }
   }
 
-  async findLocationsByIds(claims: TokenClaimsDto, payload: { ids: string[] }) {
-    try {
-      return await this.sender.send({
-        messagePattern: 'findByIds',
-        payload: {
-          claims,
-          request: { body: payload },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to find locations by ids: ${error.message}`,
-        error.stack,
-      );
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to find locations by ids',
-      });
-    }
-  }
-
-  async checkHealth() {
-    try {
-      return await this.sender.send({
-        messagePattern: 'health',
-        payload: {
-          request: {},
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to check location service health: ${error.message}`,
-        error.stack,
-      );
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to check location service health',
-      });
-    }
+  // Health check
+  async getHealthStatus() {
+    return this.customLocationRepository.getHealthStatus();
   }
 }

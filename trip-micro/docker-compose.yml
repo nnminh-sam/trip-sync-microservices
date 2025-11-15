@@ -16,5 +16,16 @@ services:
     volumes:
       - ./docker-volumes/mysql_data:/var/lib/mysql
 
+  redis:
+    container_name: 'redis-trip'
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - ./docker-volumes/redis_data:/data
+    command: redis-server --appendonly yes
+
 volumes:
   mysql_data:
+  redis_data:

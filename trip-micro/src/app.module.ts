@@ -5,6 +5,8 @@ import { validationSchema } from './config/configuration';
 import { DatabaseModule } from './database/database.module';
 import { ClientModule } from './client/client.module';
 import { LocationModule } from './modules/location/location.module';
+import { TaskModule } from './modules/task/task.module';
+import gcsConfig from './config/gcs.config';
 
 @Module({
   imports: [
@@ -12,10 +14,12 @@ import { LocationModule } from './modules/location/location.module';
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema,
+      load: [gcsConfig],
     }),
     ClientModule,
     TripModule,
     LocationModule,
+    TaskModule,
   ],
 })
 export class AppModule {}
