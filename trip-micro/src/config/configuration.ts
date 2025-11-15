@@ -16,6 +16,9 @@ export interface EnvSchema {
   SYSAD_LASTNAME: string;
   SYSAD_EMAIL: string;
   SYSAD_PASSWORD: string;
+  REDIS_HOST: string;
+  REDIS_PORT: number;
+  HTTP_PORT: number;
 }
 
 export const validationSchema = Joi.object<EnvSchema>({
@@ -25,6 +28,7 @@ export const validationSchema = Joi.object<EnvSchema>({
   API_PREFIX: Joi.string().required(),
   JWT_SECRET: Joi.string().required(),
   MYSQL_HOST: Joi.string().required(),
+  MYSQL_PORT: Joi.number().default(3306),
   MYSQL_ROOT_PASSWORD: Joi.string().required(),
   MYSQL_DATABASE: Joi.string().required(),
   MYSQL_USER: Joi.string().required(),
@@ -33,4 +37,7 @@ export const validationSchema = Joi.object<EnvSchema>({
   SYSAD_LASTNAME: Joi.string().required(),
   SYSAD_EMAIL: Joi.string().required(),
   SYSAD_PASSWORD: Joi.string().required(),
+  REDIS_HOST: Joi.string().required(),
+  REDIS_PORT: Joi.number().required(),
+  HTTP_PORT: Joi.number().required(),
 });
