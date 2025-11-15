@@ -306,10 +306,13 @@ export class UserService {
 
     const updatedUser = await this.userRepository.save(user);
 
+    // Remove password from response
+    const { password, ...userWithoutPassword } = updatedUser;
+
     this.logger.log(
       `User updated successfully with ID: ${updatedUser.id}, email: ${updatedUser.email}`,
     );
-    return updatedUser;
+    return userWithoutPassword;
   }
 
   async delete(id: string) {
@@ -342,10 +345,13 @@ export class UserService {
 
     const deletedUser = await this.userRepository.save(user);
 
+    // Remove password from response
+    const { password, ...userWithoutPassword } = deletedUser;
+
     this.logger.log(
       `User soft deleted successfully with ID: ${deletedUser.id}, email: ${deletedUser.email}`,
     );
-    return deletedUser;
+    return userWithoutPassword;
   }
 
   async activate(id: string) {
@@ -380,10 +386,13 @@ export class UserService {
 
     const updatedUser = await this.userRepository.save(user);
 
+    // Remove password from response
+    const { password, ...userWithoutPassword } = updatedUser;
+
     this.logger.log(
       `User activated successfully with ID: ${updatedUser.id}, email: ${updatedUser.email}`,
     );
-    return updatedUser;
+    return userWithoutPassword;
   }
 
   async deactivate(id: string) {
@@ -417,10 +426,13 @@ export class UserService {
 
     const updatedUser = await this.userRepository.save(user);
 
+    // Remove password from response
+    const { password, ...userWithoutPassword } = updatedUser;
+
     this.logger.log(
       `User deactivated successfully with ID: ${updatedUser.id}, email: ${updatedUser.email}`,
     );
-    return updatedUser;
+    return userWithoutPassword;
   }
 
   async updatePassword(userId: string) {

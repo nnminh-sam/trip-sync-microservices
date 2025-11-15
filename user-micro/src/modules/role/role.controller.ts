@@ -1,4 +1,4 @@
-import { Controller, HttpStatus } from '@nestjs/common';
+import { Controller, HttpStatus, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { RoleService } from './role.service';
 import { CreateRoleDto } from './dtos/create-role.dto';
@@ -12,6 +12,8 @@ import { AuditAction } from 'src/modules/audit-log/dtos/create-audit-log.dto';
 
 @Controller()
 export class RoleController {
+  private readonly logger = new Logger(RoleController.name);
+
   constructor(
     private readonly auditLogService: AuditLogService,
     private readonly roleService: RoleService,
@@ -31,17 +33,21 @@ export class RoleController {
       },
     });
     const result = await this.roleService.create(payload.request.body);
-    try {
-      this.auditLogService.log(claims, {
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
         userId: claims.sub,
         action: AuditAction.CREATE,
         entity: 'role',
         entityId: result.id,
         description: `Created role with ID: ${result.id}`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for create: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
       });
-    } catch (error) {
-      console.error('Audit log service call failed:', error);
-    }
     return result;
   }
 
@@ -59,16 +65,20 @@ export class RoleController {
       },
     });
     const result = await this.roleService.findAll(payload.request.body);
-    try {
-      this.auditLogService.log(claims, {
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
         userId: claims.sub,
         action: AuditAction.READ,
         entity: 'role',
         description: `Read roles`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for findAll: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
       });
-    } catch (error) {
-      console.error('Audit log service call failed:', error);
-    }
     return result;
   }
 
@@ -93,17 +103,21 @@ export class RoleController {
       });
     }
     const result = await this.roleService.findOne(id);
-    try {
-      this.auditLogService.log(claims, {
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
         userId: claims.sub,
         action: AuditAction.READ,
         entity: 'role',
         entityId: result.id,
         description: `Read role with ID: ${result.id}`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for findOne: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
       });
-    } catch (error) {
-      console.error('Audit log service call failed:', error);
-    }
     return result;
   }
 
@@ -129,17 +143,21 @@ export class RoleController {
     }
 
     const result = await this.roleService.findByName(name);
-    try {
-      this.auditLogService.log(claims, {
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
         userId: claims.sub,
         action: AuditAction.READ,
         entity: 'role',
         entityId: result.id,
         description: `Read role with ID: ${result.id}`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for findByName: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
       });
-    } catch (error) {
-      console.error('Audit log service call failed:', error);
-    }
     return result;
   }
 
@@ -166,17 +184,21 @@ export class RoleController {
     }
 
     const result = await this.roleService.update(id, payload.request.body);
-    try {
-      this.auditLogService.log(claims, {
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
         userId: claims.sub,
         action: AuditAction.UPDATE,
         entity: 'role',
         entityId: result.id,
         description: `Updated role with ID: ${result.id}`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for update: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
       });
-    } catch (error) {
-      console.error('Audit log service call failed:', error);
-    }
     return result;
   }
 
@@ -202,17 +224,21 @@ export class RoleController {
       });
     }
     const result = await this.roleService.remove(id);
-    try {
-      this.auditLogService.log(claims, {
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
         userId: claims.sub,
-        action: AuditAction.CREATE,
+        action: AuditAction.DELETE,
         entity: 'role',
         entityId: id,
         description: `Deleted role with ID: ${id}`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for remove: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
       });
-    } catch (error) {
-      console.error('Audit log service call failed:', error);
-    }
     return result;
   }
 }

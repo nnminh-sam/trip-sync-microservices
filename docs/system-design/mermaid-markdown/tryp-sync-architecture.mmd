@@ -1,0 +1,63 @@
+architecture-beta
+    %% Group: Client
+    group client(cloud)[Clients]
+
+    service webApp(server)[ReactJS Web App] in client
+    service mobileApp(server)[React Native Mobile App] in client
+
+        group system(cloud)[Trip Sync System Backend]
+
+        service gateway(server)[API Gateway] in system
+        service nats(server)[NATS Server] in system
+
+        service userService(server)[User Server] in system
+        service userDB(database)[User Database] in system
+        userService:B <--> T:userDB
+
+        service tripService(server)[Trip Server] in system
+        service tripDB(database)[Trip Database] in system
+        tripService:B <--> T:tripDB
+
+        service gpsTrackingService(server)[GPS Tracking Service] in system
+        service gpsDB(database)[GPS Database] in system
+        gpsTrackingService:B <--> T:gpsDB
+
+        service proofValidationService(server)[Proof Validation Service] in system
+        service validationDB(database)[Validation Database] in system
+        proofValidationService:B <--> T:validationDB
+
+        service notificationService(server)[Notification Service] in system
+        service notificationDB(database)[Notification Database] in system
+        notificationService:B <--> T:notificationDB
+
+        service auditLogService(server)[Audit Log Service] in system
+        service auditLogDB(database)[Audit Log Database] in system
+        auditLogService:B <--> T:auditLogDB
+
+        service storageService(server)[Proof Storage Service] in system
+        service minio(disk)[MinIO Storage] in system
+
+        %% Connections of internal system
+        junction gatewayJunction in system
+        gateway:R <--> L:nats
+        nats:B <-- T:gatewayJunction
+        userService:T <-- B:gatewayJunction
+        junction leftGatewayJunction in system
+        leftGatewayJunction:R -- L:gatewayJunction
+        tripService:T <-- B:leftGatewayJunction
+        junction rightGatewayJunction in system
+        rightGatewayJunction:L -- R:gatewayJunction
+        gpsTrackingService:T <-- B:rightGatewayJunction
+        junction leftLeftGatewayJunction in system
+        leftLeftGatewayJunction:R -- L:leftGatewayJunction
+        proofValidationService:T <-- B:leftLeftGatewayJunction
+        notificationService:L <-- R:rightGatewayJunction
+        auditLogService:R <-- L:leftLeftGatewayJunction
+        storageService:R <--> L:gateway
+        minio:R <--> L:storageService
+
+    %% %% Connection: Client --> Backend
+    junction clientJunctionCenter in client
+    webApp:L -- R:clientJunctionCenter
+    mobileApp:R -- L:clientJunctionCenter
+    clientJunctionCenter:B --> T:gateway

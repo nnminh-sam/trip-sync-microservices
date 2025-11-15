@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AuthService } from 'src/modules/auth/auth.service';
 import { LoginDto } from 'src/modules/auth/dtos/login.dto';
@@ -10,6 +10,8 @@ import { AuditAction } from 'src/modules/audit-log/dtos/create-audit-log.dto';
 
 @Controller()
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly auditLogService: AuditLogService,
     private readonly authService: AuthService,
@@ -25,16 +27,20 @@ export class AuthController {
   async updatePassword(@Payload() payload: MessagePayloadDto) {
     const { claims } = payload;
     const result = await this.authService.updatePassword(claims.sub);
-    try {
-      this.auditLogService.log(claims, {
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
         userId: claims.sub,
         action: AuditAction.UPDATE,
         entity: 'user',
         description: `Updated password for user with ID: ${claims.sub}`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for updatePassword: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
       });
-    } catch (error) {
-      console.error('Audit log service call failed:', error);
-    }
     return result;
   }
 

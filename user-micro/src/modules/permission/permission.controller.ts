@@ -1,4 +1,4 @@
-import { Controller, HttpStatus } from '@nestjs/common';
+import { Controller, HttpStatus, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { PermissionService } from './permission.service';
 import { CreatePermissionDto } from './dtos/create-permission.dto';
@@ -14,6 +14,8 @@ import { AuditAction } from 'src/modules/audit-log/dtos/create-audit-log.dto';
 
 @Controller()
 export class PermissionController {
+  private readonly logger = new Logger(PermissionController.name);
+
   constructor(
     private readonly auditLogService: AuditLogService,
     private readonly roleService: RoleService,
@@ -34,17 +36,21 @@ export class PermissionController {
       },
     });
     const result = await this.permissionService.create(payload.request.body);
-    try {
-      this.auditLogService.log(claims, {
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
         userId: claims.sub,
         action: AuditAction.CREATE,
         entity: 'permission',
         entityId: result.id,
         description: `Created new permission with ID: ${result.id}`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for create: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
       });
-    } catch (error) {
-      console.error('Audit log service call failed:', error);
-    }
     return result;
   }
 
@@ -62,16 +68,20 @@ export class PermissionController {
       },
     });
     const result = await this.permissionService.findAll(payload.request.body);
-    try {
-      this.auditLogService.log(claims, {
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
         userId: claims.sub,
         action: AuditAction.READ,
         entity: 'permission',
         description: `Read permissions`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for findAll: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
       });
-    } catch (error) {
-      console.error('Audit log service call failed:', error);
-    }
     return result;
   }
 
@@ -96,17 +106,21 @@ export class PermissionController {
       });
     }
     const result = await this.permissionService.findOne(id);
-    try {
-      this.auditLogService.log(claims, {
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
         userId: claims.sub,
         action: AuditAction.READ,
         entity: 'permission',
         entityId: result.id,
         description: `Read permission with ID: ${result.id}`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for findOne: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
       });
-    } catch (error) {
-      console.error('Audit log service call failed:', error);
-    }
     return result;
   }
 
@@ -134,17 +148,21 @@ export class PermissionController {
       });
     }
     const result = await this.permissionService.update(id, payload.request.body);
-    try {
-      this.auditLogService.log(claims, {
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
         userId: claims.sub,
         action: AuditAction.UPDATE,
         entity: 'permission',
         entityId: result.id,
         description: `Updated permission with ID: ${result.id}`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for update: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
       });
-    } catch (error) {
-      console.error('Audit log service call failed:', error);
-    }
     return result;
   }
 
@@ -169,17 +187,21 @@ export class PermissionController {
       });
     }
     const result = await this.permissionService.remove(id);
-    try {
-      this.auditLogService.log(claims, {
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
         userId: claims.sub,
         action: AuditAction.DELETE,
         entity: 'permission',
         entityId: id,
         description: `Deleted permission with ID: ${id}`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for remove: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
       });
-    } catch (error) {
-      console.error('Audit log service call failed:', error);
-    }
     return result;
   }
 
@@ -199,16 +221,20 @@ export class PermissionController {
       },
     });
     const result = await this.permissionService.bulkCreate(payload.request.body);
-    try {
-      this.auditLogService.log(claims, {
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
         userId: claims.sub,
         action: AuditAction.CREATE,
         entity: 'permission',
         description: `Bulk created ${result.length} permissions`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for bulkCreate: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
       });
-    } catch (error) {
-      console.error('Audit log service call failed:', error);
-    }
     return result;
   }
 }

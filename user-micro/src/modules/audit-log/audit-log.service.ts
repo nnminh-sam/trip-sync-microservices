@@ -1,10 +1,10 @@
-import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { NATSClient } from 'src/client/clients';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { AuditLogMessagePattern } from 'src/modules/audit-log/audit-log-message.pattern';
 import { CreateAuditLogDto } from 'src/modules/audit-log/dtos/create-audit-log.dto';
-import { NatsClientSender, throwRpcException } from 'src/utils';
+import { NatsClientSender } from 'src/utils';
 
 @Injectable()
 export class AuditLogService {
@@ -18,25 +18,28 @@ export class AuditLogService {
     this.sender = new NatsClientSender(natsClient, AuditLogMessagePattern);
   }
 
-  async log(claims: TokenClaimsDto, payload: CreateAuditLogDto) {
-    this.logger.log(`Logging with payload: ${JSON.stringify(payload)}`);
+  async log(claims: TokenClaimsDto, payload: CreateAuditLogDto): Promise<void> {
+    this.logger.log(
+      `Logging audit: action=${payload.action}, entity=${payload.entity}, userId=${payload.userId}`,
+    );
     try {
-      return await this.sender.send({
+      await this.sender.send({
         messagePattern: 'create',
         payload: {
           claims,
           request: { body: payload },
         },
       });
-    } catch (error) {
-      this.logger.error(
-        `Failed to create audit log: ${error.message}`,
-        error.stack,
+      this.logger.debug(
+        `Audit log created successfully: action=${payload.action}, entity=${payload.entity}`,
       );
-      throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to create audit log',
-      });
+    } catch (error: any) {
+      // Never throw - audit logging is non-critical
+      this.logger.error(
+        `Failed to create audit log: action=${payload.action}, entity=${payload.entity}, userId=${payload.userId}, error=${error?.message || 'Unknown error'}`,
+        error?.stack,
+      );
+      // Silently fail - audit log failures should not affect the main operation
     }
   }
 }
