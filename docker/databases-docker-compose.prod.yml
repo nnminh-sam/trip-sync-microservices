@@ -1,0 +1,78 @@
+services:
+  # User Service Database
+  mysql-user:
+    image: mysql:8.0
+    container_name: mysql-user-prod
+    restart: unless-stopped
+    ports:
+      - "${USER_DB_PORT}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${USER_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${USER_DB_NAME}
+      MYSQL_USER: ${USER_DB_USER}
+      MYSQL_PASSWORD: ${USER_DB_PASSWORD}
+    volumes:
+      - ./volumes/mysql-user-data:/var/lib/mysql
+    networks:
+      - trip-sync-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${USER_DB_ROOT_PASSWORD}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Trip Service Database
+  mysql-trip:
+    image: mysql:8.0
+    container_name: mysql-trip-prod
+    restart: unless-stopped
+    ports:
+      - "${TRIP_DB_PORT}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${TRIP_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${TRIP_DB_NAME}
+      MYSQL_USER: ${TRIP_DB_USER}
+      MYSQL_PASSWORD: ${TRIP_DB_PASSWORD}
+    volumes:
+      - ./volumes/mysql-trip-data:/var/lib/mysql
+    networks:
+      - trip-sync-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${TRIP_DB_ROOT_PASSWORD}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  trip-sync-network:
+    driver: bridge
+
+volumes:
+  mysql-user-data:
+    driver: local
+  mysql-trip-data:
+    driver: local
