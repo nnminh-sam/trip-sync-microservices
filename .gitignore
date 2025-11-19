@@ -44,3 +44,6 @@ coverage/
 *.log3
 *.log4
 .claude
+
+docker/volumes/
+docker/*.env*
