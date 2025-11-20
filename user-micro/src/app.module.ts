@@ -11,6 +11,7 @@ import { PermissionService } from 'src/modules/permission/permission.service';
 import { RoleService } from 'src/modules/role/role.service';
 import { UserService } from 'src/modules/user/user.service';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
     RoleModule,
     AuditLogModule,
   ],
-  controllers: [],
+  controllers: [AppController],
   providers: [],
 })
 export class AppModule {
