@@ -1,17 +1,45 @@
 services:
-  nats:
-    image: nats:2.10-alpine
-    container_name: nats
-    ports:
-      - '4222:4222'
-      - '8222:8222'
-    restart: unless-stopped
+  # nats:
+  #   image: nats:2.10-alpine
+  #   container_name: nats
+  #   ports:
+  #     - '4222:4222'
+  #     - '8222:8222'
+  #   restart: unless-stopped
 
-  gateway-redis:
-    image: redis:7-alpine
-    container_name: gateway-redis
+  # gateway-redis:
+  #   image: redis:7-alpine
+  #   container_name: gateway-redis
+  #   ports:
+  #     - '6380:6379'
+  #   volumes:
+  #     - ./volumes/redis-data:/data
+  #   restart: unless-stopped
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
     ports:
-      - '6380:6379'
+      - '3100:3100'
+    command: -config.file=/etc/loki/local-config.yaml
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - '3000:3000'
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - loki
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
     volumes:
-      - ./docker-volume/redis-data:/data
-    restart: unless-stopped
+      - ./promtail-config.yml:/etc/promtail/config.yml
+      - ./volumes/promtail/var/log:/var/log # scrape host logs (optional)
+      - ./volumes/promtail/var/lib/docker/containers:/var/lib/docker/containers # scrape Docker logs
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
