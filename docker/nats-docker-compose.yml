@@ -1,0 +1,30 @@
+services:
+  nats-server:
+    image: nats:2.10-alpine
+    container_name: nats
+    ports:
+      - "4222:4222" # Client connections
+      - "8222:8222" # HTTP monitoring
+    volumes:
+      - ./volumes/nats-prod:/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8222/healthz",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  nats-server:
+    driver: local
+  nats-logs:
+    driver: local
