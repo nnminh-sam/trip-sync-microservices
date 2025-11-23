@@ -69,7 +69,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup(`api-document`, app, document);
 
-  app.setGlobalPrefix(apiPrefix);
+  app.setGlobalPrefix(apiPrefix, {
+    exclude: ['health', ''],
+  });
 
   app.enableVersioning({
     type: VersioningType.URI,
