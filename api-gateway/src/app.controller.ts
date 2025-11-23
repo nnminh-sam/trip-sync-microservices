@@ -1,9 +1,13 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, VERSION_NEUTRAL } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { PublicRequest } from 'src/common/decorators/public-request.decorator';
 
 @ApiTags('Health')
-@Controller()
+@Controller({
+  version: VERSION_NEUTRAL,
+})
 export class AppController {
+  @PublicRequest()
   @Get('health')
   @ApiOperation({ summary: 'Health check endpoint' })
   @ApiResponse({ status: 200, description: 'Service is healthy' })
@@ -19,6 +23,7 @@ export class AppController {
     };
   }
 
+  @PublicRequest()
   @Get()
   @ApiOperation({ summary: 'Root endpoint' })
   @ApiResponse({ status: 200, description: 'API Gateway information' })
