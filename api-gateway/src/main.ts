@@ -13,9 +13,47 @@ import { RpcExceptionFilter } from 'src/common/filters/rpc-exception.filter';
 import { HttpExceptionFilter } from 'src/common/filters/http-exception.filter';
 import { ResponseWrapperInterceptor } from 'src/common/interceptors/response-wrapper.interceptor';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { WinstonModule } from 'nest-winston';
+import * as winston from 'winston';
+import 'winston-daily-rotate-file';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: WinstonModule.createLogger({
+      transports: [
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.colorize(),
+            winston.format.printf(({ level, message, timestamp }) => {
+              return `[${timestamp}] ${level}: ${message}`;
+            }),
+          ),
+        }),
+
+        // File rotation transport
+        new winston.transports.DailyRotateFile({
+          dirname: 'logs',
+          filename: 'app-%DATE%.log',
+          datePattern: 'YYYY-MM-DD',
+          zippedArchive: true,
+          maxSize: '20m',
+          maxFiles: '14d',
+          level: 'info',
+          format: winston.format.json(),
+        }),
+
+        // Separate error logs
+        new winston.transports.DailyRotateFile({
+          dirname: 'logs',
+          filename: 'error-%DATE%.log',
+          datePattern: 'YYYY-MM-DD',
+          level: 'error',
+          format: winston.format.json(),
+        }),
+      ],
+    }),
+  });
   const configService = app.get(ConfigService<EnvSchema>);
   const name = configService.get<string>('APP_NAME');
   const port = configService.get<number>('APP_PORT');
