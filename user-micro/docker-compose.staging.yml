@@ -6,10 +6,12 @@ services:
     image: trip-sync/user-service:staging
     container_name: user-service
     ports:
-      - '8080:80'
+      - '8080:${APP_PORT}'
     env_file:
       - .env.staging
     restart: unless-stopped
+    networks:
+      - shared-net
     healthcheck:
       test:
         [
@@ -18,7 +20,7 @@ services:
           '--no-verbose',
           '--tries=1',
           '--spider',
-          'http://localhost:80/health',
+          'http://localhost:8080/health',
         ]
       interval: 30s
       timeout: 10s
@@ -27,3 +29,7 @@ services:
 
 volumes:
   user-service-data:
+
+networks:
+  shared-net:
+    external: true

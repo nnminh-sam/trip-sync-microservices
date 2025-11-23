@@ -110,6 +110,9 @@ async function bootstrap() {
     allowedHeaders: '*',
   });
 
+  const natsClient = app.get('NATS_SERVICE');
+  await natsClient.connect();
+
   const logger = new Logger(name);
   await app.listen(port, () => {
     logger.log(`NestJS app: ${name}`);
