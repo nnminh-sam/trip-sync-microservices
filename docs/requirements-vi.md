@@ -46,3 +46,10 @@
 - Giám sát vị trí nhân viên trên bản đồ theo thời gian thực.
 - Xem báo cáo công tác với minh chứng được xác thực, ra chỉ thị hướng dẫn
 - Xem lịch sử công tác và trạng thái, thống kê theo tháng, năm
+
+## Xây dựng hệ thống microservices
+
+- Mỗi dịch vụ sẽ có một database riêng biệt
+- Sử dụng API gateway, không sử dụng load balancer
+- Xác thực GnuPG ở BE ở media service, media service sử dung GCS
+- Sử dụng Firebase để tracking GPS
