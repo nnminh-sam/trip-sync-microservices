@@ -12,7 +12,6 @@ The Task Service requires significant enhancements to support proper business lo
 
 ### Task Model Updates
 - [x] Add database indexes for performance optimization (tripLocationId, status)
-
 ### Task-Proof Model Updates
 - [x] Fix `locationPoint` field to use proper MySQL spatial type
 - [x] Create database migration for model changes
