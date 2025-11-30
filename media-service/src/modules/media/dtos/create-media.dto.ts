@@ -3,7 +3,11 @@ export class CreateMediaDto {
   originalName: string;
   mimetype: string;
   size: number;
+  gcsUrl: string;
+  publicUrl: string;
   taskId?: string;
+  status?: string;
   description?: string;
+  signatureVerified?: boolean;
   signatureData?: string; // GPG signature
 }

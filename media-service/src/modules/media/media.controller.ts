@@ -1,13 +1,19 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { MediaService } from './media.service';
+import { MediaUploadService, MediaUploadRequest } from './services';
 import { MediaMessagePattern } from './media-message.pattern';
 import { MessagePayloadDto } from '../../dtos/message-payload.dto';
 import { CreateMediaDto, UpdateMediaDto, FilterMediaDto } from './dtos';
 
 @Controller('media')
 export class MediaController {
-  constructor(private readonly mediaService: MediaService) {}
+  private readonly logger = new Logger(MediaController.name);
+
+  constructor(
+    private readonly mediaService: MediaService,
+    private readonly mediaUploadService: MediaUploadService,
+  ) {}
 
   @MessagePattern(MediaMessagePattern.findById)
   async findById(@Payload() payload: MessagePayloadDto) {
@@ -28,9 +34,39 @@ export class MediaController {
   }
 
   @MessagePattern(MediaMessagePattern.create)
-  async create(@Payload() payload: MessagePayloadDto<CreateMediaDto>) {
+  async create(
+    @Payload()
+    payload: MessagePayloadDto<{
+      fileBuffer: Buffer;
+      filename: string;
+      signature: string;
+      taskId?: string;
+      description?: string;
+    }>,
+  ) {
     const { claims, request } = payload;
-    return await this.mediaService.create(claims?.sub, request?.body);
+    const { fileBuffer, filename, signature, taskId, description } =
+      request?.body || {};
+
+    const uploadRequest: MediaUploadRequest = {
+      uploaderId: claims?.sub,
+      signature,
+      taskId,
+      description,
+    };
+
+    const result = await this.mediaUploadService.uploadMedia(
+      fileBuffer,
+      filename,
+      signature,
+      uploadRequest,
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to upload media');
+    }
+
+    return result.media;
   }
 
   @MessagePattern(MediaMessagePattern.update)
@@ -46,11 +82,26 @@ export class MediaController {
   }
 
   @MessagePattern(MediaMessagePattern.verifySignature)
-  async verifySignature(@Payload() payload: MessagePayloadDto<{ mediaId: string; signature: string }>) {
-    const { body } = payload.request || {};
-    // TODO: Implement GPG signature verification using openpgp.js
-    // For now, just return the media record
-    const media = await this.mediaService.findById(body?.mediaId);
-    return { verified: false, media };
+  async verifySignature(
+    @Payload()
+    payload: MessagePayloadDto<{
+      fileBuffer: Buffer;
+      signature: string;
+    }>,
+  ) {
+    const { claims, request } = payload;
+    const { fileBuffer, signature } = request?.body || {};
+
+    const validation = await this.mediaUploadService.validateMediaUpload(
+      fileBuffer,
+      signature,
+      claims?.sub,
+    );
+
+    return {
+      isValid: validation.isValid,
+      signer: validation.signerKeyId,
+      error: validation.error,
+    };
   }
 }

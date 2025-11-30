@@ -16,6 +16,13 @@ export interface EnvSchema {
   MYSQL_PASSWORD: string;
   MYSQL_DATABASE: string;
 
+  // Google Cloud Storage
+  GCS_PROJECT_ID: string;
+  GCS_BUCKET_NAME: string;
+  GCS_KEY_FILENAME?: string;
+  GCS_CLIENT_EMAIL?: string;
+  GCS_PRIVATE_KEY?: string;
+
   // Logging
   LOG_LEVEL: string;
 }
@@ -34,6 +41,12 @@ export const validationSchema = Joi.object<EnvSchema>({
   MYSQL_USER: Joi.string().required(),
   MYSQL_PASSWORD: Joi.string().required(),
   MYSQL_DATABASE: Joi.string().required(),
+
+  GCS_PROJECT_ID: Joi.string().optional(),
+  GCS_BUCKET_NAME: Joi.string().optional(),
+  GCS_KEY_FILENAME: Joi.string().optional(),
+  GCS_CLIENT_EMAIL: Joi.string().optional(),
+  GCS_PRIVATE_KEY: Joi.string().optional(),
 
   LOG_LEVEL: Joi.string()
     .valid('debug', 'info', 'warn', 'error')
@@ -56,6 +69,13 @@ export const configuration = () => ({
     username: process.env.MYSQL_USER,
     password: process.env.MYSQL_PASSWORD,
     database: process.env.MYSQL_DATABASE,
+  },
+  gcs: {
+    projectId: process.env.GCS_PROJECT_ID,
+    bucketName: process.env.GCS_BUCKET_NAME,
+    keyFilename: process.env.GCS_KEY_FILENAME,
+    clientEmail: process.env.GCS_CLIENT_EMAIL,
+    privateKey: process.env.GCS_PRIVATE_KEY,
   },
   logging: {
     level: process.env.LOG_LEVEL || 'info',

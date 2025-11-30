@@ -62,7 +62,7 @@ Testing: Postman with
 
 ## FULL IMPLEMENTATION GUIDE (STEP-BY-STEP)
 
-### [PENDING] STEP 1 — Create Repos & NestJS Skeletons
+### [DONE] STEP 1 — Create Repos & NestJS Skeletons
 
 Document step 1 at `docs/knowledge`
 
@@ -83,7 +83,7 @@ Document step 1 at `docs/knowledge`
 - Create a guiding document for this task at `docs/guides/media-service/index.md`
 - Implement the Create Media Service Guide at `docs/guides/media-service/index.md`
 
-### [PENDING] STEP 2 — Update USER SERVICE
+### [DONE] STEP 2 — Update USER SERVICE
 
 Target: Update User Service to store user's public key in `user_service_db` via an API: `PATCH /api/v1/users/my/public-key` with public key is attached inside the API payload. External services can request for the public key via API: `GET /api/v1/users/my` including user's information + public key.
 
@@ -114,7 +114,7 @@ API Flow in microservices system: `docs/knowledge/api-request`
 2.5 Update User Controller if necessary
 
 
-### [PEDNING] STEP 3 — Implement MEDIA SERVICE (UPLOAD + VERIFICATION)
+### [PEDNING] STEP 3 — Update MEDIA SERVICE with GCS UPLOAD + GnuPG VERIFICATION logic
 
 3.0 Understand how User Service at `user-micro` communicate with API gateway at `api-gateway` through NATS server
 
