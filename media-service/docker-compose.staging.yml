@@ -1,12 +1,12 @@
 services:
-  user-service:
+  media-service:
     build:
       context: .
       dockerfile: Dockerfile
-    image: trip-sync/user-micro:staging
-    container_name: user-service
+    image: trip-sync/media-service:staging
+    container_name: media-service
     ports:
-      - '8080:${APP_PORT}'
+      - '8081:${APP_PORT}'
     env_file:
       - .env.staging
     restart: unless-stopped
@@ -20,7 +20,7 @@ services:
           '--no-verbose',
           '--tries=1',
           '--spider',
-          'http://localhost:8080/health',
+          'http://localhost:8081/health',
         ]
       interval: 30s
       timeout: 10s
@@ -28,7 +28,7 @@ services:
       start_period: 30s
 
 volumes:
-  user-service-data:
+  media-service-data:
 
 networks:
   shared-net:
