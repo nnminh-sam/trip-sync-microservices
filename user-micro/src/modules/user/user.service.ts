@@ -479,6 +479,74 @@ export class UserService {
     return userWithoutPassword as User;
   }
 
+  async updatePublicKey(userId: string, publicKey: string) {
+    this.logger.log(`Updating public key for user with ID: ${userId}`);
+
+    if (!publicKey || publicKey.trim().length === 0) {
+      this.logger.warn(`Public key update failed - empty public key for user ID: ${userId}`);
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Public key cannot be empty',
+      });
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      this.logger.warn(`Public key update failed - user not found with ID: ${userId}`);
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'User Not Found',
+      });
+    }
+
+    user.publicKey = publicKey;
+    const updatedUser = await this.userRepository.save(user);
+
+    // Remove password from response
+    const { password, ...userWithoutPassword } = updatedUser;
+
+    this.logger.log(
+      `Public key updated successfully for user ID: ${updatedUser.id}`,
+    );
+    return userWithoutPassword;
+  }
+
+  async getPublicKeyById(userId: string) {
+    this.logger.log(`Retrieving public key for user with ID: ${userId}`);
+
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.email', 'user.publicKey'])
+      .where('user.id = :id', { id: userId })
+      .getOne();
+
+    if (!user) {
+      this.logger.warn(`Public key retrieval failed - user not found with ID: ${userId}`);
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'User Not Found',
+      });
+    }
+
+    if (!user.publicKey) {
+      this.logger.warn(`Public key not set for user ID: ${userId}`);
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'Public Key Not Set',
+      });
+    }
+
+    this.logger.log(`Public key retrieved for user ID: ${userId}`);
+    return {
+      id: user.id,
+      email: user.email,
+      publicKey: user.publicKey,
+    };
+  }
+
   private generateRandomPassword(length: number = 12): string {
     const charset =
       'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';

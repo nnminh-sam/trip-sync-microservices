@@ -191,4 +191,56 @@ export class UserController {
       });
     return result;
   }
+
+  @MessagePattern(UserMessagePattern.updatePublicKey)
+  async updatePublicKey(
+    @Payload()
+    payload: MessagePayloadDto<{ publicKey: string }>,
+  ) {
+    const { claims } = payload;
+    const publicKey = payload.request.body.publicKey;
+
+    const result = await this.userService.updatePublicKey(
+      claims.sub,
+      publicKey,
+    );
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
+        userId: claims.sub,
+        action: AuditAction.UPDATE,
+        entity: 'user',
+        entityId: result.id,
+        description: `Updated public key for user with ID: ${result.id}`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for updatePublicKey: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
+      });
+    return result;
+  }
+
+  @MessagePattern(UserMessagePattern.findPublicKey)
+  async findPublicKey(@Payload() payload: MessagePayloadDto) {
+    const { claims } = payload;
+    const result = await this.userService.getPublicKeyById(claims.sub);
+    // Fire-and-forget audit log call
+    this.auditLogService
+      .log(claims, {
+        userId: claims.sub,
+        action: AuditAction.READ,
+        entity: 'user',
+        entityId: claims.sub,
+        description: `Retrieved public key for user with ID: ${claims.sub}`,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Audit log failed for findPublicKey: ${error?.message || 'Unknown error'}`,
+          error?.stack,
+        );
+      });
+    return result;
+  }
 }

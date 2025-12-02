@@ -142,4 +142,37 @@ export class UserService {
     this.logger.log(`activate success for id: ${id}`);
     return result;
   }
+
+  @CatchErrors({
+    rpcMessage: 'User service unavailable',
+    defaultMessage: 'Update public key failed',
+  })
+  async updatePublicKey(claims: TokenClaimsDto, publicKey: string) {
+    this.logger.log(`updatePublicKey called for user id: ${claims.sub}`);
+    const result = await this.sender.send({
+      messagePattern: 'updatePublicKey',
+      payload: {
+        claims,
+        request: { body: { publicKey } },
+      },
+    });
+    this.logger.log(`updatePublicKey success for user id: ${claims.sub}`);
+    return result;
+  }
+
+  @CatchErrors({
+    rpcMessage: 'User service unavailable',
+    defaultMessage: 'Retrieve public key failed',
+  })
+  async getPublicKey(claims: TokenClaimsDto) {
+    this.logger.log(`getPublicKey called for user id: ${claims.sub}`);
+    const result = await this.sender.send({
+      messagePattern: 'findPublicKey',
+      payload: {
+        claims,
+      },
+    });
+    this.logger.log(`getPublicKey success for user id: ${claims.sub}`);
+    return result;
+  }
 }

@@ -128,4 +128,50 @@ export class UserController {
   ) {
     return await this.userService.activate(claims, id);
   }
+
+  @Patch('my/public-key')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update current user public key' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Public key updated',
+    model: User,
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        publicKey: {
+          type: 'string',
+          description: 'GPG public key in armored format',
+        },
+      },
+      required: ['publicKey'],
+    },
+  })
+  async updatePublicKey(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Body('publicKey') publicKey: string,
+  ) {
+    return await this.userService.updatePublicKey(claims, publicKey);
+  }
+
+  @Get('my/public-key')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user public key' })
+  // @ApiResponseConstruction({
+  //   status: 200,
+  //   description: 'Public key retrieved',
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       id: { type: 'string' },
+  //       email: { type: 'string' },
+  //       publicKey: { type: 'string' },
+  //     },
+  //   },
+  // })
+  async getPublicKey(@RequestUserClaims() claims: TokenClaimsDto) {
+    return await this.userService.getPublicKey(claims);
+  }
 }
