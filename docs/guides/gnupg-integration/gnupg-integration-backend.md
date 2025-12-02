@@ -25,10 +25,13 @@ Use Case 1 — Employee Signs Media
 
 1. Postman simulates mobile app
 1. Postman signs image/video using its own GPG private key
-1. `POST /api/v1/media?trip-id={tripId}&signature={signature}` with:
+1. `POST /api/v1/media?task-id={taskId}` with:
     Auth: JWT Bearer token
-    Payload:
-    - file
+    Multipart form fields:
+    - `file` (type: binary - required): Raw media file (image/video) 
+    - `signature` (type: text - required): GnuPG signature (ASCII armored)
+    - `originalFilename` (type: text - required): Metadata for logging
+    - `mimetype` (type: string - required): Metadata for logging
 
 Use Case 2 — Media Service Verifies Signature
 
@@ -114,7 +117,7 @@ API Flow in microservices system: `docs/knowledge/api-request`
 2.5 Update User Controller if necessary
 
 
-### [PEDNING] STEP 3 — Update MEDIA SERVICE with GCS UPLOAD + GnuPG VERIFICATION logic
+### [DONE] STEP 3 — Update MEDIA SERVICE with GCS UPLOAD + GnuPG VERIFICATION logic
 
 3.0 Understand how User Service at `user-micro` communicate with API gateway at `api-gateway` through NATS server
 
@@ -176,71 +179,14 @@ export class Media {
 
 - `GET /api/v1/media?trip-id={tripId}&task-id={taskId}`: Fetch many media files base on the trip ID or the task ID. Since Trip's ID is not stored inside the media model, therefore when trip ID is provided, query trip data from Trip Service for the list of task, check task existence in trip and then check ownership.
 - `GET /api/v1/media/{id}`: Fetch media file by it's ID.
-- `POST /api/v1/media?trip-id={tripId}`: Upload a media to the the media service.
-  - Auth: JWT Bearer token
-  - Payload: media file of key `file`
-
+- `POST /api/v1/media?task-id={taskId}` with:
+    Auth: JWT Bearer token
+    Multipart form fields:
+    - `file` (type: binary - required): Raw media file (image/video) 
+    - `signature` (type: text - required): GnuPG signature (ASCII armored)
+    - `originalFilename` (type: text - required): Metadata for logging
+    - `mimetype` (type: string - required): Metadata for logging
 - `DELETE /api/v1/media/{id}`: Delete media by it's ID.
 
 ---
 
-## POSTMAN: MOCK MOBILE CLIENT + GPG SIMULATION
-
-Postman can run Node.js inside Pre-Request Script. Use openpgp.js CDN in Postman.
-
-### [PENDING] STEP 4.1 — PREPARE GPG KEYPAIR (IN POSTMAN)
-
-Pre-Request Script
-
-```js
-const openpgp = require('openpgp');
-
-pm.environment.set("file", "raw-binary-file-here");
-
-(async () => {
-  const { privateKey, publicKey } = await openpgp.generateKey({
-    type: 'rsa',
-    rsaBits: 2048,
-    userIDs: [{ name: 'Employee' }]
-  });
-
-  pm.environment.set("pgp_private", privateKey);
-  pm.environment.set("pgp_public", publicKey);
-})();
-```
-
-Run once.
-
----
-
-### [PENDING] STEP 4.2 — SIGN BEFORE UPLOAD (Pre-request script)
-
-```js
-const openpgp = require('openpgp');
-
-(async () => {
-  const privateKey = await openpgp.readPrivateKey({ armoredKey: pm.environment.get("pgp_private") });
-  const fileBytes = pm.request.body?.file || "dummy";
-
-  const signed = await openpgp.sign({
-    message: await openpgp.createMessage({ binary: fileBytes }),
-    signingKeys: privateKey,
-    detached: true
-  });
-
-  pm.variables.set("pgp_signature", signed);
-})();
-```
-
-Create MOCK API call for testing the upload media file API
-
----
-
-### [PENDING] STEP 4.3 — End-to-End Test Steps
-
-1. Generate mock private, public key for simulating user's key pair
-2. Upload media through Media Service using Postman with
-3. Media Service requests `api/v1/users/my/public-key`
-4. Media Service verifies signature
-5. Store file + DB record
-6. Return API response

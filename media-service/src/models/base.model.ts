@@ -2,6 +2,7 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Column,
   Entity,
 } from 'typeorm';
 
@@ -16,6 +17,6 @@ export class BaseModel {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @CreateDateColumn({ nullable: true, default: null })
+  @Column({ type: 'datetime', nullable: true, default: null })
   deletedAt?: Date; // Soft delete support
 }

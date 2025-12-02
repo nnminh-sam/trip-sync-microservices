@@ -6,8 +6,8 @@ export interface EnvSchema {
   APP_NAME: string;
   NODE_ENV: string;
 
-  // NATS
-  NATS_SERVER: string;
+  // Authentication
+  API_GATEWAY_BASE_URL: string;
 
   // MySQL
   MYSQL_HOST: string;
@@ -34,7 +34,7 @@ export const validationSchema = Joi.object<EnvSchema>({
     .valid('development', 'production', 'staging')
     .default('development'),
 
-  NATS_SERVER: Joi.string().required(),
+  API_GATEWAY_BASE_URL: Joi.string().required(),
 
   MYSQL_HOST: Joi.string().required(),
   MYSQL_PORT: Joi.number().required(),
@@ -59,8 +59,8 @@ export const configuration = () => ({
     name: process.env.APP_NAME || 'media-service',
     env: process.env.NODE_ENV || 'development',
   },
-  nats: {
-    server: process.env.NATS_SERVER,
+  auth: {
+    apiGatewayUrl: process.env.API_GATEWAY_BASE_URL,
   },
   database: {
     type: 'mysql',

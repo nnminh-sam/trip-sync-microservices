@@ -56,3 +56,7 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 docker-volumes
+
+# Custom ignores
+gpg-keys/
+test/resources/

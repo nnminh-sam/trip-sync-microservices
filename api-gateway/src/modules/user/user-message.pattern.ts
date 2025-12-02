@@ -7,4 +7,6 @@ export const UserMessagePattern = {
   delete: 'user.delete',
   deactivate: 'user.deactivate',
   activate: 'user.activate',
+  updatePublicKey: 'user.update.public-key',
+  findPublicKey: 'user.find.public-key',
 } as const;

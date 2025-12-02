@@ -61,10 +61,10 @@ export class AuthController {
     return await this.authService.exchangeTokens(payload);
   }
 
-  @Post('authorize-claims')
+  @Post('authorize-request')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Authorize claims' })
-  @ApiResponse({ status: 200, description: 'Claims authorized' })
+  @ApiOperation({ summary: 'Authorize API request' })
+  @ApiResponse({ status: 200, description: 'Request authorized' })
   @ApiBody({ type: AuthorizeClaimPayloadDto })
   async authorizeClaims(
     @RequestUserClaims() claims: TokenClaimsDto,

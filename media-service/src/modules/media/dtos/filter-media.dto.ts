@@ -3,5 +3,5 @@ export class FilterMediaDto {
   uploaderId?: string;
   status?: string;
   page?: number = 1;
-  size?: number = 10;
+  pageSize?: number = 10;
 }

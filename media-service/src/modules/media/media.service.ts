@@ -32,8 +32,10 @@ export class MediaService {
       query.andWhere('media.status = :status', { status: filter.status });
     }
 
-    const skip = ((filter.page || 1) - 1) * (filter.size || 10);
-    query.skip(skip).take(filter.size || 10);
+    const page = filter.page || 1;
+    const pageSize = filter.pageSize || 10;
+    const skip = (page - 1) * pageSize;
+    query.skip(skip).take(pageSize);
 
     const [data, total] = await query.getManyAndCount();
 

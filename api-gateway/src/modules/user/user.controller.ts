@@ -159,18 +159,18 @@ export class UserController {
   @Get('my/public-key')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user public key' })
-  @ApiResponseConstruction({
-    status: 200,
-    description: 'Public key retrieved',
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string' },
-        email: { type: 'string' },
-        publicKey: { type: 'string' },
-      },
-    },
-  })
+  // @ApiResponseConstruction({
+  //   status: 200,
+  //   description: 'Public key retrieved',
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       id: { type: 'string' },
+  //       email: { type: 'string' },
+  //       publicKey: { type: 'string' },
+  //     },
+  //   },
+  // })
   async getPublicKey(@RequestUserClaims() claims: TokenClaimsDto) {
     return await this.userService.getPublicKey(claims);
   }

@@ -1,4 +1,11 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
 import * as openpgp from 'openpgp';
 
 export interface VerificationResult {
@@ -7,16 +14,28 @@ export interface VerificationResult {
   error?: string;
 }
 
+export interface SignatureVerificationResult {
+  isValid: boolean;
+  signerKeyId?: string;
+  error?: string;
+}
+
 @Injectable()
 export class GnuPgVerificationService {
   private readonly logger = new Logger(GnuPgVerificationService.name);
+  private readonly apiGatewayUrl: string;
+  private readonly publicKeyEndpoint: string;
+
+  constructor(private readonly configService: ConfigService) {
+    this.apiGatewayUrl =
+      this.configService.get('API_GATEWAY_BASE_URL') ||
+      'http://localhost:80';
+
+    this.publicKeyEndpoint = `${this.apiGatewayUrl}/api/v1/users/my/public-key`;
+  }
 
   /**
-   * Verify a detached GPG signature against file data using a public key
-   * @param fileData - The original file data (as Buffer or string)
-   * @param signatureArmored - The detached signature in armored format (text)
-   * @param publicKeyArmored - The public key in armored format (text)
-   * @returns VerificationResult with isValid flag and signer info
+   * Verify a detached signature against file data
    */
   async verifyDetachedSignature(
     fileData: Buffer | string,
@@ -24,88 +43,157 @@ export class GnuPgVerificationService {
     publicKeyArmored: string,
   ): Promise<VerificationResult> {
     try {
-      // Validate inputs
-      if (!fileData) {
-        throw new BadRequestException('File data is required');
-      }
-      if (!signatureArmored || signatureArmored.trim() === '') {
+      if (!fileData) throw new BadRequestException('File data is required');
+      if (!signatureArmored.trim())
         throw new BadRequestException('Signature is required');
-      }
-      if (!publicKeyArmored || publicKeyArmored.trim() === '') {
+      if (!publicKeyArmored.trim())
         throw new BadRequestException('Public key is required');
-      }
 
-      // Convert file data to buffer if string
-      const messageData =
-        typeof fileData === 'string'
-          ? Buffer.from(fileData, 'utf-8')
-          : fileData;
+      const message = await openpgp.createMessage({
+        binary:
+          typeof fileData === 'string'
+            ? Buffer.from(fileData, 'utf8')
+            : fileData,
+      });
 
-      // Parse the signature
       const signature = await openpgp.readSignature({
         armoredSignature: signatureArmored,
       });
 
-      // Parse the public key
       const publicKey = await openpgp.readKey({
         armoredKey: publicKeyArmored,
       });
 
-      // Create message object from binary data
-      const message = await openpgp.createMessage({
-        binary: messageData,
-      });
-
-      // Verify the signature
-      const verificationResult = await openpgp.verify({
+      const verification = await openpgp.verify({
         message,
         signature,
         verificationKeys: publicKey,
       });
 
-      // Check signature validity
-      const verified = await verificationResult.signatures[0].verified;
+      const firstSig = verification.signatures[0];
+      const valid = await firstSig.verified;
 
-      if (!verified) {
-        this.logger.warn('Signature verification failed');
+      if (!valid) {
         return {
           isValid: false,
           error: 'Signature verification failed',
         };
       }
 
-      // Get signer information
-      const signerKeyID = verificationResult.signatures[0].keyID.toHex();
-      const signer = signerKeyID;
+      const signerKeyId = firstSig.keyID.toHex();
+      return { isValid: true, signer: signerKeyId };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Detached signature verification error: ${msg}`);
 
-      this.logger.debug(`Signature verified successfully by key: ${signer}`);
-
-      return {
-        isValid: true,
-        signer,
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Signature verification error: ${errorMessage}`);
-
-      return {
-        isValid: false,
-        error: errorMessage,
-      };
+      return { isValid: false, error: msg };
     }
   }
 
   /**
-   * Verify a signature with string-based message data
-   * @param messageText - The text message to verify
-   * @param signatureArmored - The detached signature
-   * @param publicKeyArmored - The public key
+   * Shortcut for verifying text signatures
    */
   async verifyTextSignature(
     messageText: string,
     signatureArmored: string,
     publicKeyArmored: string,
-  ): Promise<VerificationResult> {
-    return this.verifyDetachedSignature(messageText, signatureArmored, publicKeyArmored);
+  ) {
+    return this.verifyDetachedSignature(
+      messageText,
+      signatureArmored,
+      publicKeyArmored,
+    );
+  }
+
+  /**
+   * Verify detached signature for media upload
+   */
+  async verifySignature(
+    fileBuffer: Buffer,
+    armoredSignature: string,
+    jwtToken: string,
+  ): Promise<SignatureVerificationResult> {
+    try {
+      if (!fileBuffer?.length)
+        return { isValid: false, error: 'File buffer is empty' };
+      if (!armoredSignature.trim())
+        return { isValid: false, error: 'Signature is missing' };
+      if (!jwtToken.trim())
+        return { isValid: false, error: 'JWT token is required' };
+
+      const publicKey = await this.fetchUserPublicKey(jwtToken);
+      if (!publicKey)
+        return {
+          isValid: false,
+          error:
+            'No public key found. User must upload a GPG public key before uploading signed media.',
+        };
+
+      const signature = await openpgp.readSignature({
+        armoredSignature: armoredSignature,
+      });
+
+      const signingIds = signature.getSigningKeyIDs();
+      if (!signingIds.length)
+        return { isValid: false, error: 'No signing key ID found in signature' };
+
+      const signerKeyId = signingIds[0].toHex();
+
+      const message = await openpgp.createMessage({
+        binary: fileBuffer,
+      });
+
+      const verificationResult = await openpgp.verify({
+        message,
+        signature,
+        verificationKeys: await openpgp.readKey({
+          armoredKey: publicKey,
+        }),
+      });
+
+      const isValid = await verificationResult.signatures[0].verified;
+
+      if (!isValid) {
+        return {
+          isValid: false,
+          signerKeyId,
+          error: 'Signature verification failed — invalid signature',
+        };
+      }
+
+      return { isValid: true, signerKeyId };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Signature verification failed: ${msg}`);
+      return { isValid: false, error: msg };
+    }
+  }
+
+  /**
+   * Fetch user public key from API Gateway
+   */
+  private async fetchUserPublicKey(jwtToken: string): Promise<string | null> {
+    try {
+      const res = await axios.get(this.publicKeyEndpoint, {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 8000,
+      });
+
+      return res.data?.data?.publicKey || null;
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        if ([401, 403].includes(err.response?.status || 0)) {
+          throw new UnauthorizedException('Invalid or expired JWT token');
+        }
+      }
+
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed fetching public key: ${msg}`);
+
+      throw new BadRequestException('Failed to fetch public key from gateway');
+    }
   }
 }

@@ -17,7 +17,9 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "sign-media": "node scripts/sign-media.js",
+    "update-public-key": "node scripts/update-public-key.js"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^1.11.2",
@@ -42,6 +44,7 @@
     "mysql2": "^3.14.2",
     "nats": "^2.29.3",
     "nodemailer": "^6.10.1",
+    "openpgp": "^5.11.3",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
     "reflect-metadata": "^0.2.0",
