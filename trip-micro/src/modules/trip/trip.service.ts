@@ -10,11 +10,11 @@ import { throwRpcException } from 'src/utils';
 import { ListDataDto } from 'src/dtos/list-data.dto';
 import { AuthorizeClaimsPayloadDto } from './dtos/authorize-claims-payload.dto';
 import { RpcException } from '@nestjs/microservices';
-import { TripApproval } from 'src/models/trip-approval.model';
 import { ApproveTripDto } from './dtos/approve-trip.dto';
-import { TripApprovalStatusEnum } from 'src/models/trip-approval-status.enum';
 import { TripStatusEnum } from 'src/models/trip-status.enum';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
+import { LocationService } from '../location/location.service';
+import { Location } from 'src/models/location.model';
 
 @Injectable()
 export class TripService {
@@ -27,8 +27,7 @@ export class TripService {
     @InjectRepository(TripLocation)
     private readonly tripLocationRepo: Repository<TripLocation>,
 
-    @InjectRepository(TripApproval)
-    private readonly tripApprovalRepo: Repository<TripApproval>,
+    private readonly locationService: LocationService,
   ) {}
 
   async authorizeClaims(payload: AuthorizeClaimsPayloadDto) {
@@ -56,96 +55,90 @@ export class TripService {
   }
 
   async validateLocationIds(locationIds: string[]) {
-    const invalidIds: string[] = [];
-
-    for (const id of locationIds) {
-      try {
-        // const result = await this.locationClient.findOne(id);
-        // if (!result) invalidIds.push(id);
-      } catch {
-        invalidIds.push(id);
-      }
-    }
-
-    if (invalidIds.length > 0) {
-      this.logger.warn(`Invalid location_ids: ${invalidIds.join(', ')}`);
+    try {
+      return await Promise.all(
+        locationIds.map((id) =>
+          this.locationService.findOne(id).catch(() => {
+            throw new Error(`Invalid location ID: ${id}`);
+          }),
+        ),
+      );
+    } catch (error) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
-        message: 'One or more location_id are invalid',
-        details: invalidIds.map((id) => ({
-          field: 'location_id',
-          value: id,
-          error: 'Not found in location-microservice',
-        })),
+        message: error.message,
       });
     }
   }
 
   private shouldAutoApproveTrip(dto: CreateTripDto): boolean {
     // Check if all required fields are provided for auto-approval
+    const today: Date = new Date();
     const hasPurpose = dto.purpose && dto.purpose.trim().length > 0;
     const hasGoal = dto.goal && dto.goal.trim().length > 0;
-    const hasSchedule = dto.schedule && dto.schedule.trim().length > 0;
-    const hasAssigneeId = dto.assignee_id && dto.assignee_id.trim().length > 0;
+    const hasSchedule = dto.schedule && +dto.schedule > +today;
+    const hasDeadline = dto.deadline && +dto.deadline > +today;
+    const meaningfulSchedule =
+      hasSchedule && hasDeadline && dto.schedule <= dto.deadline;
     const hasLocations = dto.locations && dto.locations.length > 0;
 
     // All criteria must be met for auto-approval
-    return hasPurpose && hasGoal && hasSchedule && hasAssigneeId && hasLocations;
+    return (
+      hasPurpose && hasGoal && hasSchedule && hasLocations && meaningfulSchedule
+    );
   }
 
   async create(dto: CreateTripDto, claims: TokenClaimsDto): Promise<Trip> {
     this.logger.log('Creating a new trip');
     try {
-      const locationIds = dto.locations.map((loc) => loc.location_id);
-      await this.validateLocationIds(locationIds);
-
-      // Check if trip should be auto-approved
       const shouldAutoApprove = this.shouldAutoApproveTrip(dto);
-      
+      const locationIds = dto.locations.map((loc) => loc.location_id);
+      const locations: Location[] = await this.validateLocationIds(locationIds);
+
       const trip = this.tripRepo.create({
         title: dto.title,
-        assignee_id: dto.assignee_id,
+        assigneeId: dto.assignee_id,
+        managerId: dto.manager_id,
         purpose: dto.purpose,
         goal: dto.goal,
         schedule: dto.schedule,
-        created_by: dto.created_by,
-        status: shouldAutoApprove ? TripStatusEnum.APPROVED : TripStatusEnum.PENDING,
+        deadline: dto.deadline,
+        ...(dto.note && {
+          note: dto.note,
+        }),
+        status: shouldAutoApprove
+          ? TripStatusEnum.PENDING
+          : TripStatusEnum.PROPOSING,
       });
       const savedTrip = await this.tripRepo.save(trip);
 
-      const tripLocations = dto.locations.map((loc) =>
-        this.tripLocationRepo.create({
-          trip: savedTrip,
-          location_id: loc.location_id,
-          arrival_order: loc.arrival_order,
-          scheduled_at: loc.scheduled_at,
-        }),
+      const tripLocations: TripLocation[] = locations.map(
+        (location: Location, index: number) => {
+          return this.tripLocationRepo.create({
+            trip: savedTrip,
+            baseLocationId: location.id,
+            nameSnapshot: location.name,
+            latitudeSnapshot: location.latitude,
+            longitudeSnapshot: location.longitude,
+            offsetRadiusSnapshot: location.offsetRadious,
+            locationPointSnapshot: location.geom,
+            arrivalOrder: dto.locations[index].arrival_order,
+            scheduledAt: dto.locations[index].scheduled_at,
+          });
+        },
       );
 
       await this.tripLocationRepo.save(tripLocations);
 
-      // Create auto-approval record if trip was auto-approved
-      if (shouldAutoApprove) {
-        const approval = this.tripApprovalRepo.create({
-          trip_id: savedTrip.id,
-          approver_id: claims.sub, // Use the creator as the approver for auto-approval
-          status: TripApprovalStatusEnum.APPROVED,
-          note: 'Auto-approved: All required fields provided',
-          is_auto: true,
-        });
-        await this.tripApprovalRepo.save(approval);
-        
-        this.logger.log(`Trip ${savedTrip.id} was auto-approved - all required fields provided`);
-      }
-
       return await this.findOne(savedTrip.id, claims);
     } catch (error) {
+      // Fowarding detailed errors
       if (error instanceof RpcException) {
         throw error;
       }
 
       this.logger.error('Failed to create trip', error.stack);
-      
+
       // Handle unique constraint violation for title
       if (error.code === '23505' || error.message?.includes('duplicate key')) {
         throwRpcException({
@@ -158,7 +151,7 @@ export class TripService {
           },
         });
       }
-      
+
       throwRpcException({
         message: 'Failed to create trip',
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -382,7 +375,7 @@ export class TripService {
       return await this.findOne(id, claims);
     } catch (error) {
       this.logger.error(`Failed to update trip: ${id}`, error.stack);
-      
+
       // Handle unique constraint violation for title
       if (error.code === '23505' || error.message?.includes('duplicate key')) {
         throwRpcException({
@@ -395,7 +388,7 @@ export class TripService {
           },
         });
       }
-      
+
       throwRpcException({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Failed to update trip',

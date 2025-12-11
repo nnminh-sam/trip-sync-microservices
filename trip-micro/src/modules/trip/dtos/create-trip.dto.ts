@@ -36,7 +36,7 @@ export class CreateTripDto {
 
   @IsString()
   @IsNotEmpty()
-  created_by: string; 
+  manager_id: string;
 
   @IsString()
   @IsNotEmpty()
@@ -46,9 +46,14 @@ export class CreateTripDto {
   @IsNotEmpty()
   goal: string;
 
-  @IsString()
   @IsNotEmpty()
-  schedule: string;
+  schedule: Date;
+
+  @IsNotEmpty()
+  deadline: Date;
+
+  @IsOptional()
+  note?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

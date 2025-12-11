@@ -33,7 +33,7 @@ export class TripLocation extends BaseModel {
   })
   locationPointSnapshot: { x: number; y: number };
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', nullable: false })
   arrivalOrder: number;
 
   @Column({ type: 'datetime', nullable: true })
@@ -42,25 +42,23 @@ export class TripLocation extends BaseModel {
   @Column({
     type: 'point',
     srid: 4326,
-    nullable: false,
     spatialFeatureType: 'Point',
     select: false, // Don't select by default to avoid ST_AsText issues
   })
   checkInPoint: { x: number; y: number };
 
-  @Column({ type: 'datetime', nullable: false })
+  @Column({ type: 'datetime', nullable: true })
   checkInTimestamp: Date;
 
   @Column({
     type: 'point',
     srid: 4326,
-    nullable: false,
     spatialFeatureType: 'Point',
     select: false, // Don't select by default to avoid ST_AsText issues
   })
   checkOutPoint: { x: number; y: number };
 
-  @Column({ type: 'datetime', nullable: false })
+  @Column({ type: 'datetime', nullable: true })
   checkOutTimestamp: Date;
 
   @ManyToOne(() => Trip, (trip) => trip.locations, { onDelete: 'CASCADE' })
