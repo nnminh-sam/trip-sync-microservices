@@ -60,3 +60,5 @@ docker-volumes
 # Custom ignores
 gpg-keys/
 test/resources/
+
+cert.json

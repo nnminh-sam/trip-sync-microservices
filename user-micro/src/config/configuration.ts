@@ -24,6 +24,7 @@ export interface EnvSchema {
   MAIL_USER: string;
   MAIL_PASSWORD: string;
   MAIL_FROM: string;
+  FIREBASE_CERT_PATH: string;
 }
 
 export const validationSchema = Joi.object<EnvSchema>({
@@ -50,4 +51,5 @@ export const validationSchema = Joi.object<EnvSchema>({
   MAIL_USER: Joi.string().required(),
   MAIL_PASSWORD: Joi.string().required(),
   MAIL_FROM: Joi.string().email().required(),
+  FIREBASE_CERT_PATH: Joi.string().required(),
 });

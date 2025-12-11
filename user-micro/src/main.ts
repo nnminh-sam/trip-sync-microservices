@@ -9,6 +9,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService<EnvSchema>);
   const natsServer = configService.get<string>('NATS_SERVER');
   const port = configService.get<number>('APP_PORT') || 3000;
+  console.log("🚀 ~ bootstrap ~ port:", port)
 
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.NATS,

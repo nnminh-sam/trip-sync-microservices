@@ -7,16 +7,38 @@ import * as bcrypt from 'bcryptjs';
 import { AuthorizeClaimsPayloadDto } from 'src/modules/role/dtos/authorize-claims-payload.dto';
 import { RoleService } from 'src/modules/role/role.service';
 import { User } from 'src/models/user.model';
+import { ConfigService } from '@nestjs/config';
+import * as admin from 'firebase-admin';
+import { EnvSchema } from 'src/config';
 
 @Injectable()
 export class AuthService {
   private readonly logger: Logger = new Logger(AuthService.name);
+  private readonly firebaseAdmin;
 
+  // TODO: setup firebase and create an admin credential for user service
   constructor(
+    private readonly configService: ConfigService<EnvSchema>,
+
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
     private readonly roleService: RoleService,
-  ) {}
+  ) {
+    this.logger.log('Setting up firebase admin');
+    const firebaseCertPath = this.configService.get('FIREBASE_CERT_PATH');
+    this.firebaseAdmin = admin;
+    this.firebaseAdmin.initializeApp({
+      credential: admin.credential.cert(firebaseCertPath),
+    });
+  }
+
+  async generateFirebaseToken(userId: string) {
+    const customToken: string = await this.firebaseAdmin
+      .auth()
+      .createCustomToken(userId);
+    this.logger.log(`Generated custom token: ${customToken.substring(0, 12)}`);
+    return customToken;
+  }
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
@@ -42,8 +64,10 @@ export class AuthService {
       }
 
       this.logger.log('Login successful. Returning user info.');
-      const userWithoutPassword = { ...user };
+      const firebaseToken = await this.generateFirebaseToken(user.email);
+      const userWithoutPassword: any = { ...user };
       delete userWithoutPassword.password;
+      userWithoutPassword.firebaseToken = firebaseToken;
       return userWithoutPassword as User;
     } catch (error) {
       this.logger.error('Login failed:', error);

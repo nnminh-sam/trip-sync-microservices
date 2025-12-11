@@ -1,6 +1,6 @@
 services:
   mysql:
-    container_name: 'mysql'
+    container_name: 'user_db'
     image: mysql:8.0
     restart: unless-stopped
     env_file:

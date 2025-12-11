@@ -483,7 +483,9 @@ export class UserService {
     this.logger.log(`Updating public key for user with ID: ${userId}`);
 
     if (!publicKey || publicKey.trim().length === 0) {
-      this.logger.warn(`Public key update failed - empty public key for user ID: ${userId}`);
+      this.logger.warn(
+        `Public key update failed - empty public key for user ID: ${userId}`,
+      );
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'Public key cannot be empty',
@@ -495,7 +497,9 @@ export class UserService {
     });
 
     if (!user) {
-      this.logger.warn(`Public key update failed - user not found with ID: ${userId}`);
+      this.logger.warn(
+        `Public key update failed - user not found with ID: ${userId}`,
+      );
       throwRpcException({
         statusCode: HttpStatus.NOT_FOUND,
         message: 'User Not Found',
@@ -524,7 +528,9 @@ export class UserService {
       .getOne();
 
     if (!user) {
-      this.logger.warn(`Public key retrieval failed - user not found with ID: ${userId}`);
+      this.logger.warn(
+        `Public key retrieval failed - user not found with ID: ${userId}`,
+      );
       throwRpcException({
         statusCode: HttpStatus.NOT_FOUND,
         message: 'User Not Found',
