@@ -15,6 +15,7 @@ import { TripStatusEnum } from 'src/models/trip-status.enum';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { LocationService } from '../location/location.service';
 import { Location } from 'src/models/location.model';
+import { TripStatusValidator } from './trip-status-validator';
 
 @Injectable()
 export class TripService {
@@ -130,7 +131,7 @@ export class TripService {
 
       await this.tripLocationRepo.save(tripLocations);
 
-      return await this.findOne(savedTrip.id, claims);
+      return await this.findOne(savedTrip.id);
     } catch (error) {
       // Fowarding detailed errors
       if (error instanceof RpcException) {
@@ -202,7 +203,7 @@ export class TripService {
 
     const enrichedTrips = items.map((trip) => ({
       ...trip,
-      locations: trip.locations?.map((tl) => tl.location) ?? [],
+      locations: trip.tripLocations,
       // Add your enrichment fields here (e.g., assigner, driver data)
     }));
 
@@ -214,69 +215,32 @@ export class TripService {
     });
   }
 
-  async findOne(id: string, claims: TokenClaimsDto): Promise<any> {
-    const trip = await this.tripRepo.findOne({
-      where: { id },
-      relations: ['locations'],
-    });
+  async findOne(id: string): Promise<any> {
+    const trip = await this.tripRepo
+      .createQueryBuilder('trip')
+      .leftJoinAndSelect('trip.locations', 'tripLocation')
+      .leftJoinAndSelect('tripLocation.location', 'location')
+      .where('trip.id = :id', { id })
+      .getOne();
 
     if (!trip) {
-      this.logger.warn(`Trip not found: ${id}`);
       throwRpcException({
         statusCode: HttpStatus.NOT_FOUND,
-        message: 'Trip not found',
+        message: `Trip with id ${id} not found`,
       });
     }
 
-    // Enrich location data with location-micro response
-    const enrichedLocations = await Promise.all(
-      trip.locations.map(async (loc) => {
-        let locationDetails = null;
-        try {
-          // locationDetails = await this.locationClient.findOne(loc.location_id);
-        } catch (err) {
-          this.logger.warn(
-            `Failed to fetch location for ID: ${loc.location_id}`,
-          );
-        }
-
-        return {
-          id: loc.id,
-          location_id: loc.location_id,
-          arrival_order: loc.arrival_order,
-          scheduled_at: loc.scheduled_at,
-          location: locationDetails
-            ? {
-                name: locationDetails.name,
-                latitude: locationDetails.latitude,
-                longitude: locationDetails.longitude,
-              }
-            : null,
-        };
-      }),
-    );
-
-    return {
-      id: trip.id,
-      title: trip.title,
-      purpose: trip.purpose,
-      goal: trip.goal,
-      schedule: trip.schedule,
-      assignee_id: trip.assignee_id,
-      status: trip.status,
-      created_by: trip.created_by,
-      createdAt: trip.createdAt,
-      updatedAt: trip.updatedAt,
-      locations: enrichedLocations,
+    // Enrich result (same pattern as findAll)
+    const enriched = {
+      ...trip,
+      locations: trip.tripLocations,
     };
+
+    return enriched;
   }
 
-  async update(
-    id: string,
-    dto: UpdateTripDto,
-    claims: TokenClaimsDto,
-  ): Promise<Trip> {
-    const trip = await this.findOne(id, claims);
+  async update(id: string, dto: UpdateTripDto): Promise<Trip> {
+    const trip: Trip = await this.findOne(id);
 
     if (!trip) {
       throwRpcException({
@@ -285,63 +249,43 @@ export class TripService {
       });
     }
 
-    if (trip.status !== 'pending') {
+    const { title, status, schedule, deadline, ...rest } = dto;
+    const titleExisted = await this.tripRepo.existsBy({
+      title,
+    });
+    if (titleExisted) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
-        message: `Only trips with status 'pending' can be updated`,
+        message: 'Duplicated trip title',
+      });
+    }
+
+    const isMeaningfulTimeline = +schedule <= +deadline;
+    if (!isMeaningfulTimeline) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid trip schedule and deadline',
       });
     }
 
     try {
-      Object.assign(trip, {
-        title: dto.title,
-        purpose: dto.purpose,
-        goal: dto.goal,
-        schedule: dto.schedule,
-        assignee_id: dto.assignee_id,
-      });
-
-      const savedTrip = await this.tripRepo.save(trip);
-
-      if (dto.locations && dto.locations.length > 0) {
-        // Xoá các trip_location cũ
-        await this.tripLocationRepo.delete({ trip: { id } });
-
-        // Tạo mới các trip_location
-        const newTripLocations = dto.locations.map((loc) =>
-          this.tripLocationRepo.create({
-            trip: savedTrip,
-            location_id: loc.location_id,
-            arrival_order: loc.arrival_order,
-            scheduled_at: loc.scheduled_at,
-          }),
-        );
-
-        await this.tripLocationRepo.save(newTripLocations);
-      }
-
-      return await this.findOne(id, claims);
+      TripStatusValidator.validateTransition(trip.status, status);
     } catch (error) {
-      this.logger.error(`Failed to update trip: ${id}`, error.stack);
-
-      // Handle unique constraint violation for title
-      if (error.code === '23505' || error.message?.includes('duplicate key')) {
-        throwRpcException({
-          message: 'A trip with this title already exists',
-          statusCode: HttpStatus.CONFLICT,
-          details: {
-            field: 'title',
-            value: dto.title,
-            error: 'Title must be unique',
-          },
-        });
-      }
-
       throwRpcException({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to update trip',
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: error.message,
       });
     }
+
+    if (title !== undefined) trip.title = title;
+    if (status !== undefined) trip.status = status;
+    if (schedule !== undefined) trip.schedule = schedule;
+    if (deadline !== undefined) trip.deadline = deadline;
+
+    Object.assign(trip, rest);
+
+    await this.tripRepo.save(trip);
+    return trip;
   }
 
   async remove(

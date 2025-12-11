@@ -40,5 +40,5 @@ export class Trip extends BaseModel {
   startedAt: Date;
 
   @OneToMany(() => TripLocation, (tripLocation) => tripLocation.trip)
-  locations: TripLocation[];
+  tripLocations: TripLocation[];
 }

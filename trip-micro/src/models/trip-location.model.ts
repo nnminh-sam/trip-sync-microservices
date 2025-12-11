@@ -61,7 +61,7 @@ export class TripLocation extends BaseModel {
   @Column({ type: 'datetime', nullable: true })
   checkOutTimestamp: Date;
 
-  @ManyToOne(() => Trip, (trip) => trip.locations, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Trip, (trip) => trip.tripLocations, { onDelete: 'CASCADE' })
   // @JoinColumn({ name: 'trip_id' })
   trip: Trip;
 

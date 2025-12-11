@@ -1,6 +1,17 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateTripDto } from './create-trip.dto';
+import { TripStatusEnum } from 'src/models/trip-status.enum';
 
-export class UpdateTripDto extends PartialType(CreateTripDto) {
-    
+export class UpdateTripDto {
+  title: string;
+
+  status: TripStatusEnum;
+
+  purpose: string;
+
+  goal: string;
+
+  schedule: Date;
+
+  deadline: Date;
+
+  note: string;
 }
