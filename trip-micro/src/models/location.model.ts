@@ -1,12 +1,12 @@
 import { BaseModel } from 'src/models/base.model';
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, ManyToOne } from 'typeorm';
 import { LocationType } from '../types/location.types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Trip } from './trip.model';
+import { TripLocation } from './trip-location.model';
 
-@Entity('location')
+@Entity('locations')
 @Index('idx_location_geom', ['geom'], { spatial: true })
-@Index('idx_location_type', ['type'])
-@Index('idx_location_created_by', ['createdBy'])
 export class Location extends BaseModel {
   @ApiProperty({
     description: 'Unique name of the location',
@@ -146,5 +146,7 @@ export class Location extends BaseModel {
   })
   @Column({ type: 'varchar', length: 50, nullable: true })
   timezone: string;
-}
 
+  @ManyToOne(() => TripLocation, (tripLocation) => tripLocation.trip)
+  trips: Trip[];
+}

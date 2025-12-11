@@ -1,17 +1,15 @@
 import { Column, Entity, OneToMany } from 'typeorm';
 import { BaseModel } from './base.model';
 import { TripLocation } from './trip-location.model';
-import { TripApproval } from './trip-approval.model';
 import { TripStatusEnum } from 'src/models/trip-status.enum';
 
 @Entity({ name: 'trips' })
 export class Trip extends BaseModel {
-
   @Column({ type: 'varchar' })
   title: string;
 
   @Column({ nullable: true })
-  assignee_id: string;
+  assigneeId: string;
 
   @Column({
     type: 'enum',
@@ -26,15 +24,21 @@ export class Trip extends BaseModel {
   @Column({ type: 'varchar', nullable: true })
   goal: string;
 
-  @Column({ type: 'varchar', nullable: true })
-  schedule: string;
+  @Column({ type: 'datetime', nullable: true })
+  schedule: Date;
 
-  @Column()
-  created_by: string;
+  @Column({ type: 'datetime', nullable: true })
+  deadline: Date;
 
-  @OneToMany(() => TripLocation, (tl) => tl.trip)
+  @Column({ type: 'string', nullable: true })
+  note: string;
+
+  @Column({ type: 'uuid', nullable: false })
+  managerId: string;
+
+  @Column({ type: 'datetime', nullable: true })
+  startedAt: Date;
+
+  @OneToMany(() => TripLocation, (tripLocation) => tripLocation.trip)
   locations: TripLocation[];
-
-  @OneToMany(() => TripApproval, (approval) => approval.trip)
-  approvals: TripApproval[];
 }
