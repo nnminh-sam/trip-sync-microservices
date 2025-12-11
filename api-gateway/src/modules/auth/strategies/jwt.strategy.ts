@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -13,7 +14,9 @@ import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { UserService } from 'src/modules/user/user.service';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+  private readonly logger: Logger;
+
   constructor(
     private readonly configService: ConfigService<EnvSchema>,
     private readonly redisService: RedisService,
@@ -23,18 +26,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_SECRET'),
-      passReqToCallback: true,
     });
+    this.logger = new Logger(JwtStrategy.name);
+    console.log('JWT constructor called');
   }
 
-  // ? Why removing the request, the token is not decoded? Currently, this function work
-  async validate(req: Request, payload: TokenClaimsDto) {
-    const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
-
-    if (!token) {
-      throw new BadRequestException('No Token Provided');
-    }
-
+  async validate(payload: TokenClaimsDto) {
     const isBlacklisted = await this.redisService.isBlacklisted(payload.jit);
     if (isBlacklisted) {
       throw new BadRequestException('Invalid Token');

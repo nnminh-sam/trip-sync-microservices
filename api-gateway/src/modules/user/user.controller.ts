@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';

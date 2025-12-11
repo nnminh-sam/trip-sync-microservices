@@ -2,10 +2,9 @@ import {
   BadRequestException,
   Inject,
   Injectable,
-  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { ClientProxy, RpcException } from '@nestjs/microservices';
+import { ClientProxy } from '@nestjs/microservices';
 import { NATSClient } from 'src/client/clients';
 import { AuthMessagePattern } from 'src/modules/auth/auth-message.pattern';
 import { LoginDto } from 'src/modules/auth/dtos/login-payload.dto';
@@ -17,8 +16,6 @@ import { ExchangeTokenDto } from 'src/modules/auth/dtos/exchange-token.dto';
 import { v4 as uuid } from 'uuid';
 import { AuthorizeClaimPayloadDto } from 'src/modules/auth/dtos/authorize-claim-payload.dto';
 import { AuthResponseDto } from 'src/modules/auth/dtos/auth-response.dto';
-import { firstValueFrom } from 'rxjs';
-import { MessagePayloadDto } from 'src/dtos/message-payload.dto';
 
 @Injectable()
 export class AuthService {

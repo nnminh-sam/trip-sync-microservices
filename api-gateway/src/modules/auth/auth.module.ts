@@ -6,13 +6,13 @@ import { ClientModule } from 'src/client/client.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EnvSchema } from 'src/config';
 import { JwtStrategy } from 'src/modules/auth/strategies/jwt.strategy';
-import { APP_GUARD } from '@nestjs/core';
-import { JwtGuard } from 'src/common/guards/jwt.guard';
 import { DatabaseModule } from 'src/database/database.module';
 import { UserModule } from 'src/modules/user/user.module';
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
   imports: [
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     UserModule,
     DatabaseModule,
     ClientModule,
@@ -29,13 +29,7 @@ import { UserModule } from 'src/modules/user/user.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    {
-      provide: APP_GUARD,
-      useClass: JwtGuard,
-    },
-  ],
+  providers: [AuthService, JwtStrategy],
+  exports: [JwtStrategy, PassportModule],
 })
 export class AuthModule {}
