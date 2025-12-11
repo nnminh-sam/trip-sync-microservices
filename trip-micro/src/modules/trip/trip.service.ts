@@ -177,8 +177,8 @@ export class TripService {
 
     const query = this.tripRepo
       .createQueryBuilder('trip')
-      .leftJoinAndSelect('trip.locations', 'location')
-      .leftJoinAndSelect('trip.approvals', 'approval');
+      .leftJoinAndSelect('trip.location', 'tripLocation')
+      .leftJoinAndSelect('tripLocation.location', 'location');
 
     if (assignee_id) {
       query.andWhere('trip.assignee_id = :assignee_id', { assignee_id });
@@ -200,63 +200,11 @@ export class TripService {
 
     const [items, total] = await query.getManyAndCount();
 
-    // Gọi locationClient.findOne() cho từng trip location
-    const enrichedTrips = await Promise.all(
-      items.map(async (trip) => {
-        const enrichedLocations = await Promise.all(
-          trip.locations.map(async (loc) => {
-            let name = null;
-            try {
-              // const location = await this.locationClient.findOne(
-              //   loc.location_id,
-              // );
-              // name = location?.name ?? null;
-            } catch (err) {
-              this.logger.warn(
-                `Cannot fetch location name for ID: ${loc.location_id}`,
-              );
-            }
-            return {
-              id: loc.id,
-              location_id: loc.location_id,
-              arrival_order: loc.arrival_order,
-              scheduled_at: loc.scheduled_at,
-              name,
-              createdAt: loc.createdAt,
-              updatedAt: loc.updatedAt,
-            };
-          }),
-        );
-
-        // Format approvals data
-        const formattedApprovals =
-          trip.approvals?.map((approval) => ({
-            id: approval.id,
-            trip_id: approval.trip_id,
-            approver_id: approval.approver_id,
-            status: approval.status,
-            note: approval.note,
-            is_auto: approval.is_auto,
-            createdAt: approval.createdAt,
-            updatedAt: approval.updatedAt,
-          })) || [];
-
-        return {
-          id: trip.id,
-          title: trip.title,
-          assignee_id: trip.assignee_id,
-          status: trip.status,
-          purpose: trip.purpose,
-          goal: trip.goal,
-          schedule: trip.schedule,
-          created_by: trip.created_by,
-          createdAt: trip.createdAt,
-          updatedAt: trip.updatedAt,
-          locations: enrichedLocations,
-          approvals: formattedApprovals,
-        };
-      }),
-    );
+    const enrichedTrips = items.map((trip) => ({
+      ...trip,
+      locations: trip.locations?.map((tl) => tl.location) ?? [],
+      // Add your enrichment fields here (e.g., assigner, driver data)
+    }));
 
     return ListDataDto.build<any>({
       data: enrichedTrips,

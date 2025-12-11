@@ -1,5 +1,5 @@
 import { BaseModel } from 'src/models/base.model';
-import { Column, Entity, Index, ManyToOne } from 'typeorm';
+import { Column, Entity, Index, ManyToOne, OneToMany } from 'typeorm';
 import { LocationType } from '../types/location.types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Trip } from './trip.model';
@@ -147,6 +147,6 @@ export class Location extends BaseModel {
   @Column({ type: 'varchar', length: 50, nullable: true })
   timezone: string;
 
-  @ManyToOne(() => TripLocation, (tripLocation) => tripLocation.trip)
+  @OneToMany(() => TripLocation, (tripLocation) => tripLocation.trip)
   trips: Trip[];
 }
