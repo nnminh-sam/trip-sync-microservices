@@ -15,10 +15,12 @@ async function bootstrap() {
   app.enableCors();
 
   // Global validation pipe for HTTP endpoints
-  app.useGlobalPipes(new ValidationPipe({
-    transform: true,
-    whitelist: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+    }),
+  );
 
   // Setup Swagger for HTTP endpoints
   const config = new DocumentBuilder()
@@ -44,13 +46,15 @@ async function bootstrap() {
 
   // Start both HTTP server and microservice
   await app.startAllMicroservices();
-  
+
   // Start HTTP server
-  const httpPort = configService.get<number>('HTTP_PORT') || 3000;
-  await app.listen(httpPort);
+  const port = configService.get<number>('APP_PORT') || 3000;
+  await app.listen(port);
 
   console.log(`Trip microservice is listening on NATS: ${natsServer}`);
-  console.log(`Trip HTTP server is running on port ${httpPort}`);
-  console.log(`Swagger documentation available at http://localhost:${httpPort}/api-docs`);
+  console.log(`Trip HTTP server is running on port ${port}`);
+  console.log(
+    `Swagger documentation available at http://localhost:${port}/api-docs`,
+  );
 }
 bootstrap();

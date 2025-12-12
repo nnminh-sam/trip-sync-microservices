@@ -1,14 +1,11 @@
-import { IsEnum, IsOptional, IsString, IsBoolean } from 'class-validator';
-import { TripApprovalStatusEnum } from 'src/models/trip-approval-status.enum';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class ApproveTripDto {
-  @IsEnum(TripApprovalStatusEnum)
-  status: TripApprovalStatusEnum;
-
   @IsString()
-  note: string;
+  @IsNotEmpty()
+  decision: 'approve' | 'reject';
 
   @IsString()
   @IsOptional()
-  assignee_id: string;
+  note?: string;
 }

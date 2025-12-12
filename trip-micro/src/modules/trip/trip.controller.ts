@@ -25,7 +25,7 @@ export class TripController {
       },
     });
 
-    return await this.tripService.create(payload.request.body, payload.claims);
+    return await this.tripService.create(payload.request.body);
   }
 
   @MessagePattern(TripMessagePattern.FIND_ALL)
@@ -41,7 +41,7 @@ export class TripController {
       },
     });
 
-    return await this.tripService.findAll(payload.request.body, payload.claims);
+    return await this.tripService.findAll(payload.request.body);
   }
 
   @MessagePattern(TripMessagePattern.FIND_ONE)
@@ -65,7 +65,7 @@ export class TripController {
       });
     }
 
-    return await this.tripService.findOne(id, payload.claims);
+    return await this.tripService.findOne(id);
   }
 
   @MessagePattern(TripMessagePattern.UPDATE)
@@ -89,11 +89,7 @@ export class TripController {
       });
     }
 
-    return await this.tripService.update(
-      id,
-      payload.request.body,
-      payload.claims,
-    );
+    return await this.tripService.update(id, payload.request.body);
   }
 
   @MessagePattern(TripMessagePattern.DELETE)
@@ -117,7 +113,7 @@ export class TripController {
       });
     }
 
-    return await this.tripService.remove(id, payload.claims);
+    return await this.tripService.remove(id);
   }
 
   @MessagePattern(TripMessagePattern.APPROVE)
@@ -135,9 +131,8 @@ export class TripController {
 
     const { id } = payload.request.path;
     const dto = payload.request.body;
-    const approverId = payload.claims.sub;
 
-    return this.tripService.approve(id, approverId, dto, payload.claims);
+    return this.tripService.approve(id, dto);
   }
 
   @MessagePattern(TripMessagePattern.LOCATIONS)
@@ -154,22 +149,6 @@ export class TripController {
     });
 
     const { id } = payload.request.path;
-    return this.tripService.getTripLocations(id, payload.claims);
-  }
-  @MessagePattern(TripMessagePattern.APPROVALS)
-  async getTripApprovals(@Payload() payload: MessagePayloadDto) {
-    await this.tripService.authorizeClaims({
-      claims: payload.claims,
-      required: {
-        roles: ['manager', 'system admin', 'employee'],
-        permission: {
-          action: 'read',
-          resource: 'trip',
-        },
-      },
-    });
-
-    const { id } = payload.request.path;
-    return await this.tripService.getTripApprovals(id);
+    return this.tripService.getTripLocations(id);
   }
 }

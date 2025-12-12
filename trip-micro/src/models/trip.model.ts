@@ -30,7 +30,7 @@ export class Trip extends BaseModel {
   @Column({ type: 'datetime', nullable: true })
   deadline: Date;
 
-  @Column({ type: 'string', nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   note: string;
 
   @Column({ type: 'uuid', nullable: false })
@@ -38,6 +38,9 @@ export class Trip extends BaseModel {
 
   @Column({ type: 'datetime', nullable: true })
   startedAt: Date;
+
+  @Column({ type: 'datetime', nullable: true })
+  decidedAt: Date;
 
   @OneToMany(() => TripLocation, (tripLocation) => tripLocation.trip)
   tripLocations: TripLocation[];

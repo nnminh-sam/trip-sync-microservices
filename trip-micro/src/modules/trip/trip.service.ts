@@ -12,7 +12,6 @@ import { AuthorizeClaimsPayloadDto } from './dtos/authorize-claims-payload.dto';
 import { RpcException } from '@nestjs/microservices';
 import { ApproveTripDto } from './dtos/approve-trip.dto';
 import { TripStatusEnum } from 'src/models/trip-status.enum';
-import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { LocationService } from '../location/location.service';
 import { Location } from 'src/models/location.model';
 import { TripStatusValidator } from './trip-status-validator';
@@ -89,7 +88,7 @@ export class TripService {
     );
   }
 
-  async create(dto: CreateTripDto, claims: TokenClaimsDto): Promise<Trip> {
+  async create(dto: CreateTripDto): Promise<Trip> {
     this.logger.log('Creating a new trip');
     try {
       const shouldAutoApprove = this.shouldAutoApproveTrip(dto);
@@ -104,6 +103,7 @@ export class TripService {
         goal: dto.goal,
         schedule: dto.schedule,
         deadline: dto.deadline,
+        decidedAt: new Date(),
         ...(dto.note && {
           note: dto.note,
         }),
@@ -161,10 +161,7 @@ export class TripService {
     }
   }
 
-  async findAll(
-    filter: FilterTripDto,
-    claims: TokenClaimsDto,
-  ): Promise<ListDataDto<any>> {
+  async findAll(filter: FilterTripDto): Promise<ListDataDto<any>> {
     const {
       assignee_id,
       from_date,
@@ -201,21 +198,15 @@ export class TripService {
 
     const [items, total] = await query.getManyAndCount();
 
-    const enrichedTrips = items.map((trip) => ({
-      ...trip,
-      locations: trip.tripLocations,
-      // Add your enrichment fields here (e.g., assigner, driver data)
-    }));
-
     return ListDataDto.build<any>({
-      data: enrichedTrips,
+      data: items,
       page,
       size,
       total,
     });
   }
 
-  async findOne(id: string): Promise<any> {
+  async findOne(id: string): Promise<Trip> {
     const trip = await this.tripRepo
       .createQueryBuilder('trip')
       .leftJoinAndSelect('trip.locations', 'tripLocation')
@@ -230,25 +221,11 @@ export class TripService {
       });
     }
 
-    // Enrich result (same pattern as findAll)
-    const enriched = {
-      ...trip,
-      locations: trip.tripLocations,
-    };
-
-    return enriched;
+    return trip;
   }
 
   async update(id: string, dto: UpdateTripDto): Promise<Trip> {
     const trip: Trip = await this.findOne(id);
-
-    if (!trip) {
-      throwRpcException({
-        statusCode: HttpStatus.NOT_FOUND,
-        message: 'Trip not found',
-      });
-    }
-
     const { title, status, schedule, deadline, ...rest } = dto;
     const titleExisted = await this.tripRepo.existsBy({
       title,
@@ -288,89 +265,59 @@ export class TripService {
     return trip;
   }
 
-  async remove(
-    id: string,
-    claims: TokenClaimsDto,
-  ): Promise<{ success: boolean; id: string }> {
-    const trip = await this.findOne(id, claims);
-
-    if (!trip) {
-      throwRpcException({
-        statusCode: HttpStatus.NOT_FOUND,
-        message: 'Trip not found',
-      });
-    }
-
-    if (trip.status !== 'pending') {
+  async remove(id: string): Promise<{ success: boolean; id: string }> {
+    const trip = await this.findOne(id);
+    if (trip.status !== TripStatusEnum.PENDING) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: `Only trips with status 'pending' can be deleted`,
       });
     }
 
-    // Xoá các trip_location trước
-    await this.tripLocationRepo.delete({ trip: { id } });
-
-    // Xoá trip
-    await this.tripRepo.delete(id);
+    try {
+      await this.tripLocationRepo.delete({
+        trip: { id },
+      });
+      await this.tripRepo.delete(id);
+    } catch (error) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Cannot delete trip',
+      });
+    }
 
     this.logger.log(`Trip deleted with id: ${id}`);
     return { success: true, id };
   }
 
-  async approve(
-    tripId: string,
-    approverId: string,
-    dto: ApproveTripDto,
-    claims: TokenClaimsDto,
-  ): Promise<Trip> {
-    const trip = await this.findOne(tripId, claims);
+  async approve(tripId: string, dto: ApproveTripDto): Promise<Trip> {
+    const trip = await this.findOne(tripId);
 
-    if (trip.status !== 'pending') {
+    if (trip.status !== TripStatusEnum.PROPOSING) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
-        message: 'Only trips with status "pending" can be approved or rejected',
+        message: 'Invalid trip approval',
       });
     }
 
-    const approval = this.tripApprovalRepo.create({
-      trip_id: tripId,
-      approver_id: approverId,
-      status: dto.status,
-      note: dto.note,
-      is_auto: false,
-    });
-
-    await this.tripApprovalRepo.save(approval);
-
-    if (dto.status === TripApprovalStatusEnum.APPROVED) {
-      trip.assignee_id = dto.assignee_id;
-      trip.status = TripStatusEnum.APPROVED;
+    if (dto.note) {
+      trip.note = dto.note;
     }
-
-    if (dto.status === TripApprovalStatusEnum.REJECTED) {
-      trip.status = TripStatusEnum.CANCELED;
-    }
-
-    await this.tripRepo.save(trip);
-    return await this.findOne(tripId, claims);
+    trip.decidedAt = new Date();
+    trip.status =
+      dto.decision === 'approve'
+        ? TripStatusEnum.PENDING
+        : TripStatusEnum.CANCELED;
+    return await this.tripRepo.save(trip);
+    // return await this.findOne(tripId, claims);
   }
 
-  async getTripLocations(
-    tripId: string,
-    claims: TokenClaimsDto,
-  ): Promise<any[]> {
-    const trip = await this.tripRepo.findOne({ where: { id: tripId } });
-    if (!trip) {
-      throwRpcException({
-        statusCode: HttpStatus.NOT_FOUND,
-        message: `Trip not found with ID: ${tripId}`,
-      });
-    }
+  async getTripLocations(tripId: string): Promise<any[]> {
+    const trip = await this.findOne(tripId);
 
     const locations = await this.tripLocationRepo.find({
       where: { trip: { id: tripId } },
-      order: { arrival_order: 'ASC' },
+      order: { arrivalOrder: 'ASC' },
     });
 
     const enrichedLocations = await Promise.all(
@@ -385,9 +332,9 @@ export class TripService {
 
         return {
           id: loc.id,
-          location_id: loc.location_id,
-          arrival_order: loc.arrival_order,
-          scheduled_at: loc.scheduled_at,
+          location_id: loc.baseLocationId,
+          arrival_order: loc.arrivalOrder,
+          scheduled_at: loc.scheduledAt,
           location: locationDetails
             ? {
                 name: locationDetails.name,
@@ -400,29 +347,5 @@ export class TripService {
     );
 
     return enrichedLocations;
-  }
-
-  async getTripApprovals(tripId: string) {
-    const trip = await this.tripRepo.findOne({ where: { id: tripId } });
-    if (!trip) {
-      throwRpcException({
-        statusCode: HttpStatus.NOT_FOUND,
-        message: `Trip not found with ID: ${tripId}`,
-      });
-    }
-
-    const approvals = await this.tripApprovalRepo.find({
-      where: { trip_id: tripId },
-      order: { createdAt: 'ASC' },
-    });
-
-    return approvals.map((a) => ({
-      id: a.id,
-      approver_id: a.approver_id,
-      status: a.status,
-      note: a.note,
-      is_auto: a.is_auto,
-      created_at: a.createdAt,
-    }));
   }
 }

@@ -15,6 +15,7 @@ export const NATSClient: ClientsProviderAsyncOptions = {
         servers: [natsServer],
         timeout: 30000, // 30 seconds timeout
         maxPayload: 50 * 1024 * 1024, // 50MB max payload
+        name: 'API-Gateway',
       },
     };
   },

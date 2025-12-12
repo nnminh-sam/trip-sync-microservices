@@ -13,6 +13,7 @@ export const NATSClient: ClientsProviderAsyncOptions = {
       transport: Transport.NATS,
       options: {
         servers: [natsServer],
+        name: 'Trip Service',
       },
     };
   },
