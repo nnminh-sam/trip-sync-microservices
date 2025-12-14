@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Trip } from 'src/models/trip.model';
 import { TripLocation } from 'src/models/trip-location.model';
 import { CreateTripDto } from './dtos/create-trip.dto';
@@ -28,6 +28,8 @@ export class TripService {
     private readonly tripLocationRepo: Repository<TripLocation>,
 
     private readonly locationService: LocationService,
+
+    private readonly dataSource: DataSource,
   ) {}
 
   async authorizeClaims(payload: AuthorizeClaimsPayloadDto) {
@@ -72,30 +74,46 @@ export class TripService {
   }
 
   private shouldAutoApproveTrip(dto: CreateTripDto): boolean {
-    // Check if all required fields are provided for auto-approval
+    const schedule = dto.schedule ? new Date(dto.schedule) : null;
+    const deadline = dto.deadline ? new Date(dto.deadline) : null;
     const today: Date = new Date();
     const hasPurpose = dto.purpose && dto.purpose.trim().length > 0;
     const hasGoal = dto.goal && dto.goal.trim().length > 0;
-    const hasSchedule = dto.schedule && +dto.schedule > +today;
-    const hasDeadline = dto.deadline && +dto.deadline > +today;
+    const hasSchedule = schedule && +schedule >= +today;
+    const hasDeadline = deadline && +deadline >= +today;
     const meaningfulSchedule =
-      hasSchedule && hasDeadline && dto.schedule <= dto.deadline;
+      hasSchedule && hasDeadline && +schedule <= +deadline;
     const hasLocations = dto.locations && dto.locations.length > 0;
+    const result: boolean = hasPurpose && hasGoal && hasSchedule && hasLocations && meaningfulSchedule;
 
-    // All criteria must be met for auto-approval
-    return (
-      hasPurpose && hasGoal && hasSchedule && hasLocations && meaningfulSchedule
-    );
+    this.logger.debug(`Create trip DTO: ${JSON.stringify(dto)}`);
+    this.logger.debug(`Criteria(Has purpose): ${hasPurpose}`);
+    this.logger.debug(`Criteria(Has schedule): ${hasSchedule}`);
+    this.logger.debug(`Criteria(Has deadline): ${hasDeadline}`);
+    this.logger.debug(`Criteria(Has meaningful schedule): ${meaningfulSchedule}`);
+    this.logger.debug(`Criteria(Has goal): ${hasGoal}`);
+    this.logger.debug(`Result: ${result ? "Auto approved": "Failed to auto approve"}`)
+
+    return result;
   }
 
-  async create(dto: CreateTripDto): Promise<Trip> {
-    this.logger.log('Creating a new trip');
-    try {
-      const shouldAutoApprove = this.shouldAutoApproveTrip(dto);
-      const locationIds = dto.locations.map((loc) => loc.location_id);
-      const locations: Location[] = await this.validateLocationIds(locationIds);
+  async create(creatorId: string, dto: CreateTripDto): Promise<Trip> {
+    this.logger.log('Creating a new trip with transaction');
 
-      const trip = this.tripRepo.create({
+    const shouldAutoApprove = this.shouldAutoApproveTrip(dto);
+    const locationIds = dto.locations.map((loc) => loc.location_id);
+    
+    const locations: Location[] = await this.validateLocationIds(locationIds);
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    const isProposal = creatorId !== dto.manager_id;
+    const tripStatus = (isProposal && shouldAutoApprove || !isProposal) ? TripStatusEnum.PENDING : TripStatusEnum.PROPOSING;
+
+    try {
+      const trip = this.tripRepo.create({ 
         title: dto.title,
         assigneeId: dto.assignee_id,
         managerId: dto.manager_id,
@@ -104,52 +122,44 @@ export class TripService {
         schedule: dto.schedule,
         deadline: dto.deadline,
         decidedAt: new Date(),
-        ...(dto.note && {
-          note: dto.note,
-        }),
-        status: shouldAutoApprove
-          ? TripStatusEnum.PENDING
-          : TripStatusEnum.PROPOSING,
+        ...(dto.note && { note: dto.note }),
+        status: tripStatus,
       });
-      const savedTrip = await this.tripRepo.save(trip);
 
-      const tripLocations: TripLocation[] = locations.map(
-        (location: Location, index: number) => {
-          return this.tripLocationRepo.create({
-            trip: savedTrip,
-            baseLocationId: location.id,
-            nameSnapshot: location.name,
-            latitudeSnapshot: location.latitude,
-            longitudeSnapshot: location.longitude,
-            offsetRadiusSnapshot: location.offsetRadious,
-            locationPointSnapshot: location.geom,
-            arrivalOrder: dto.locations[index].arrival_order,
-            scheduledAt: dto.locations[index].scheduled_at,
-          });
-        },
-      );
+      const savedTrip = await queryRunner.manager.save(trip);
 
-      await this.tripLocationRepo.save(tripLocations);
+      const tripLocations = locations.map((location: Location, index: number) => {
+        return this.tripLocationRepo.create({
+          trip: savedTrip,
+          baseLocationId: location.id,
+          nameSnapshot: location.name,
+          latitudeSnapshot: location.latitude,
+          longitudeSnapshot: location.longitude,
+          offsetRadiusSnapshot: location.offsetRadious,
+          locationPointSnapshot: location.locationPoint,
+          arrivalOrder: dto.locations[index].arrival_order,
+          scheduledAt: dto.locations[index].scheduled_at,
+        });
+      });
+
+      await queryRunner.manager.save(tripLocations);
+
+      await queryRunner.commitTransaction();
 
       return await this.findOne(savedTrip.id);
+
     } catch (error) {
-      // Fowarding detailed errors
-      if (error instanceof RpcException) {
-        throw error;
-      }
+      await queryRunner.rollbackTransaction();
 
-      this.logger.error('Failed to create trip', error.stack);
+      this.logger.error('Failed to create trip, rolling back', error.stack);
 
-      // Handle unique constraint violation for title
+      if (error instanceof RpcException) throw error;
+
       if (error.code === '23505' || error.message?.includes('duplicate key')) {
         throwRpcException({
           message: 'A trip with this title already exists',
           statusCode: HttpStatus.CONFLICT,
-          details: {
-            field: 'title',
-            value: dto.title,
-            error: 'Title must be unique',
-          },
+          details: { field: 'title', value: dto.title },
         });
       }
 
@@ -158,6 +168,8 @@ export class TripService {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         details: error.message || error,
       });
+    } finally {
+      await queryRunner.release();
     }
   }
 
@@ -175,7 +187,7 @@ export class TripService {
 
     const query = this.tripRepo
       .createQueryBuilder('trip')
-      .leftJoinAndSelect('trip.location', 'tripLocation')
+      .leftJoinAndSelect('trip.tripLocations', 'tripLocation')
       .leftJoinAndSelect('tripLocation.location', 'location');
 
     if (assignee_id) {
@@ -209,7 +221,7 @@ export class TripService {
   async findOne(id: string): Promise<Trip> {
     const trip = await this.tripRepo
       .createQueryBuilder('trip')
-      .leftJoinAndSelect('trip.locations', 'tripLocation')
+      .leftJoinAndSelect('trip.tripLocations', 'tripLocation')
       .leftJoinAndSelect('tripLocation.location', 'location')
       .where('trip.id = :id', { id })
       .getOne();
@@ -225,39 +237,48 @@ export class TripService {
   }
 
   async update(id: string, dto: UpdateTripDto): Promise<Trip> {
+    console.log("🚀 ~ TripService ~ update ~ dto:", dto)
     const trip: Trip = await this.findOne(id);
+    console.log("🚀 ~ TripService ~ update ~ trip:", trip)
     const { title, status, schedule, deadline, ...rest } = dto;
-    const titleExisted = await this.tripRepo.existsBy({
-      title,
-    });
-    if (titleExisted) {
-      throwRpcException({
-        statusCode: HttpStatus.BAD_REQUEST,
-        message: 'Duplicated trip title',
+    if (title) {
+      const titleExisted = await this.tripRepo.existsBy({
+        title,
       });
+      console.log("🚀 ~ TripService ~ update ~ titleExisted:", titleExisted)
+      if (titleExisted) {
+        throwRpcException({
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Duplicated trip title',
+        });
+        return null;
+      }
+      if (title !== undefined) trip.title = title;
     }
 
-    const isMeaningfulTimeline = +schedule <= +deadline;
+    const formatedSchedule = schedule ? new Date(schedule) : null;
+    const formatedDeadline = deadline ? new Date(deadline) : null;
+    const isMeaningfulTimeline = formatedSchedule <= formatedDeadline;
     if (!isMeaningfulTimeline) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'Invalid trip schedule and deadline',
       });
     }
-
-    try {
-      TripStatusValidator.validateTransition(trip.status, status);
-    } catch (error) {
-      throwRpcException({
-        statusCode: HttpStatus.BAD_REQUEST,
-        message: error.message,
-      });
-    }
-
-    if (title !== undefined) trip.title = title;
-    if (status !== undefined) trip.status = status;
     if (schedule !== undefined) trip.schedule = schedule;
     if (deadline !== undefined) trip.deadline = deadline;
+
+    if (status) {
+      try {
+        TripStatusValidator.validateTransition(trip.status, status);
+      } catch (error) {
+        throwRpcException({
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: error.message,
+        });
+      }
+      if (status !== undefined) trip.status = status;
+    }
 
     Object.assign(trip, rest);
 
@@ -275,19 +296,16 @@ export class TripService {
     }
 
     try {
-      await this.tripLocationRepo.delete({
-        trip: { id },
-      });
-      await this.tripRepo.delete(id);
+      trip.deletedAt = new Date();
+      await this.tripRepo.save(trip);
+      this.logger.log(`Trip deleted with id: ${id}`);
+      return { success: true, id };
     } catch (error) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'Cannot delete trip',
       });
     }
-
-    this.logger.log(`Trip deleted with id: ${id}`);
-    return { success: true, id };
   }
 
   async approve(tripId: string, dto: ApproveTripDto): Promise<Trip> {
@@ -297,6 +315,7 @@ export class TripService {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'Invalid trip approval',
+        details: 'Trip is not propsoing'
       });
     }
 

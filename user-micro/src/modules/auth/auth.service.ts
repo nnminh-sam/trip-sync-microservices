@@ -16,7 +16,6 @@ export class AuthService {
   private readonly logger: Logger = new Logger(AuthService.name);
   private readonly firebaseAdmin;
 
-  // TODO: setup firebase and create an admin credential for user service
   constructor(
     private readonly configService: ConfigService<EnvSchema>,
 

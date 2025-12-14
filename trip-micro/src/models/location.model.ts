@@ -4,9 +4,9 @@ import { LocationType } from '../types/location.types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Trip } from './trip.model';
 import { TripLocation } from './trip-location.model';
+import { PointTransformer } from 'src/utils';
 
 @Entity('locations')
-@Index('idx_location_geom', ['geom'], { spatial: true })
 export class Location extends BaseModel {
   @ApiProperty({
     description: 'Unique name of the location',
@@ -60,21 +60,17 @@ export class Location extends BaseModel {
 
   @ApiPropertyOptional({
     description: 'Spatial point representation for GIS operations',
-    example: { x: 106.7009238, y: 10.7769331 },
-    type: 'object',
-    properties: {
-      x: { type: 'number', description: 'Longitude' },
-      y: { type: 'number', description: 'Latitude' },
-    },
+    example: 'POINT(106.7009238 10.7769331)',
   })
   @Column({
-    type: 'point',
-    srid: 4326,
-    nullable: false,
+    name: 'location_point',
+    type: 'geometry',
     spatialFeatureType: 'Point',
-    select: false, // Don't select by default to avoid ST_AsText issues
+    srid: 4326,
+    nullable: true,
+    transformer: PointTransformer,
   })
-  geom: { x: number; y: number };
+  locationPoint: string;
 
   @ApiProperty({
     description: 'Type of location',

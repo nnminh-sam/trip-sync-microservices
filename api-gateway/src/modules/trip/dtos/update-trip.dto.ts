@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUUID, IsDateString } from 'class-validator';
+import { IsOptional, IsString,  IsDateString } from 'class-validator';
+import { TripStatusEnum } from 'src/models/enums/trip-status.enum';
 
 export class UpdateTripDto {
   @ApiProperty({
@@ -10,52 +11,49 @@ export class UpdateTripDto {
   @IsOptional()
   @IsString()
   title?: string;
-
+  
   @ApiProperty({
-    description: 'Trip description',
-    example: 'Client meeting and site inspection',
+    description: 'Trip purpose',
     required: false,
   })
   @IsOptional()
   @IsString()
-  description?: string;
+  purpose?: string;
+  
+  @ApiProperty({
+    description: 'Trip goal',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  goal?: string;
 
   @ApiProperty({
-    description: 'Trip start date',
+    description: "Trip's schedule",
     example: '2024-01-15T08:00:00Z',
     required: false,
   })
   @IsOptional()
   @IsDateString()
-  start_date?: string;
+  schedule?: Date;
 
   @ApiProperty({
-    description: 'Trip end date',
+    description: "Trip's deadline",
     example: '2024-01-17T18:00:00Z',
     required: false,
   })
   @IsOptional()
   @IsDateString()
-  end_date?: string;
-
-  @ApiProperty({
-    description: 'User ID assigned to this trip',
-    example: 'user-uuid-123',
-    required: false,
-  })
-  @IsOptional()
-  @IsUUID()
-  assignee_id?: string;
+  deadline?: Date;
 
   @ApiProperty({
     description: 'Trip status',
-    example: 'scheduled',
-    enum: ['scheduled', 'in_progress', 'completed', 'cancelled'],
+    enum: TripStatusEnum,
     required: false,
   })
   @IsOptional()
   @IsString()
-  status?: string;
+  status?: TripStatusEnum;
 
   @ApiProperty({
     description: 'Trip notes',

@@ -39,7 +39,7 @@ export class LocationService {
         .into(Location)
         .values({
           ...payload,
-          geom: () => `POINT(${payload.longitude}, ${payload.latitude})`,
+          locationPoint: () => `POINT(${payload.longitude}, ${payload.latitude})`,
         })
         .execute();
 
@@ -128,7 +128,7 @@ export class LocationService {
 
     // Set geom field based on coordinates
     locations.forEach((loc) => {
-      loc.geom = { x: loc.longitude, y: loc.latitude };
+      loc.locationPoint = `POINT(${loc.longitude} ${loc.latitude})`;
     });
 
     return ListDataDto.build<Location>({
@@ -171,7 +171,7 @@ export class LocationService {
     }
 
     // Set geom field based on coordinates
-    location.geom = { x: location.longitude, y: location.latitude };
+    location.locationPoint = `POINT(${location.longitude} ${location.latitude})`;
 
     return location;
   }
@@ -352,7 +352,7 @@ export class LocationService {
 
     // Set geom field based on coordinates
     locations.forEach((loc) => {
-      loc.geom = { x: loc.longitude, y: loc.latitude };
+      loc.locationPoint = `POINT(${loc.longitude} ${loc.latitude})`;
     });
 
     return locations;
@@ -430,7 +430,7 @@ export class LocationService {
       this.logger.debug(`Cache hit for location ${id}`);
       // Ensure geom field is set
       if (cached.latitude && cached.longitude) {
-        cached.geom = { x: cached.longitude, y: cached.latitude };
+        cached.locationPoint = `POINT(${cached.longitude} ${cached.latitude})`;
       }
       return cached;
     }

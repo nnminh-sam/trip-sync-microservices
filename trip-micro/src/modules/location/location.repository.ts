@@ -440,10 +440,7 @@ export class LocationRepository
   async saveLocation(location: Location): Promise<Location> {
     // Update geom if coordinates changed
     if (location.latitude && location.longitude) {
-      location.geom = {
-        x: location.longitude,
-        y: location.latitude,
-      };
+      location.locationPoint = `POINT(${location.longitude} ${location.latitude})`;
     }
     return this.save(location);
   }

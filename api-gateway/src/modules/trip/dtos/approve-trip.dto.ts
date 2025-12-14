@@ -1,14 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class ApproveTripDto {
   @ApiProperty({
     description: 'Approval status',
-    example: 'approved',
-    enum: ['approved', 'rejected'],
+    example: 'approve',
+    enum: ['approve', 'reject'],
+    required: true
   })
+  @IsNotEmpty()
   @IsString()
-  status: string;
+  decision: 'approve' | 'reject';
 
   @ApiProperty({
     description: 'Approval comments',
@@ -17,5 +19,5 @@ export class ApproveTripDto {
   })
   @IsOptional()
   @IsString()
-  comments?: string;
+  note?: string;
 }

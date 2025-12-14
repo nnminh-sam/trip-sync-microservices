@@ -139,27 +139,4 @@ export class TripService {
 
     return result;
   }
-  async getLocations(claims: TokenClaimsDto, tripId: string) {
-    this.logger.log(`Sending request to get locations for trip: ${tripId}`);
-    return this.sender.send({
-      messagePattern: 'LOCATIONS',
-      payload: {
-        claims,
-        request: {
-          path: { id: tripId },
-        },
-      },
-    });
-  }
-  async getApprovals(claims: TokenClaimsDto, tripId: string) {
-    return this.sender.send({
-      messagePattern: 'APPROVALS',
-      payload: {
-        claims,
-        request: {
-          path: { id: tripId },
-        },
-      },
-    });
-  }
 }

@@ -26,7 +26,6 @@ import { FilterTripDto } from './dtos/filter-trip.dto';
 import { ApproveTripDto } from './dtos/approve-trip.dto';
 import { Trip } from 'src/models/trip.model';
 import { TripApproval } from 'src/models/trip-approval.model';
-import { TripLocation } from 'src/models/trip-location.model';
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
@@ -138,39 +137,5 @@ export class TripController {
     @Body() dto: ApproveTripDto,
   ) {
     return this.tripService.approveTrip(id, claims, dto);
-  }
-
-  @Get(':id/locations')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get all locations of a trip' })
-  @ApiParam({ name: 'id', description: 'Trip ID' })
-  @ApiResponseConstruction({
-    status: 200,
-    description: 'List of trip locations',
-    isArray: true,
-    model: TripLocation,
-  })
-  async getTripLocations(
-    @RequestUserClaims() claims: TokenClaimsDto,
-    @Param('id') id: string,
-  ) {
-    return this.tripService.getLocations(claims, id);
-  }
-
-  @Get(':id/approvals')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get approval history of a trip' })
-  @ApiParam({ name: 'id', description: 'Trip ID' })
-  @ApiResponseConstruction({
-    status: 200,
-    description: 'List of trip approvals',
-    isArray: true,
-    model: TripApproval,
-  })
-  async getTripApprovals(
-    @RequestUserClaims() claims: TokenClaimsDto,
-    @Param('id') id: string,
-  ) {
-    return this.tripService.getApprovals(claims, id);
   }
 }

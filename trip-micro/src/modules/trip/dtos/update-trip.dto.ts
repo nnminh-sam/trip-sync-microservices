@@ -1,17 +1,16 @@
 import { TripStatusEnum } from 'src/models/trip-status.enum';
-
 export class UpdateTripDto {
-  title: string;
+  title?: string;
 
-  status: TripStatusEnum;
+  schedule?: Date;
+  
+  deadline?: Date;
+  
+  status?: TripStatusEnum;
 
-  purpose: string;
-
-  goal: string;
-
-  schedule: Date;
-
-  deadline: Date;
-
-  note: string;
+  note?: string;
+  
+  purpose?: string;
+  
+  goal?: string;
 }

@@ -2,6 +2,7 @@ import { Column, Entity, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseModel } from './base.model';
 import { Trip } from './trip.model';
 import { Location } from './location.model';
+import { PointTransformer } from 'src/utils';
 
 @Entity({ name: 'trip_locations' })
 export class TripLocation extends BaseModel {
@@ -9,56 +10,61 @@ export class TripLocation extends BaseModel {
   @Column({ type: 'uuid' })
   tripId: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', name: 'base_location_id' })
   baseLocationId: string; // FK -> location-micro
 
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ type: 'varchar', name: 'name_snapshot', nullable: false })
   nameSnapshot: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 8, nullable: false })
+  @Column({ type: 'decimal', precision: 10, scale: 8, name: 'latitude_snapshot', nullable: false })
   latitudeSnapshot: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 8, nullable: false })
+  @Column({ type: 'decimal', precision: 11, scale: 8, name: 'longitude_snapshot', nullable: false })
   longitudeSnapshot: number;
 
-  @Column({ type: 'float', default: 100 })
+  @Column({ type: 'float', name: 'offset_radius_snapshot', default: 100 })
   offsetRadiusSnapshot: number;
 
   @Column({
-    type: 'point',
-    srid: 4326,
-    nullable: false,
+    name: 'location_point_snapshot',
+    type: 'geometry',
     spatialFeatureType: 'Point',
-    select: false, // Don't select by default to avoid ST_AsText issues
+    srid: 4326,
+    nullable: true,
+    transformer: PointTransformer,
   })
-  locationPointSnapshot: { x: number; y: number };
+  locationPointSnapshot: string;
 
-  @Column({ type: 'int', nullable: false })
+  @Column({ type: 'int', name: 'arrival_order', nullable: false })
   arrivalOrder: number;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'datetime', name: 'scheduled_at', nullable: true })
   scheduledAt: Date;
 
   @Column({
-    type: 'point',
-    srid: 4326,
+    name: 'checkin_point',
+    type: 'geometry',
     spatialFeatureType: 'Point',
-    select: false, // Don't select by default to avoid ST_AsText issues
+    srid: 4326,
+    nullable: true,
+    transformer: PointTransformer,
   })
-  checkInPoint: { x: number; y: number };
+  checkInPoint: string;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'datetime', name: 'checkin_timestamp', nullable: true })
   checkInTimestamp: Date;
 
   @Column({
-    type: 'point',
-    srid: 4326,
+    name: 'checkout_point',
+    type: 'geometry',
     spatialFeatureType: 'Point',
-    select: false, // Don't select by default to avoid ST_AsText issues
+    srid: 4326,
+    nullable: true,
+    transformer: PointTransformer,
   })
-  checkOutPoint: { x: number; y: number };
+  checkoutPoint: string;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'datetime', name: 'checkout_timestamp', nullable: true })
   checkOutTimestamp: Date;
 
   @ManyToOne(() => Trip, (trip) => trip.tripLocations, { onDelete: 'CASCADE' })

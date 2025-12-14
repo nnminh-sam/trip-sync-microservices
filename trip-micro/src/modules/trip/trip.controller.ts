@@ -8,6 +8,7 @@ import { TripMessagePattern } from './trip-message.pattern';
 import { MessagePayloadDto } from 'src/dtos/message-payload.dto';
 import { throwRpcException } from 'src/utils';
 import { ApproveTripDto } from './dtos/approve-trip.dto';
+
 @Controller()
 export class TripController {
   constructor(private readonly tripService: TripService) {}
@@ -25,7 +26,7 @@ export class TripController {
       },
     });
 
-    return await this.tripService.create(payload.request.body);
+    return await this.tripService.create(payload.claims.sub, payload.request.body);
   }
 
   @MessagePattern(TripMessagePattern.FIND_ALL)

@@ -19,6 +19,7 @@ import { tableSchemas } from 'src/models';
           entities: tableSchemas,
           synchronize: true,
           logging: true,
+          legacySpatialSupport: false,
         };
       },
       inject: [ConfigService],
