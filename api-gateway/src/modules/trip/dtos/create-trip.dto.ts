@@ -1,6 +1,5 @@
 import {
   IsArray,
-  IsDateString,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -10,6 +9,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { CreateTaskDto } from 'src/modules/task/dtos/create-task.dto';
 
 export class CreateTripLocationDto {
   @ApiProperty({
@@ -19,7 +19,7 @@ export class CreateTripLocationDto {
   @IsString()
   @IsNotEmpty()
   location_id: string;
-  
+
   @ApiProperty({
     description: 'Arrival order',
     example: '1',
@@ -28,12 +28,12 @@ export class CreateTripLocationDto {
   arrival_order: number;
 
   @ApiProperty({
-    description: 'Schedule time to arrive at the location',
-    example: '2024-01-15T08:00:00Z',
+    description: "Employee's task at this trip's location",
+    required: true,
+    type: CreateTaskDto,
   })
-  @IsOptional()
-  @IsDateString()
-  scheduled_at?: string;
+  @IsNotEmpty()
+  task: CreateTaskDto;
 }
 
 export class CreateTripDto {
@@ -102,7 +102,8 @@ export class CreateTripDto {
 
   @ApiProperty({
     description: 'Locations of the trip',
-    example: '[{location_id: "123e4567-e89b-12d3-a456-426614174000", arrival_order: 1, scheduled_at: "2024-01-15T08:00:00Z"}]',
+    type: CreateTripLocationDto,
+    isArray: true,
   })
   @IsArray()
   @ValidateNested({ each: true })

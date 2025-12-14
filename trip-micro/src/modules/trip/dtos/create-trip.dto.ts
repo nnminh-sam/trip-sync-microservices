@@ -1,6 +1,5 @@
 import {
   IsArray,
-  IsDateString,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -9,6 +8,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { CreateTaskDto } from 'src/modules/task/dtos/create-task.dto';
 
 export class CreateTripLocationDto {
   @IsString()
@@ -18,9 +18,8 @@ export class CreateTripLocationDto {
   @IsNotEmpty()
   arrival_order: number;
 
-  @IsOptional()
-  @IsDateString()
-  scheduled_at?: string;
+  @IsNotEmpty()
+  task: CreateTaskDto;
 }
 
 export class CreateTripDto {

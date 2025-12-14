@@ -1,8 +1,9 @@
-import { Column, Entity, ManyToOne, JoinColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
 import { BaseModel } from './base.model';
 import { Trip } from './trip.model';
 import { Location } from './location.model';
 import { PointTransformer } from 'src/utils';
+import { Task } from './task.model';
 
 @Entity({ name: 'trip_locations' })
 export class TripLocation extends BaseModel {
@@ -16,10 +17,22 @@ export class TripLocation extends BaseModel {
   @Column({ type: 'varchar', name: 'name_snapshot', nullable: false })
   nameSnapshot: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 8, name: 'latitude_snapshot', nullable: false })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 8,
+    name: 'latitude_snapshot',
+    nullable: false,
+  })
   latitudeSnapshot: number;
 
-  @Column({ type: 'decimal', precision: 11, scale: 8, name: 'longitude_snapshot', nullable: false })
+  @Column({
+    type: 'decimal',
+    precision: 11,
+    scale: 8,
+    name: 'longitude_snapshot',
+    nullable: false,
+  })
   longitudeSnapshot: number;
 
   @Column({ type: 'float', name: 'offset_radius_snapshot', default: 100 })
@@ -37,9 +50,6 @@ export class TripLocation extends BaseModel {
 
   @Column({ type: 'int', name: 'arrival_order', nullable: false })
   arrivalOrder: number;
-
-  @Column({ type: 'datetime', name: 'scheduled_at', nullable: true })
-  scheduledAt: Date;
 
   @Column({
     name: 'checkin_point',
@@ -67,12 +77,14 @@ export class TripLocation extends BaseModel {
   @Column({ type: 'datetime', name: 'checkout_timestamp', nullable: true })
   checkOutTimestamp: Date;
 
-  @ManyToOne(() => Trip, (trip) => trip.tripLocations, { onDelete: 'CASCADE' })
-  // @JoinColumn({ name: 'trip_id' })
+  @ManyToOne(() => Trip, (trip) => trip.tripLocations, { onUpdate: 'CASCADE' })
   trip: Trip;
 
   @ManyToOne(() => Location, (location) => location.trips, {
     onDelete: 'CASCADE',
   })
   location: Location;
+
+  @OneToOne(() => Task, (task) => task.tripLocation)
+  task?: Task;
 }

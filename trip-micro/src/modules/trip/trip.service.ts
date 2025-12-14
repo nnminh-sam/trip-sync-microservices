@@ -15,6 +15,8 @@ import { TripStatusEnum } from 'src/models/trip-status.enum';
 import { LocationService } from '../location/location.service';
 import { Location } from 'src/models/location.model';
 import { TripStatusValidator } from './trip-status-validator';
+import { TaskService } from '../task/task.service';
+import { CreateTaskDto } from '../task/dtos/create-task.dto';
 
 @Injectable()
 export class TripService {
@@ -28,6 +30,8 @@ export class TripService {
     private readonly tripLocationRepo: Repository<TripLocation>,
 
     private readonly locationService: LocationService,
+
+    private readonly taskService: TaskService,
 
     private readonly dataSource: DataSource,
   ) {}
@@ -84,15 +88,24 @@ export class TripService {
     const meaningfulSchedule =
       hasSchedule && hasDeadline && +schedule <= +deadline;
     const hasLocations = dto.locations && dto.locations.length > 0;
-    const result: boolean = hasPurpose && hasGoal && hasSchedule && hasLocations && meaningfulSchedule;
+    const result: boolean =
+      hasPurpose &&
+      hasGoal &&
+      hasSchedule &&
+      hasLocations &&
+      meaningfulSchedule;
 
     this.logger.debug(`Create trip DTO: ${JSON.stringify(dto)}`);
     this.logger.debug(`Criteria(Has purpose): ${hasPurpose}`);
     this.logger.debug(`Criteria(Has schedule): ${hasSchedule}`);
     this.logger.debug(`Criteria(Has deadline): ${hasDeadline}`);
-    this.logger.debug(`Criteria(Has meaningful schedule): ${meaningfulSchedule}`);
+    this.logger.debug(
+      `Criteria(Has meaningful schedule): ${meaningfulSchedule}`,
+    );
     this.logger.debug(`Criteria(Has goal): ${hasGoal}`);
-    this.logger.debug(`Result: ${result ? "Auto approved": "Failed to auto approve"}`)
+    this.logger.debug(
+      `Result: ${result ? 'Auto approved' : 'Failed to auto approve'}`,
+    );
 
     return result;
   }
@@ -100,9 +113,24 @@ export class TripService {
   async create(creatorId: string, dto: CreateTripDto): Promise<Trip> {
     this.logger.log('Creating a new trip with transaction');
 
+    const isTitleExisted = await this.tripRepo.existsBy({ title: dto.title });
+    if (isTitleExisted) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: "Duplicated trip's title",
+      });
+      return;
+    }
+    if (!dto.manager_id) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: "Trip manager's ID is required",
+      });
+      return;
+    }
+
     const shouldAutoApprove = this.shouldAutoApproveTrip(dto);
     const locationIds = dto.locations.map((loc) => loc.location_id);
-    
     const locations: Location[] = await this.validateLocationIds(locationIds);
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -110,10 +138,13 @@ export class TripService {
     await queryRunner.startTransaction();
 
     const isProposal = creatorId !== dto.manager_id;
-    const tripStatus = (isProposal && shouldAutoApprove || !isProposal) ? TripStatusEnum.PENDING : TripStatusEnum.PROPOSING;
+    const tripStatus =
+      (isProposal && shouldAutoApprove) || !isProposal
+        ? TripStatusEnum.PENDING
+        : TripStatusEnum.PROPOSING;
 
     try {
-      const trip = this.tripRepo.create({ 
+      const tripObject: Trip = this.tripRepo.create({
         title: dto.title,
         assigneeId: dto.assignee_id,
         managerId: dto.manager_id,
@@ -122,32 +153,44 @@ export class TripService {
         schedule: dto.schedule,
         deadline: dto.deadline,
         decidedAt: new Date(),
-        ...(dto.note && { note: dto.note }),
         status: tripStatus,
+        ...(dto.note && { note: dto.note }),
       });
 
-      const savedTrip = await queryRunner.manager.save(trip);
+      const trip = await queryRunner.manager.save(tripObject);
 
-      const tripLocations = locations.map((location: Location, index: number) => {
-        return this.tripLocationRepo.create({
-          trip: savedTrip,
-          baseLocationId: location.id,
-          nameSnapshot: location.name,
-          latitudeSnapshot: location.latitude,
-          longitudeSnapshot: location.longitude,
-          offsetRadiusSnapshot: location.offsetRadious,
-          locationPointSnapshot: location.locationPoint,
-          arrivalOrder: dto.locations[index].arrival_order,
-          scheduledAt: dto.locations[index].scheduled_at,
-        });
-      });
+      const tripLocationObjects: TripLocation[] = locations.map(
+        (location: Location, index: number) => {
+          return this.tripLocationRepo.create({
+            trip: trip,
+            baseLocationId: location.id,
+            nameSnapshot: location.name,
+            latitudeSnapshot: location.latitude,
+            longitudeSnapshot: location.longitude,
+            offsetRadiusSnapshot: location.offsetRadious,
+            locationPointSnapshot: location.locationPoint,
+            arrivalOrder: dto.locations[index].arrival_order,
+          });
+        },
+      );
 
-      await queryRunner.manager.save(tripLocations);
+      const tripLocations: TripLocation[] =
+        await queryRunner.manager.save(tripLocationObjects);
+
+      const createTaskDtos: CreateTaskDto[] = dto.locations.map(
+        (tripLocation) => tripLocation.task,
+      );
+      await Promise.all(
+        createTaskDtos.map((dto: CreateTaskDto, index: number) => {
+          dto.tripLocationId = tripLocations[index].id;
+          console.log('🚀 ~ TripService ~ create ~ dto:', dto);
+          return this.taskService.create(dto);
+        }),
+      );
 
       await queryRunner.commitTransaction();
 
-      return await this.findOne(savedTrip.id);
-
+      return trip;
     } catch (error) {
       await queryRunner.rollbackTransaction();
 
@@ -223,6 +266,7 @@ export class TripService {
       .createQueryBuilder('trip')
       .leftJoinAndSelect('trip.tripLocations', 'tripLocation')
       .leftJoinAndSelect('tripLocation.location', 'location')
+      .leftJoinAndSelect('tripLocation.task', 'task')
       .where('trip.id = :id', { id })
       .getOne();
 
@@ -237,15 +281,15 @@ export class TripService {
   }
 
   async update(id: string, dto: UpdateTripDto): Promise<Trip> {
-    console.log("🚀 ~ TripService ~ update ~ dto:", dto)
+    console.log('🚀 ~ TripService ~ update ~ dto:', dto);
     const trip: Trip = await this.findOne(id);
-    console.log("🚀 ~ TripService ~ update ~ trip:", trip)
+    console.log('🚀 ~ TripService ~ update ~ trip:', trip);
     const { title, status, schedule, deadline, ...rest } = dto;
     if (title) {
       const titleExisted = await this.tripRepo.existsBy({
         title,
       });
-      console.log("🚀 ~ TripService ~ update ~ titleExisted:", titleExisted)
+      console.log('🚀 ~ TripService ~ update ~ titleExisted:', titleExisted);
       if (titleExisted) {
         throwRpcException({
           statusCode: HttpStatus.BAD_REQUEST,
@@ -315,7 +359,7 @@ export class TripService {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'Invalid trip approval',
-        details: 'Trip is not propsoing'
+        details: 'Trip is not propsoing',
       });
     }
 
@@ -353,7 +397,6 @@ export class TripService {
           id: loc.id,
           location_id: loc.baseLocationId,
           arrival_order: loc.arrivalOrder,
-          scheduled_at: loc.scheduledAt,
           location: locationDetails
             ? {
                 name: locationDetails.name,

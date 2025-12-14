@@ -1,39 +1,32 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateTaskDto {
   @ApiProperty({
-    description: "Trip's location ID, UUID value",
-  })
-  @IsNotEmpty()
-  @IsUUID()
-  tripLocationId: string;
-
-  @ApiProperty({
     description: "Task's title",
+    example: "Get client's approval for TripSync project",
+    required: true,
   })
-  @IsNotEmpty()
   @IsString()
+  @IsNotEmpty()
   title: string;
 
   @ApiProperty({
     description: "Task's description",
+    example:
+      'Present the project to the client and convince them to approve the solution for the TripSync project',
+    required: true,
   })
-  @IsNotEmpty()
   @IsString()
+  @IsNotEmpty()
   description: string;
 
   @ApiProperty({
-    description: "Task's note",
+    description: 'Additional note',
+    example: 'Our client is quite hard to convince so be pacient',
+    required: false,
   })
-  @IsNotEmpty()
   @IsString()
-  note: string;
-
-  @ApiProperty({
-    description: "Task's deadline",
-  })
-  @IsNotEmpty()
-  // @IsDate()
-  deadline: Date;
+  @IsOptional()
+  note?: string;
 }
