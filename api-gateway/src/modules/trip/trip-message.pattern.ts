@@ -7,4 +7,6 @@ export const TripMessagePattern = {
   APPROVE: 'trip.approve',
   LOCATIONS: 'trip.locations',
   APPROVALS: 'trip.approvals',
+  CHECK_IN: 'trip.location.check_in',
+  CHECK_OUT: 'trip.location.check_out',
 } as const;

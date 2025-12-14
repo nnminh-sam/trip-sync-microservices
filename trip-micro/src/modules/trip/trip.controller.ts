@@ -8,6 +8,7 @@ import { TripMessagePattern } from './trip-message.pattern';
 import { MessagePayloadDto } from 'src/dtos/message-payload.dto';
 import { throwRpcException } from 'src/utils';
 import { ApproveTripDto } from './dtos/approve-trip.dto';
+import { CheckInAtLocationDto } from './dtos/check-in-at-location.dto';
 
 @Controller()
 export class TripController {
@@ -26,7 +27,10 @@ export class TripController {
       },
     });
 
-    return await this.tripService.create(payload.claims.sub, payload.request.body);
+    return await this.tripService.create(
+      payload.claims.sub,
+      payload.request.body,
+    );
   }
 
   @MessagePattern(TripMessagePattern.FIND_ALL)
@@ -152,4 +156,16 @@ export class TripController {
     const { id } = payload.request.path;
     return this.tripService.getTripLocations(id);
   }
+
+  @MessagePattern(TripMessagePattern.CHECK_IN)
+  async checkInAtLocation(
+    @Payload() payload: MessagePayloadDto<CheckInAtLocationDto>,
+  ) {
+    const assigneeId: string = payload.claims.sub;
+    const dto: CheckInAtLocationDto = payload.request.body;
+    return await this.tripService.checkIn(assigneeId, dto);
+  }
+
+  @MessagePattern(TripMessagePattern.CHECK_OUT)
+  async checkOutAtLocation() {}
 }

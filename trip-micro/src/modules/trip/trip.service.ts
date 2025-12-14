@@ -17,6 +17,7 @@ import { Location } from 'src/models/location.model';
 import { TripStatusValidator } from './trip-status-validator';
 import { TaskService } from '../task/task.service';
 import { CreateTaskDto } from '../task/dtos/create-task.dto';
+import { CheckInAtLocationDto } from './dtos/check-in-at-location.dto';
 
 @Injectable()
 export class TripService {
@@ -372,7 +373,6 @@ export class TripService {
         ? TripStatusEnum.PENDING
         : TripStatusEnum.CANCELED;
     return await this.tripRepo.save(trip);
-    // return await this.findOne(tripId, claims);
   }
 
   async getTripLocations(tripId: string): Promise<any[]> {
@@ -409,5 +409,139 @@ export class TripService {
     );
 
     return enrichedLocations;
+  }
+
+  // async checkIn(assigneeId: string, checkInDto: CheckInAtLocationDto) {
+  //   console.log('🚀 ~ TripService ~ checkIn ~ checkInDto:', checkInDto);
+  //   if (!checkInDto.tripLocationId) {
+  //     throwRpcException({
+  //       statusCode: HttpStatus.BAD_REQUEST,
+  //       message: "Trip's location ID is required",
+  //     });
+  //   }
+
+  //   const validLocation = await this.tripLocationRepo
+  //     .createQueryBuilder('tripLocation')
+  //     .addSelect(
+  //       `ST_Distance_Sphere(
+  //         tripLocation.locationPointSnapshot,
+  //         ST_GeomFromText(:userPoint, 4326)
+  //       )`,
+  //       'distanceInMeter',
+  //     )
+  //     // .leftJoinAndSelect('trip.tripLocations', 'tripLocation')
+  //     .where('tripLocation.id = :id', {
+  //       id: checkInDto.tripLocationId,
+  //     })
+  //     .andWhere(
+  //       `ST_Distance_Sphere(
+  //        tripLocation.locationPointSnapshot,
+  //        ST_GeomFromText(:userPoint, 4326)
+  //      ) <= tripLocation.offsetRadiusSnapshot`,
+  //       {
+  //         userPoint: `POINT(${checkInDto.latitude} ${checkInDto.longitude})`,
+  //       },
+  //     )
+  //     .setParameter(
+  //       'userPoint',
+  //       `POINT(${checkInDto.latitude} ${checkInDto.longitude})`,
+  //     )
+  //     // .andWhere(``)
+  //     // Optional: You might want to filter by the specific User's active trip or status here
+  //     // .andWhere('tripLocation.tripId = :tripId', { tripId: ... })
+  //     .getRawOne();
+  //   console.log('🚀 ~ TripService ~ checkIn ~ validLocation:', validLocation);
+
+  //   if (!validLocation) {
+  //     // We differentiate the error for better UX:
+  //     // Does the location exist at all?
+  //     const exists = await this.tripLocationRepo.findOne({
+  //       where: { id: checkInDto.tripLocationId },
+  //     });
+
+  //     if (exists) {
+  //       throwRpcException({
+  //         statusCode: HttpStatus.BAD_REQUEST,
+  //         message: 'You are too far from the check-in point.',
+  //       });
+  //     } else {
+  //       throwRpcException({
+  //         statusCode: HttpStatus.NOT_FOUND,
+  //         message: 'Location identifier not found.',
+  //       });
+  //     }
+  //   }
+
+  //   validLocation.checkInTimestamp = new Date(checkInDto.timestamp);
+  //   validLocation.checkInPoint = `POINT(${checkInDto.longitude} ${checkInDto.latitude})`;
+  //   this.logger.debug(
+  //     `User checked in at location different ${validLocation.distanceInMeter}m`,
+  //   );
+
+  //   return await this.tripLocationRepo.save(validLocation);
+  // }
+
+  async checkIn(assigneeId: string, checkInDto: CheckInAtLocationDto) {
+    // 1. Run the Raw Query (Fast, calculates distance)
+    const rawResult = await this.tripLocationRepo
+      .createQueryBuilder('tripLocation')
+      .addSelect(
+        `ST_Distance_Sphere(
+        tripLocation.locationPointSnapshot, 
+        ST_GeomFromText(:userPoint, 4326)
+      )`,
+        'distanceInMeter',
+      )
+      .where('tripLocation.id = :id', { id: checkInDto.tripLocationId })
+      .setParameter(
+        'userPoint',
+        `POINT(${checkInDto.latitude} ${checkInDto.longitude})`, // Lat Lng for MySQL 8 Query
+      )
+      .getRawOne();
+
+    // 2. Validate Existence
+    if (!rawResult) {
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'Location identifier not found.',
+      });
+    }
+
+    // 3. Validate Distance
+    // Note: Raw results usually return strings for decimals, so use parseFloat
+    const distance = parseFloat(rawResult.distanceInMeter);
+    const radius = parseFloat(rawResult.tripLocation_offset_radius_snapshot);
+
+    if (distance > radius) {
+      this.logger.debug(
+        `Check-in failed. Distance: ${distance}m, Radius: ${radius}m`,
+      );
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'You are too far from the check-in point.',
+      });
+    }
+
+    // 4. Perform the Update
+    // We use the ID from the raw result (tripLocation_id) to update the record.
+    // Note: Pass "Longitude Latitude" (X Y) to the transformer, it will swap it to "Lat Lng" for MySQL.
+
+    // OPTION A: Using update() (Faster, but bypasses some hooks)
+    /*
+  await this.tripLocationRepo.update(rawResult.tripLocation_id, {
+    checkInTimestamp: new Date(checkInDto.timestamp),
+    checkInPoint: `POINT(${checkInDto.longitude} ${checkInDto.latitude})`
+  });
+  */
+
+    // OPTION B: Using save() with a Partial Object (Safest for Transformers)
+    // We manually construct an object with the ID so TypeORM knows to UPDATE, not INSERT.
+    const updatePayload = {
+      id: rawResult.tripLocation_id, // <--- CRITICAL: Map the raw alias back to 'id'
+      checkInTimestamp: new Date(checkInDto.timestamp),
+      checkInPoint: `POINT(${checkInDto.longitude} ${checkInDto.latitude})`,
+    };
+
+    return await this.tripLocationRepo.save(updatePayload);
   }
 }

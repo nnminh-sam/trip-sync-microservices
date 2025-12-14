@@ -29,6 +29,7 @@ import { TripApproval } from 'src/models/trip-approval.model';
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
+import { CheckInAtLocationDto } from './dtos/check-in-at-location.dto';
 
 @ApiTags('Trip')
 @Controller('trips')
@@ -137,5 +138,20 @@ export class TripController {
     @Body() dto: ApproveTripDto,
   ) {
     return this.tripService.approveTrip(id, claims, dto);
+  }
+
+  @Patch('/locations/check-in')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Check-in at location' })
+  @ApiBody({ type: CheckInAtLocationDto })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Check-in success',
+  })
+  async checkInAtLocation(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Body() dto: CheckInAtLocationDto,
+  ) {
+    return await this.tripService.checkInAtLocation(claims, dto);
   }
 }
