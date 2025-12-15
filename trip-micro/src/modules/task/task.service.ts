@@ -2,7 +2,7 @@ import { throwRpcException } from 'src/utils';
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Task } from 'src/models/task.model';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { CreateTaskDto } from 'src/modules/task/dtos/create-task.dto';
 import { UpdateTaskDto } from 'src/modules/task/dtos/update-task.dto';
 
@@ -15,9 +15,10 @@ export class TaskService {
     private readonly taskRepository: Repository<Task>,
   ) {}
 
-  async create(payload: CreateTaskDto): Promise<Task> {
-    console.log('🚀 ~ TaskService ~ create ~ payload:', payload);
-    const existingTask = await this.taskRepository.existsBy({
+  async create(payload: CreateTaskDto, manager?: EntityManager): Promise<Task> {
+    const repo = manager ? manager.getRepository(Task) : this.taskRepository;
+
+    const existingTask = await repo.existsBy({
       title: payload.title,
     });
     if (existingTask) {
@@ -34,11 +35,11 @@ export class TaskService {
     }
 
     try {
-      const task: Task = this.taskRepository.create({
+      const task: Task = repo.create({
         ...payload,
         createdAt: new Date(),
       });
-      return await this.taskRepository.save(task);
+      return await repo.save(task);
     } catch (error: any) {
       this.logger.error('Cannot create new task', error);
       throwRpcException({

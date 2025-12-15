@@ -185,8 +185,8 @@ export class TripService {
       await Promise.all(
         createTaskDtos.map((dto: CreateTaskDto, index: number) => {
           dto.tripLocationId = tripLocations[index].id;
-          console.log('🚀 ~ TripService ~ create ~ dto:', dto);
-          return this.taskService.create(dto);
+          // console.log('🚀 ~ TripService ~ create ~ dto:', dto);
+          return this.taskService.create(dto, queryRunner.manager);
         }),
       );
 
