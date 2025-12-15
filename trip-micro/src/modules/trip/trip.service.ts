@@ -19,6 +19,8 @@ import { TaskService } from '../task/task.service';
 import { CreateTaskDto } from '../task/dtos/create-task.dto';
 import { CheckInAtLocationDto } from './dtos/check-in-at-location.dto';
 import { CheckOutAtLocationDto } from './dtos/check-out-at-location.dto';
+import { Task } from 'src/models/task.model';
+import { TaskStatusEnum } from 'src/models/task-status.enum';
 
 @Injectable()
 export class TripService {
@@ -446,7 +448,6 @@ export class TripService {
         `POINT(${checkInDto.latitude} ${checkInDto.longitude})`,
       )
       .getRawOne();
-    console.log('🚀 ~ TripService ~ checkIn ~ rawResult:', rawResult);
 
     if (!rawResult) {
       throwRpcException({
@@ -529,12 +530,31 @@ export class TripService {
       });
     }
 
-    const updatePayload = {
-      id: rawResult.tripLocation_id,
-      checkOutTimestamp: new Date(dto.timestamp),
-      checkOutPoint: `POINT(${dto.longitude} ${dto.latitude})`,
-    };
+    return await this.tripLocationRepo.manager.transaction(
+      async (transactionalManager) => {
+        const updateLocationPayload = {
+          id: rawResult.tripLocation_id,
+          checkOutTimestamp: new Date(dto.timestamp),
+          checkOutPoint: `POINT(${dto.longitude} ${dto.latitude})`,
+        };
 
-    return await this.tripLocationRepo.save(updatePayload);
+        const savedLocation = await transactionalManager.save(
+          TripLocation,
+          updateLocationPayload,
+        );
+
+        await transactionalManager.update(
+          Task,
+          { tripLocationId: rawResult.tripLocation_id },
+          { status: TaskStatusEnum.COMPLETED },
+        );
+
+        this.logger.log(
+          `Checkout success for location ${savedLocation.id}. Associated task marked as COMPLETED.`,
+        );
+
+        return savedLocation;
+      },
+    );
   }
 }
