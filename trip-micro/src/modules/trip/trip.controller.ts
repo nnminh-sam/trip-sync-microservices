@@ -9,6 +9,7 @@ import { MessagePayloadDto } from 'src/dtos/message-payload.dto';
 import { throwRpcException } from 'src/utils';
 import { ApproveTripDto } from './dtos/approve-trip.dto';
 import { CheckInAtLocationDto } from './dtos/check-in-at-location.dto';
+import { CheckOutAtLocationDto } from './dtos/check-out-at-location.dto';
 
 @Controller()
 export class TripController {
@@ -167,5 +168,11 @@ export class TripController {
   }
 
   @MessagePattern(TripMessagePattern.CHECK_OUT)
-  async checkOutAtLocation() {}
+  async checkOutAtLocation(
+    @Payload() payload: MessagePayloadDto<CheckOutAtLocationDto>,
+  ) {
+    const assigneeId: string = payload.claims.sub;
+    const dto: CheckOutAtLocationDto = payload.request.body;
+    return await this.tripService.checkOutAtLocation(assigneeId, dto);
+  }
 }

@@ -9,6 +9,7 @@ import { UpdateTripDto } from './dtos/update-trip.dto';
 import { ApproveTripDto } from './dtos/approve-trip.dto';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { CheckInAtLocationDto } from './dtos/check-in-at-location.dto';
+import { CheckOutAtLocationDto } from './dtos/check-out-at-location.dto';
 
 @Injectable()
 export class TripService {
@@ -148,6 +149,23 @@ export class TripService {
 
     const result = await this.sender.send({
       messagePattern: 'CHECK_IN',
+      payload: {
+        claims,
+        request: {
+          body: dto,
+        },
+      },
+    });
+    return result;
+  }
+
+  async checkOutAtLocation(claims: TokenClaimsDto, dto: CheckOutAtLocationDto) {
+    this.logger.log(
+      `Sending check-out request for trip_location_id: ${dto.tripLocationId}`,
+    );
+
+    const result = await this.sender.send({
+      messagePattern: 'CHECK_OUT',
       payload: {
         claims,
         request: {

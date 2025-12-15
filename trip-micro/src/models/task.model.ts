@@ -1,6 +1,7 @@
 import { BaseModel } from 'src/models/base.model';
 import { Column, Entity, JoinColumn, OneToOne } from 'typeorm';
 import { TripLocation } from './trip-location.model';
+import { TaskStatusEnum } from './task-status.enum';
 
 @Entity('tasks')
 export class Task extends BaseModel {
@@ -22,6 +23,14 @@ export class Task extends BaseModel {
 
   @Column({ type: 'text', nullable: false })
   description: string;
+
+  @Column({
+    type: 'enum',
+    enum: TaskStatusEnum,
+    default: TaskStatusEnum.PENDING,
+    nullable: true,
+  })
+  status: TaskStatusEnum;
 
   @Column({ type: 'text', nullable: true })
   note?: string;

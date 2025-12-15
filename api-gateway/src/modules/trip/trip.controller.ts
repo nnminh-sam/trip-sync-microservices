@@ -30,6 +30,7 @@ import { RequestUserClaims } from 'src/common/decorators/request-user-claims.dec
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
 import { CheckInAtLocationDto } from './dtos/check-in-at-location.dto';
+import { CheckOutAtLocationDto } from './dtos/check-out-at-location.dto';
 
 @ApiTags('Trip')
 @Controller('trips')
@@ -153,5 +154,20 @@ export class TripController {
     @Body() dto: CheckInAtLocationDto,
   ) {
     return await this.tripService.checkInAtLocation(claims, dto);
+  }
+
+  @Patch('/locations/check-out')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Check-out at location' })
+  @ApiBody({ type: CheckOutAtLocationDto })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Check-out success',
+  })
+  async checkOutAtLocation(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Body() dto: CheckOutAtLocationDto,
+  ) {
+    return await this.tripService.checkOutAtLocation(claims, dto);
   }
 }

@@ -72,7 +72,7 @@ export class TripLocation extends BaseModel {
     nullable: true,
     transformer: PointTransformer,
   })
-  checkoutPoint: string;
+  checkOutPoint: string;
 
   @Column({ type: 'datetime', name: 'checkout_timestamp', nullable: true })
   checkOutTimestamp: Date;
