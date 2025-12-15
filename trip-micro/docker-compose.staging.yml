@@ -5,7 +5,7 @@ networks:
 
 services:
   mysql:
-    container_name: 'user_db'
+    container_name: trip_db
     image: mysql:8.0
     restart: unless-stopped
     env_file:
@@ -16,12 +16,12 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - '${MYSQL_PORT}:3306'
+      - '3308:3306'
     networks:
       - shared-net
     command: ['--default-authentication-plugin=mysql_native_password']
     volumes:
-      - ./docker-volumes/mysql_data:/var/lib/mysql
+      - ./volumes/mysql_data:/var/lib/mysql
     healthcheck:
       test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
       interval: 10s
@@ -29,11 +29,25 @@ services:
       retries: 5
       start_period: 10s
 
-  user-service:
+  redis-cache:
+    container_name: redis-cache
+    image: redis:7-alpine
+    restart: unless-stopped
+    env_file:
+      - .env.staging
+    ports:
+      - '${REDIS_PORT}:6379'
+    networks:
+      - shared-net
+    volumes:
+      - ./volumes/redis_data:/data
+    command: redis-server --appendonly yes
+
+  trip-service:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: user-service
+    container_name: trip-service
     ports:
       - '${APP_PORT}:3000'
     env_file:
@@ -44,17 +58,3 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'wget',
-          '--no-verbose',
-          '--tries=1',
-          '--spider',
-          'http://localhost:${APP_PORT}',
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s

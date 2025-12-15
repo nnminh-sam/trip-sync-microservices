@@ -55,6 +55,8 @@ cd user-micro && npm install && cd ..
 You can run the services using Docker Compose for easy setup:
 
 ```bash
+docker network create shared-microservices-net
+
 # From the root directory
 cd api-gateway
 # For development
@@ -86,27 +88,35 @@ npm run start:dev
 Follow these steps to set up and work on the project locally for any service (e.g., api-gateway, user-micro):
 
 1. **Install Dependencies**
+
    ```bash
    npm install
    ```
+
    Run this inside each service directory after cloning the repo and setting up environment variables.
 
 2. **Check Lint**
+
    ```bash
    npm run lint
    ```
+
    This checks code style and potential errors. Fix any issues before committing.
 
 3. **Run in Development Mode**
+
    ```bash
    npm run start:dev
    ```
+
    This starts the service with hot-reloading for development.
 
 4. **Build the Project**
+
    ```bash
    npm run build
    ```
+
    Compiles the TypeScript source code into JavaScript in the `dist/` directory.
 
 5. **Run the Built Application**
@@ -191,4 +201,3 @@ Thank you for helping improve this project!
 ## License
 
 [MIT](LICENSE)
-
