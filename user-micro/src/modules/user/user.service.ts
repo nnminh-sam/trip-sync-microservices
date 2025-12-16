@@ -45,7 +45,7 @@ export class UserService {
       where: { email: createUserDto.email },
     });
     if (!existingUser) {
-      await this.create(createUserDto);
+      await this.create(createUserDto, 'sys-admin');
       this.logger.log('System admin user created');
     }
     this.logger.log('User seeding completed.');
@@ -107,6 +107,7 @@ export class UserService {
         'user.gender',
         'user.dateOfBirth',
         'user.isActive',
+        'user.managerId',
       ])
       .where('user.id = :id', { id })
       .getOne();
@@ -215,7 +216,7 @@ export class UserService {
     });
   }
 
-  async create(payload: CreateUserDto) {
+  async create(payload: CreateUserDto, creatorId?: string) {
     this.logger.log(`Creating new user with email: ${payload.email}`);
 
     const existingUser = await this.userRepository.findOne({
@@ -260,6 +261,7 @@ export class UserService {
       dateOfBirth: formatDate(payload.dateOfBirth.toString()),
       isActive: true,
       deletedAt: null,
+      managerId: creatorId,
     });
     const savedUser = await this.userRepository.save(user);
 

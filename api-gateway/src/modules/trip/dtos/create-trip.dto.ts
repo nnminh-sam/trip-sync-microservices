@@ -56,14 +56,6 @@ export class CreateTripDto {
   assignee_id?: string;
 
   @ApiProperty({
-    description: 'Manager ID',
-    example: 'user-uuid-456',
-  })
-  @IsString()
-  @IsNotEmpty()
-  manager_id: string;
-
-  @ApiProperty({
     description: 'Purpose of the trip',
     example: 'Client meeting and site inspection',
   })

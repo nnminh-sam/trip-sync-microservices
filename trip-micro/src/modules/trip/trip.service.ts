@@ -132,7 +132,7 @@ export class TripService {
     this.logger.log('Creating a new trip with transaction');
 
     let managerId: string = null;
-    if (creator.role === 'manager') {
+    if (creator.role !== 'employee') {
       managerId = creator.id;
     } else {
       // TODO: fetch employee's manager ID from the user service with the event find by id

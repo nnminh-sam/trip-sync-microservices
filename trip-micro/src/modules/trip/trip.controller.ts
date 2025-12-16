@@ -29,7 +29,10 @@ export class TripController {
     });
 
     return await this.tripService.create(
-      payload.claims.sub,
+      {
+        id: payload.claims.sub,
+        role: payload.claims.role,
+      },
       payload.request.body,
     );
   }

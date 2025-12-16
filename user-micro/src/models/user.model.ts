@@ -39,6 +39,9 @@ export class User extends BaseModel {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  @Column({ type: 'varchar' })
+  managerId: string;
+
   @Column({ type: 'text', nullable: true })
   publicKey?: string; // GPG public key for signature verification
 }
