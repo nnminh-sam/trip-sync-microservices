@@ -6,6 +6,7 @@ WORKDIR /app
 
 # Install dependencies (only package*.json for better cache)
 COPY package.json package-lock.json ./
+COPY secret.json ./
 RUN npm ci
 
 # Copy the rest of the source code
@@ -22,6 +23,7 @@ WORKDIR /app
 
 # Copy only the built files and production dependencies
 COPY --from=builder /app/package.json ./
+COPY --from=builder /app/secret.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 

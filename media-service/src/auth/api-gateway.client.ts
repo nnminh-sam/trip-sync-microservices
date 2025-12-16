@@ -10,6 +10,7 @@ export interface AuthorizationRequest {
 
 export interface AuthorizationResponse {
   data: {
+    id?: string;
     message: string;
   };
   path: string;
@@ -39,7 +40,15 @@ export class ApiGatewayClient {
 
   constructor(private readonly configService: ConfigService) {
     this.apiGatewayUrl = this.configService.get('auth.apiGatewayUrl');
+    console.log(
+      '🚀 ~ ApiGatewayClient ~ constructor ~ this.apiGatewayUrl:',
+      this.apiGatewayUrl,
+    );
     this.authorizationEndpoint = `${this.apiGatewayUrl}/api/v1/auth/authorize-request`;
+    console.log(
+      '🚀 ~ ApiGatewayClient ~ constructor ~ this.authorizationEndpoint:',
+      this.authorizationEndpoint,
+    );
   }
 
   /**
@@ -54,6 +63,11 @@ export class ApiGatewayClient {
     token: string,
     authRequest: AuthorizationRequest,
   ): Promise<AuthorizationResponse> {
+    console.log(
+      '🚀 ~ ApiGatewayClient ~ authorizeRequest ~ authRequest:',
+      authRequest,
+    );
+    console.log('🚀 ~ ApiGatewayClient ~ authorizeRequest ~ token:', token);
     try {
       this.logger.debug(
         `Authorizing request with roles: ${authRequest.roles?.join(', ')}`,
@@ -64,7 +78,7 @@ export class ApiGatewayClient {
         authRequest,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           timeout: 10000, // 10 second timeout
@@ -74,15 +88,16 @@ export class ApiGatewayClient {
       this.logger.debug(`Authorization successful`);
       return response.data;
     } catch (error) {
-      this.logger.error(
-        `Authorization failed: ${this.getErrorMessage(error)}`,
-      );
+      console.log('🚀 ~ ApiGatewayClient ~ authorizeRequest ~ error:', error);
+      this.logger.error(`Authorization failed: ${this.getErrorMessage(error)}`);
 
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
 
         if (status === 401 || status === 403) {
-          throw new UnauthorizedException('Unauthorized: Invalid or expired token');
+          throw new UnauthorizedException(
+            'Unauthorized: Invalid or expired token',
+          );
         }
 
         if (status === 400) {

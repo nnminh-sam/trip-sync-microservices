@@ -155,76 +155,6 @@ export class GcsUploadService {
   }
 
   /**
-   * Generate a signed URL for accessing private GCS files
-   *
-   * Signed URLs provide time-limited access to private files without exposing credentials.
-   * This allows clients to download files directly from GCS without going through our server.
-   *
-   * @param filename - Storage filename in GCS
-   * @param expiresIn - URL expiration time in seconds
-   * @returns Signed URL with metadata
-   */
-  async generateSignedUrl(
-    filename: string,
-    expiresIn: number = 3600,
-  ): Promise<{
-    success: boolean;
-    signedUrl?: string;
-    expiresAt?: string;
-    error?: string;
-  }> {
-    try {
-      if (!this.bucket) {
-        throw new BadRequestException('GCS bucket not initialized');
-      }
-
-      if (!filename || filename.trim() === '') {
-        throw new BadRequestException('Filename is required');
-      }
-
-      const file = this.bucket.file(filename);
-
-      // Check if file exists before generating signed URL
-      const [exists] = await file.exists();
-      if (!exists) {
-        // Log detailed error with bucket info for debugging
-        this.logger.error(
-          `File not found in bucket '${this.bucket.name}': ${filename}`,
-        );
-        throw new BadRequestException(`File not found: ${filename}`);
-      }
-
-      // Generate signed URL with v4 signature
-      const [signedUrl] = await file.getSignedUrl({
-        version: 'v4',
-        action: 'read',
-        expires: Date.now() + expiresIn * 1000,
-      });
-
-      const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
-
-      this.logger.debug(
-        `Generated signed URL for ${filename}, expires in ${expiresIn}s`,
-      );
-
-      return {
-        success: true,
-        signedUrl,
-        expiresAt,
-      };
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to generate signed URL for ${filename}: ${errorMessage}`);
-
-      return {
-        success: false,
-        error: errorMessage,
-      };
-    }
-  }
-
-  /**
    * Check if file exists in GCS
    * @param filename - The filename to check
    * @returns boolean indicating existence
@@ -241,9 +171,7 @@ export class GcsUploadService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Error checking file existence: ${errorMessage}`,
-      );
+      this.logger.error(`Error checking file existence: ${errorMessage}`);
       return false;
     }
   }

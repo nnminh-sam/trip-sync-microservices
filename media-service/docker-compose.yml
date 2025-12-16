@@ -4,7 +4,7 @@ services:
     container_name: mysql-media-local
     restart: unless-stopped
     ports:
-      - "${MYSQL_PORT}:3306"
+      - '${MYSQL_PORT}:3306'
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -16,19 +16,16 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost",
-          "-u",
-          "root",
-          "-p${MYSQL_ROOT_PASSWORD}",
+          'CMD',
+          'mysqladmin',
+          'ping',
+          '-h',
+          'localhost',
+          '-u',
+          'root',
+          '-p${MYSQL_ROOT_PASSWORD}',
         ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
-
-volumes:
-  mysql_data:

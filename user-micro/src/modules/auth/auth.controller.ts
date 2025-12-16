@@ -48,7 +48,7 @@ export class AuthController {
   async authorizeClaims(
     @Payload() payload: MessagePayloadDto<AuthorizeClaimsPayloadDto>,
   ) {
-    await this.authService.authorizeClaims(payload.request.body);
-    return { message: 'ok' };
+    return await this.authService.authorizeClaims(payload.request.body);
+    // return { message: 'ok' };
   }
 }

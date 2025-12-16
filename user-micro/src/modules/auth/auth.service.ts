@@ -10,6 +10,7 @@ import { User } from 'src/models/user.model';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 import { EnvSchema } from 'src/config';
+import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class AuthService {
@@ -83,9 +84,16 @@ export class AuthService {
   }
 
   async authorizeClaims(payload: AuthorizeClaimsPayloadDto) {
+    const { claims } = payload;
     try {
       await this.roleService.authorizeClaims(payload);
+
+      return await this.userService.findById(claims.sub);
     } catch (error) {
+      if (error instanceof RpcException) {
+        throw error;
+      }
+
       throwRpcException({
         statusCode: HttpStatus.UNAUTHORIZED,
         message: 'Unauthorized Claims',
