@@ -10,6 +10,7 @@ export interface AuthorizationRequest {
 
 export interface AuthorizationResponse {
   data: {
+    id?: string;
     message: string;
   };
   path: string;

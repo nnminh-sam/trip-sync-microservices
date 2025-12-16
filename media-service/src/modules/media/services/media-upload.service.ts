@@ -259,8 +259,8 @@ export class MediaUploadService {
       };
 
       const savedMedia = await this.mediaService.create(
-        // uploadRequest.uploaderId,
-        '123',
+        uploadRequest.uploaderId,
+        // '123',
         createMediaDto,
       );
 

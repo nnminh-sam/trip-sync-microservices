@@ -328,9 +328,9 @@ export class MediaController {
     }
 
     // Prepare upload request with signature and JWT token
+    console.log('🚀 ~ MediaController ~ uploadMedia ~ req.user:', req.user);
     const uploadRequest = {
-      // uploaderId: req.user.sub,
-      uploaderId: '123',
+      uploaderId: req.user.sub,
       taskId,
       signature: body.signature,
       jwtToken,

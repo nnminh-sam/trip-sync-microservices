@@ -38,13 +38,20 @@ export class ApiGatewayGuard implements CanActivate {
 
     try {
       const authRequest = {
-        roles: ["employee", "system admin"],
+        roles: ['employee', 'system admin'],
         action: 'create',
         resource: 'task proof',
       };
 
-      await this.apiGatewayClient.authorizeRequest(token, authRequest);
-
+      const data = await this.apiGatewayClient.authorizeRequest(
+        token,
+        authRequest,
+      );
+      console.log('🚀 ~ ApiGatewayGuard ~ canActivate ~ data:', data);
+      // request.user.sub = data.data.id || 'user-id-123';
+      request.user = {
+        sub: data.data.id || 'user-id-123',
+      };
 
       this.logger.debug(`Request authorized`);
       return true;
