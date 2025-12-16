@@ -11,16 +11,17 @@ import {
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { GpsService } from './gps.service';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiBody,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
-import {
-  TrackGPSDto,
-  BatchTrackGPSDto,
-} from './dtos/track-gps.dto';
-import {
-  CheckInDto,
-  CheckOutDto,
-} from './dtos/check-in-out.dto';
+import { TrackGPSDto, BatchTrackGPSDto } from './dtos/track-gps.dto';
+import { CheckInDto, CheckOutDto } from './dtos/check-in-out.dto';
 import {
   RouteQueryDto,
   StopQueryDto,
@@ -41,6 +42,7 @@ import {
   RealtimeLocationQueryDto,
   RealtimeLocationsResponseDto,
 } from './dtos/realtime-monitoring.dto';
+import { PublicRequest } from 'src/common/decorators/public-request.decorator';
 
 @ApiTags('GPS')
 @Controller('gps')
@@ -223,6 +225,58 @@ export class GpsController {
     @Param('exportId') exportId: string,
   ) {
     return await this.gpsService.getExportStatus(claims, exportId);
+  }
+
+  // GPS Logs
+  @Get('logs')
+  // @PublicRequest()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Query GPS logs for a trip' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'GPS logs retrieved successfully',
+  })
+  @ApiQuery({
+    name: 'userId',
+    required: true,
+    description: 'User ID',
+  })
+  @ApiQuery({
+    name: 'tripId',
+    required: true,
+    description: 'Trip ID',
+  })
+  @ApiQuery({
+    name: 'beginDate',
+    required: false,
+    description: 'Start date (ISO format)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'End date (ISO format)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of records to return (default: 100, max: 1000)',
+  })
+  async queryGpsLogs(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Query('userId') userId: string,
+    @Query('tripId') tripId: string,
+    @Query('beginDate') beginDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return await this.gpsService.queryGpsLogs(
+      claims,
+      userId,
+      tripId,
+      beginDate,
+      endDate,
+      limit ? parseInt(limit, 10) : 100,
+    );
   }
 
   // Health Check

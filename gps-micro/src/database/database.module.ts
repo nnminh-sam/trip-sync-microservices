@@ -1,7 +1,8 @@
-import { Logger, Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EnvSchema } from 'src/config';
+import { tableSchemas } from 'src/models';
 
 @Module({
   imports: [
@@ -11,14 +12,14 @@ import { EnvSchema } from 'src/config';
         return {
           type: 'mysql',
           host: configService.get<string>('MYSQL_HOST'),
-          port: 3308,
+          port: configService.get<number>('MYSQL_PORT'),
           username: configService.get<string>('MYSQL_USER'),
           password: configService.get<string>('MYSQL_PASSWORD'),
           database: configService.get<string>('MYSQL_DATABASE'),
-          entities: [__dirname + '/../**/*.model{.ts,.js}'],
+          entities: tableSchemas,
           synchronize: true,
           logging: true,
-          autoLoadEntities: true,
+          legacySpatialSupport: false,
         };
       },
       inject: [ConfigService],

@@ -252,6 +252,47 @@ export class GpsService {
     }
   }
 
+  // GPS Logs
+  async queryGpsLogs(
+    claims: TokenClaimsDto,
+    userId: string,
+    tripId: string,
+    beginDate?: string,
+    endDate?: string,
+    limit?: number,
+  ) {
+    this.logger.log(
+      `Querying GPS logs for userId=${userId}, tripId=${tripId}`,
+    );
+    try {
+      const result = await this.sender.send({
+        messagePattern: 'queryGpsLogs',
+        payload: {
+          claims,
+          request: {
+            body: {
+              userId,
+              tripId,
+              beginDate,
+              endDate,
+              limit: limit || 100,
+            },
+          },
+        },
+      });
+      this.logger.log(
+        `GPS logs retrieved for userId=${userId}, tripId=${tripId}`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Failed to query GPS logs for userId=${userId}, tripId=${tripId}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
   // Health
   async health() {
     try {
