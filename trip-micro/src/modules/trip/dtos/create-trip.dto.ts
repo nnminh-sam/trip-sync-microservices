@@ -35,10 +35,6 @@ export class CreateTripDto {
 
   @IsString()
   @IsNotEmpty()
-  manager_id: string;
-
-  @IsString()
-  @IsNotEmpty()
   purpose: string;
 
   @IsString()

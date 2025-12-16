@@ -76,7 +76,10 @@ export class UserController {
   @RequirePermission(['system admin'], { action: 'create', resource: 'user' })
   async create(@Payload() payload: MessagePayloadDto<CreateUserDto>) {
     const { claims } = payload;
-    const result = await this.userService.create(payload.request.body);
+    const result = await this.userService.create(
+      payload.request.body,
+      claims.sub,
+    );
     // Fire-and-forget audit log call
     this.auditLogService
       .log(claims, {
