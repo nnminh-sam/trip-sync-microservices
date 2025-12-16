@@ -1,17 +1,49 @@
+networks:
+  shared-net:
+    name: shared-microservices-net
+    external: true
+
 services:
+  mysql:
+    container_name: 'user_db'
+    image: mysql:8.0
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - '${MYSQL_PORT}:3306'
+    networks:
+      - shared-net
+    command: ['--default-authentication-plugin=mysql_native_password']
+    volumes:
+      - ./docker-volumes/mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   user-service:
     build:
       context: .
       dockerfile: Dockerfile
-    image: trip-sync/user-service:staging
     container_name: user-service
     ports:
-      - '8080:${APP_PORT}'
+      - '${APP_PORT}:3000'
     env_file:
-      - .env.staging
+      - .env.production
     restart: unless-stopped
     networks:
       - shared-net
+    depends_on:
+      mysql:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -20,16 +52,9 @@ services:
           '--no-verbose',
           '--tries=1',
           '--spider',
-          'http://localhost:8080/health',
+          'http://localhost:${APP_PORT}',
         ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
-
-volumes:
-  user-service-data:
-
-networks:
-  shared-net:
-    external: true

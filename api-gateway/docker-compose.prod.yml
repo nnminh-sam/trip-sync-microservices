@@ -58,7 +58,7 @@ services:
     ports:
       - '80:${APP_PORT}'
     env_file:
-      - .env.staging
+      - .env.production
     environment:
       - NODE_ENV=production
     depends_on:
