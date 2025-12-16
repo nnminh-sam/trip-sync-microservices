@@ -1,45 +1,44 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, Column, Index } from 'typeorm';
 import { BaseModel } from './base.model';
+import { PointTransformer } from 'src/utils';
 
 @Entity('gps_logs')
-@Index(['trip_id', 'timestamp'])
-@Index(['user_id', 'timestamp'])
+@Index(['userId'])
+@Index(['tripId'])
 @Index(['timestamp'])
-export class GPSLog extends BaseModel {
-  @Column('uuid')
-  @Index()
-  trip_id: string;
+export class GpsLog extends BaseModel {
+  @Column({ type: 'uuid', name: 'trip_id', nullable: true })
+  tripId: string | null;
 
-  @Column('uuid')
-  @Index()
-  user_id: string;
+  @Column({ type: 'uuid', name: 'user_id', nullable: false })
+  userId: string;
 
-  @Column('decimal', { precision: 10, scale: 8 })
+  @Column({
+    type: 'decimal',
+    precision: 9,
+    scale: 6,
+    nullable: false,
+  })
   latitude: number;
 
-  @Column('decimal', { precision: 11, scale: 8 })
+  @Column({
+    type: 'decimal',
+    precision: 9,
+    scale: 6,
+    nullable: false,
+  })
   longitude: number;
 
-  @Column('decimal', { precision: 5, scale: 2, nullable: true })
-  accuracy?: number;
-
-  @Column('decimal', { precision: 6, scale: 2, nullable: true })
-  speed?: number;
-
-  @Column('decimal', { precision: 5, scale: 2, nullable: true })
-  heading?: number;
-
-  @Column('timestamp')
+  @Column({ type: 'datetime', nullable: false })
   timestamp: Date;
 
-  @Column('text', { nullable: true })
-  address?: string;
-
-  @Column('json', { nullable: true })
-  metadata?: {
-    battery_level?: number;
-    network_type?: string;
-    provider?: string;
-    altitude?: number;
-  };
+  @Column({
+    name: 'location_point',
+    type: 'geometry',
+    spatialFeatureType: 'Point',
+    srid: 4326,
+    nullable: true,
+    transformer: PointTransformer,
+  })
+  locationPoint: string;
 }

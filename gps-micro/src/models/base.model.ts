@@ -15,5 +15,5 @@ export class BaseModel {
   updatedAt: Date;
 
   @CreateDateColumn({ nullable: true, default: null })
-  deletedAt?: Date = null;
+  deletedAt?: Date;
 }
