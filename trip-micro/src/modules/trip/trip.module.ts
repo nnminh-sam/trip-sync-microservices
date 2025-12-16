@@ -6,12 +6,14 @@ import { TripService } from './trip.service';
 import { TripController } from './trip.controller';
 import { LocationModule } from 'src/modules/location/location.module';
 import { TaskModule } from '../task/task.module';
+import { ClientModule } from 'src/client/client.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Trip, TripLocation]),
     LocationModule,
     TaskModule,
+    ClientModule,
   ],
   controllers: [TripController],
   providers: [TripService],

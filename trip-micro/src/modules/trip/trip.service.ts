@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Trip } from 'src/models/trip.model';
@@ -9,7 +9,7 @@ import { FilterTripDto } from './dtos/filter-trip.dto';
 import { throwRpcException } from 'src/utils';
 import { ListDataDto } from 'src/dtos/list-data.dto';
 import { AuthorizeClaimsPayloadDto } from './dtos/authorize-claims-payload.dto';
-import { RpcException } from '@nestjs/microservices';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { ApproveTripDto } from './dtos/approve-trip.dto';
 import { TripStatusEnum } from 'src/models/trip-status.enum';
 import { LocationService } from '../location/location.service';
@@ -21,10 +21,15 @@ import { CheckInAtLocationDto } from './dtos/check-in-at-location.dto';
 import { CheckOutAtLocationDto } from './dtos/check-out-at-location.dto';
 import { Task } from 'src/models/task.model';
 import { TaskStatusEnum } from 'src/models/task-status.enum';
+import { NATSClient } from 'src/client/clients';
+import { NatsClientSender } from 'src/utils';
+import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
+import { MessagePayloadDto } from 'src/dtos/message-payload.dto';
 
 @Injectable()
 export class TripService {
   private readonly logger = new Logger(TripService.name);
+  private readonly userSender: NatsClientSender<{ findById: string }>;
 
   constructor(
     @InjectRepository(Trip)
@@ -38,7 +43,13 @@ export class TripService {
     private readonly taskService: TaskService,
 
     private readonly dataSource: DataSource,
-  ) {}
+    @Inject(NATSClient.name)
+    private readonly natsClient: ClientProxy,
+  ) {
+    this.userSender = new NatsClientSender(this.natsClient, {
+      findById: 'user.find.id',
+    });
+  }
 
   async authorizeClaims(payload: AuthorizeClaimsPayloadDto) {
     const { claims, required } = payload;
@@ -114,21 +125,68 @@ export class TripService {
     return result;
   }
 
-  async create(creatorId: string, dto: CreateTripDto): Promise<Trip> {
+  async create(
+    creator: { id: string; role: string },
+    dto: CreateTripDto,
+  ): Promise<Trip> {
     this.logger.log('Creating a new trip with transaction');
+
+    let managerId: string = null;
+    if (creator.role === 'manager') {
+      managerId = creator.id;
+    } else {
+      // TODO: fetch employee's manager ID from the user service with the event find by id
+      try {
+        const claims: TokenClaimsDto = {
+          jit: '', // not used here
+          iat: Date.now(),
+          sub: creator.id,
+          email: '', // not required for this lookup
+          role: creator.role,
+        };
+
+        const payload: MessagePayloadDto = {
+          claims,
+        };
+
+        const user: any = await this.userSender.send({
+          messagePattern: 'findById',
+          payload,
+        });
+
+        if (!user || !user.managerId) {
+          this.logger.error(
+            `Manager ID not found for creator with id: ${creator.id}`,
+          );
+          throwRpcException({
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'Manager not found for this employee',
+          });
+        }
+
+        managerId = user.managerId;
+      } catch (error) {
+        if (error instanceof RpcException) {
+          throw error;
+        }
+
+        this.logger.error(
+          `Failed to fetch manager ID from user service for creator ${creator.id}`,
+          error?.stack,
+        );
+
+        throwRpcException({
+          statusCode: HttpStatus.BAD_GATEWAY,
+          message: 'User service unavailable while resolving manager',
+        });
+      }
+    }
 
     const isTitleExisted = await this.tripRepo.existsBy({ title: dto.title });
     if (isTitleExisted) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: "Duplicated trip's title",
-      });
-      return;
-    }
-    if (!dto.manager_id) {
-      throwRpcException({
-        statusCode: HttpStatus.BAD_REQUEST,
-        message: "Trip manager's ID is required",
       });
       return;
     }
@@ -141,7 +199,7 @@ export class TripService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
-    const isProposal = creatorId !== dto.manager_id;
+    const isProposal = creator.role === 'employee';
     const tripStatus =
       (isProposal && shouldAutoApprove) || !isProposal
         ? TripStatusEnum.PENDING
@@ -151,7 +209,7 @@ export class TripService {
       const tripObject: Trip = this.tripRepo.create({
         title: dto.title,
         assigneeId: dto.assignee_id,
-        managerId: dto.manager_id,
+        managerId,
         purpose: dto.purpose,
         goal: dto.goal,
         schedule: dto.schedule,
