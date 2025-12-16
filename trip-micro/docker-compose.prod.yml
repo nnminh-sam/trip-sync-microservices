@@ -1,6 +1,11 @@
+networks:
+  shared-net:
+    name: shared-microservices-net
+    external: true
+
 services:
   mysql:
-    container_name: 'mysql'
+    container_name: trip_db
     image: mysql:8.0
     restart: unless-stopped
     env_file:
@@ -12,32 +17,44 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - '3306:3306'
+    networks:
+      - shared-net
     command: ['--default-authentication-plugin=mysql_native_password']
     volumes:
-      - ./docker-volumes/mysql_data:/var/lib/mysql
+      - ./volumes/mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
-  redis:
-    container_name: redis
+  redis-cache:
+    container_name: redis-cache
     image: redis:7-alpine
     restart: unless-stopped
+    env_file:
+      - .env.production
     ports:
       - '6379:6379'
+    networks:
+      - shared-net
     volumes:
-      - ./docker-volumes/redis_data:/data
+      - ./volumes/redis_data:/data
     command: redis-server --appendonly yes
 
   trip-service:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: trip-service
     ports:
-      - '80:80'
+      - '80:8080'
     env_file:
       - .env.production
-    depends_on:
-      - mysql
-      - redis
     restart: unless-stopped
-
-volumes:
-  mysql_data:
-  redis_data:
+    networks:
+      - shared-net
+    depends_on:
+      mysql:
+        condition: service_healthy
