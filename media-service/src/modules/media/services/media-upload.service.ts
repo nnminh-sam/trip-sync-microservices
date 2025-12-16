@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GnuPgVerificationService } from './gnupg-verification.service';
 import { GcsUploadService } from './gcs-upload.service';
@@ -44,7 +40,8 @@ export class MediaUploadService {
     private readonly mediaService: MediaService,
     private readonly configService: ConfigService,
   ) {
-    this.tripServiceUrl = this.configService.get('TRIP_SERVICE_URL') || 'http://localhost:3003';
+    this.tripServiceUrl =
+      this.configService.get('TRIP_SERVICE_URL') || 'http://localhost:3003';
   }
 
   /**
@@ -85,7 +82,7 @@ export class MediaUploadService {
       // Upload file to GCS
       const storageFilename = this.generateStorageFilename(
         // uploadRequest.uploaderId,
-        "123",
+        '123',
         uploadRequest.taskId,
         filename,
       );
@@ -102,7 +99,8 @@ export class MediaUploadService {
         this.logger.error(`GCS upload failed: ${gcsUploadResult.error}`);
         return {
           success: false,
-          error: gcsUploadResult.error || 'Failed to upload file to cloud storage',
+          error:
+            gcsUploadResult.error || 'Failed to upload file to cloud storage',
         };
       }
 
@@ -122,7 +120,7 @@ export class MediaUploadService {
 
       const savedMedia = await this.mediaService.create(
         // uploadRequest.uploaderId,
-        "123",
+        '123',
         createMediaDto,
       );
 
@@ -136,7 +134,8 @@ export class MediaUploadService {
         media: savedMedia,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`Media upload error: ${errorMessage}`);
 
       return {
@@ -198,11 +197,12 @@ export class MediaUploadService {
         };
       }
 
-      const signatureValidation = await this.gnuPgVerificationService.verifySignature(
-        fileBuffer,
-        uploadRequest.signature,
-        uploadRequest.jwtToken,
-      );
+      const signatureValidation =
+        await this.gnuPgVerificationService.verifySignature(
+          fileBuffer,
+          uploadRequest.signature,
+          uploadRequest.jwtToken,
+        );
 
       if (!signatureValidation.isValid) {
         this.logger.warn(
@@ -221,7 +221,7 @@ export class MediaUploadService {
       // Upload file to GCS
       const storageFilename = this.generateStorageFilename(
         // uploadRequest.uploaderId,
-        "123",
+        '123',
         uploadRequest.taskId,
         filename,
       );
@@ -238,7 +238,8 @@ export class MediaUploadService {
         this.logger.error(`GCS upload failed: ${gcsUploadResult.error}`);
         return {
           success: false,
-          error: gcsUploadResult.error || 'Failed to upload file to cloud storage',
+          error:
+            gcsUploadResult.error || 'Failed to upload file to cloud storage',
         };
       }
 
@@ -259,7 +260,7 @@ export class MediaUploadService {
 
       const savedMedia = await this.mediaService.create(
         // uploadRequest.uploaderId,
-        "123",
+        '123',
         createMediaDto,
       );
 
@@ -272,8 +273,11 @@ export class MediaUploadService {
         media: savedMedia,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Media upload with signature verification error: ${errorMessage}`);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Media upload with signature verification error: ${errorMessage}`,
+      );
 
       return {
         success: false,
@@ -316,75 +320,6 @@ export class MediaUploadService {
   }
 
   /**
-   * Generate a signed URL for accessing private GCS files
-   *
-   * This creates time-limited, authenticated URLs that allow direct
-   * download from GCS without requiring JWT on the final download request.
-   *
-   * @param filename - Storage filename in GCS
-   * @param expiresIn - URL expiration time in seconds (default 3600, max 86400)
-   * @returns Signed URL with expiration info
-   */
-  async generateSignedUrl(
-    filename: string,
-    expiresIn: number = 3600,
-  ): Promise<{
-    success: boolean;
-    signedUrl?: string;
-    expiresIn?: number;
-    expiresAt?: string;
-    error?: string;
-  }> {
-    try {
-      // Validate expiration time
-      const maxExpiry = 86400; // 24 hours in seconds
-      const minExpiry = 60; // 1 minute in seconds
-
-      let validExpiresIn = expiresIn;
-      if (validExpiresIn > maxExpiry) {
-        this.logger.warn(
-          `Requested expiration ${expiresIn}s exceeds max ${maxExpiry}s, using max`,
-        );
-        validExpiresIn = maxExpiry;
-      }
-
-      if (validExpiresIn < minExpiry) {
-        this.logger.warn(
-          `Requested expiration ${expiresIn}s is less than minimum ${minExpiry}s, using minimum`,
-        );
-        validExpiresIn = minExpiry;
-      }
-
-      // Generate signed URL via GCS service
-      const result = await this.gcsUploadService.generateSignedUrl(
-        filename,
-        validExpiresIn,
-      );
-
-      if (!result.success) {
-        return {
-          success: false,
-          error: result.error,
-        };
-      }
-
-      return {
-        success: true,
-        signedUrl: result.signedUrl,
-        expiresIn: validExpiresIn,
-        expiresAt: result.expiresAt,
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to generate signed URL: ${errorMessage}`);
-      return {
-        success: false,
-        error: errorMessage,
-      };
-    }
-  }
-
-  /**
    * Delete media from GCS storage
    * @param filename - The filename to delete
    */
@@ -399,7 +334,10 @@ export class MediaUploadService {
   /**
    * Verify if user is a member of the trip
    */
-  private async verifyUserInTrip(tripId: string, userId: string): Promise<boolean> {
+  private async verifyUserInTrip(
+    tripId: string,
+    userId: string,
+  ): Promise<boolean> {
     try {
       const response = await axios.get(
         `${this.tripServiceUrl}/api/v1/trips/${tripId}/members/${userId}`,

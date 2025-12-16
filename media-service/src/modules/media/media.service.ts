@@ -17,7 +17,9 @@ export class MediaService {
     });
   }
 
-  async findAll(filter: FilterMediaDto): Promise<{ data: Media[]; total: number }> {
+  async findAll(
+    filter: FilterMediaDto,
+  ): Promise<{ data: Media[]; total: number }> {
     const query = this.mediaRepository.createQueryBuilder('media');
 
     if (filter.taskId) {
@@ -25,7 +27,9 @@ export class MediaService {
     }
 
     if (filter.uploaderId) {
-      query.andWhere('media.uploaderId = :uploaderId', { uploaderId: filter.uploaderId });
+      query.andWhere('media.uploaderId = :uploaderId', {
+        uploaderId: filter.uploaderId,
+      });
     }
 
     if (filter.status) {
@@ -48,7 +52,10 @@ export class MediaService {
     });
   }
 
-  async create(uploaderId: string, createMediaDto: CreateMediaDto): Promise<Media> {
+  async create(
+    uploaderId: string,
+    createMediaDto: CreateMediaDto,
+  ): Promise<Media> {
     const media = this.mediaRepository.create({
       ...createMediaDto,
       uploaderId,

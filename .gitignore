@@ -48,3 +48,5 @@ coverage/
 docker/volumes/
 docker/*.env*
 databases
+
+tracking-micro
