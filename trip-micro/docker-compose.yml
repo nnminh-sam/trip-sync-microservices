@@ -11,7 +11,7 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - '${MYSQL_PORT}:3306'
+      - '3307:3306'
     command: ['--default-authentication-plugin=mysql_native_password']
     volumes:
       - ./volumes/mysql_data:/var/lib/mysql
@@ -21,7 +21,7 @@ services:
     container_name: cache_redis
     restart: unless-stopped
     ports:
-      - '${REDIS_PORT}:6379'
+      - '6380:6379'
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:

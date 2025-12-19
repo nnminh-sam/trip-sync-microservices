@@ -11,7 +11,7 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - '${MYSQL_PORT}:3306'
+      - '3306:3306'
     command: ['--default-authentication-plugin=mysql_native_password']
     volumes:
       - ./docker-volumes/mysql_data:/var/lib/mysql
