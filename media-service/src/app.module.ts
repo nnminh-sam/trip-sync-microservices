@@ -28,3 +28,4 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
   ],
 })
 export class AppModule {}
+

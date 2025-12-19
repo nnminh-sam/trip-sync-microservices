@@ -8,8 +8,6 @@ import { GcsUploadService } from './gcs-upload.service';
 import { MediaService } from '../media.service';
 import { CreateMediaDto } from '../dtos';
 import { Media } from '../../../models';
-import axios from 'axios';
-import { error } from 'console';
 
 export interface MediaUploadRequest {
   uploaderId: string;
@@ -35,17 +33,13 @@ export interface MediaUploadResponse {
 @Injectable()
 export class MediaUploadService {
   private readonly logger = new Logger(MediaUploadService.name);
-  private readonly tripServiceUrl: string;
 
   constructor(
     private readonly gnuPgVerificationService: GnuPgVerificationService,
     private readonly gcsUploadService: GcsUploadService,
     private readonly mediaService: MediaService,
     private readonly configService: ConfigService,
-  ) {
-    this.tripServiceUrl =
-      this.configService.get('TRIP_SERVICE_URL') || 'http://localhost:3003';
-  }
+  ) {}
 
   /**
    * Upload media file to GCS and save metadata to database
@@ -66,21 +60,6 @@ export class MediaUploadService {
     try {
       // Validate file
       this.validateFile(fileBuffer, fileSize, mimetype);
-
-      // If tripId provided, verify user access to trip
-      // if (uploadRequest.tripId) {
-      //   const hasAccess = await this.verifyUserInTrip(
-      //     uploadRequest.tripId,
-      //     uploadRequest.uploaderId,
-      //   );
-
-      //   if (!hasAccess) {
-      //     return {
-      //       success: false,
-      //       error: 'User does not have access to this trip',
-      //     };
-      //   }
-      // }
 
       // Upload file to GCS
       const storageFilename = this.generateStorageFilename(
@@ -301,23 +280,6 @@ export class MediaUploadService {
     }
   }
 
-  /**
-   * Verify if user is a member of the trip
-   */
-  private async verifyUserInTrip(
-    tripId: string,
-    userId: string,
-  ): Promise<boolean> {
-    try {
-      const response = await axios.get(
-        `${this.tripServiceUrl}/api/v1/trips/${tripId}/members/${userId}`,
-      );
-      return response.status === 200;
-    } catch (error) {
-      this.logger.warn(`Failed to verify user in trip: ${error}`);
-      return false;
-    }
-  }
 
   /**
    * Verify GPG signature asynchronously (non-blocking)
