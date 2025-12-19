@@ -92,39 +92,6 @@ export class TripService {
     }
   }
 
-  private shouldAutoApproveTrip(dto: CreateTripDto): boolean {
-    const schedule = dto.schedule ? new Date(dto.schedule) : null;
-    const deadline = dto.deadline ? new Date(dto.deadline) : null;
-    const today: Date = new Date();
-    const hasPurpose = dto.purpose && dto.purpose.trim().length > 0;
-    const hasGoal = dto.goal && dto.goal.trim().length > 0;
-    const hasSchedule = schedule && +schedule >= +today;
-    const hasDeadline = deadline && +deadline >= +today;
-    const meaningfulSchedule =
-      hasSchedule && hasDeadline && +schedule <= +deadline;
-    const hasLocations = dto.locations && dto.locations.length > 0;
-    const result: boolean =
-      hasPurpose &&
-      hasGoal &&
-      hasSchedule &&
-      hasLocations &&
-      meaningfulSchedule;
-
-    this.logger.debug(`Create trip DTO: ${JSON.stringify(dto)}`);
-    this.logger.debug(`Criteria(Has purpose): ${hasPurpose}`);
-    this.logger.debug(`Criteria(Has schedule): ${hasSchedule}`);
-    this.logger.debug(`Criteria(Has deadline): ${hasDeadline}`);
-    this.logger.debug(
-      `Criteria(Has meaningful schedule): ${meaningfulSchedule}`,
-    );
-    this.logger.debug(`Criteria(Has goal): ${hasGoal}`);
-    this.logger.debug(
-      `Result: ${result ? 'Auto approved' : 'Failed to auto approve'}`,
-    );
-
-    return result;
-  }
-
   async create(
     creator: { id: string; role: string },
     dto: CreateTripDto,
@@ -135,7 +102,6 @@ export class TripService {
     if (creator.role !== 'employee') {
       managerId = creator.id;
     } else {
-      // TODO: fetch employee's manager ID from the user service with the event find by id
       try {
         const claims: TokenClaimsDto = {
           jit: '', // not used here
@@ -191,7 +157,6 @@ export class TripService {
       return;
     }
 
-    const shouldAutoApprove = this.shouldAutoApproveTrip(dto);
     const locationIds = dto.locations.map((loc) => loc.location_id);
     const locations: Location[] = await this.validateLocationIds(locationIds);
 
@@ -200,10 +165,9 @@ export class TripService {
     await queryRunner.startTransaction();
 
     const isProposal = creator.role === 'employee';
-    const tripStatus =
-      (isProposal && shouldAutoApprove) || !isProposal
-        ? TripStatusEnum.PENDING
-        : TripStatusEnum.PROPOSING;
+    const tripStatus: TripStatusEnum = isProposal
+      ? TripStatusEnum.WAITING_FOR_APPROVAL
+      : TripStatusEnum.NOT_STARTED;
 
     try {
       const tripObject: Trip = this.tripRepo.create({
@@ -245,7 +209,6 @@ export class TripService {
       await Promise.all(
         createTaskDtos.map((dto: CreateTaskDto, index: number) => {
           dto.tripLocationId = tripLocations[index].id;
-          // console.log('🚀 ~ TripService ~ create ~ dto:', dto);
           return this.taskService.create(dto, queryRunner.manager);
         }),
       );
@@ -343,15 +306,12 @@ export class TripService {
   }
 
   async update(id: string, dto: UpdateTripDto): Promise<Trip> {
-    console.log('🚀 ~ TripService ~ update ~ dto:', dto);
     const trip: Trip = await this.findOne(id);
-    console.log('🚀 ~ TripService ~ update ~ trip:', trip);
     const { title, status, schedule, deadline, ...rest } = dto;
     if (title) {
       const titleExisted = await this.tripRepo.existsBy({
         title,
       });
-      console.log('🚀 ~ TripService ~ update ~ titleExisted:', titleExisted);
       if (titleExisted) {
         throwRpcException({
           statusCode: HttpStatus.BAD_REQUEST,
@@ -394,12 +354,6 @@ export class TripService {
 
   async remove(id: string): Promise<{ success: boolean; id: string }> {
     const trip = await this.findOne(id);
-    if (trip.status !== TripStatusEnum.PENDING) {
-      throwRpcException({
-        statusCode: HttpStatus.BAD_REQUEST,
-        message: `Only trips with status 'pending' can be deleted`,
-      });
-    }
 
     try {
       trip.deletedAt = new Date();
@@ -417,11 +371,11 @@ export class TripService {
   async approve(tripId: string, dto: ApproveTripDto): Promise<Trip> {
     const trip = await this.findOne(tripId);
 
-    if (trip.status !== TripStatusEnum.PROPOSING) {
+    if (trip.status !== TripStatusEnum.WAITING_FOR_APPROVAL) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
-        message: 'Invalid trip approval',
-        details: 'Trip is not propsoing',
+        message: 'Invalid trip',
+        details: 'Only approve trip that is waiting for approval',
       });
     }
 
@@ -431,8 +385,8 @@ export class TripService {
     trip.decidedAt = new Date();
     trip.status =
       dto.decision === 'approve'
-        ? TripStatusEnum.PENDING
-        : TripStatusEnum.CANCELED;
+        ? TripStatusEnum.NOT_STARTED
+        : TripStatusEnum.NOT_APPROVED;
     return await this.tripRepo.save(trip);
   }
 
@@ -531,6 +485,7 @@ export class TripService {
       id: rawResult.tripLocation_id,
       checkInTimestamp: new Date(checkInDto.timestamp),
       checkInPoint: `POINT(${checkInDto.longitude} ${checkInDto.latitude})`,
+      checkInAttachmentId: checkInDto.attachmentId,
     };
 
     try {
@@ -594,6 +549,7 @@ export class TripService {
           id: rawResult.tripLocation_id,
           checkOutTimestamp: new Date(dto.timestamp),
           checkOutPoint: `POINT(${dto.longitude} ${dto.latitude})`,
+          checkOutAttachmentId: dto.attachmentId,
         };
 
         const savedLocation = await transactionalManager.save(

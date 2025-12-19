@@ -7,10 +7,11 @@ import { TripController } from './trip.controller';
 import { LocationModule } from 'src/modules/location/location.module';
 import { TaskModule } from '../task/task.module';
 import { ClientModule } from 'src/client/client.module';
+import { TripProgress } from 'src/models/trip-progress.model';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Trip, TripLocation]),
+    TypeOrmModule.forFeature([Trip, TripLocation, TripProgress]),
     LocationModule,
     TaskModule,
     ClientModule,

@@ -3,7 +3,7 @@ import { IsDateString, IsNotEmpty, IsNumber, IsUUID } from 'class-validator';
 
 export class CheckOutAtLocationDto {
   @ApiProperty({
-    description: "Trip's location ID that user is checking in",
+    description: "Trip's location ID that user is checking out",
     required: true,
   })
   @IsUUID()
@@ -27,10 +27,19 @@ export class CheckOutAtLocationDto {
   longitude: number;
 
   @ApiProperty({
-    description: "Client's check-in timestamp",
+    description: "Client's check-out timestamp",
     required: true,
   })
   @IsDateString()
   @IsNotEmpty()
   timestamp: Date;
+
+  @ApiProperty({
+    description: "Client's check-out attachment ID",
+    type: 'string',
+    required: true,
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  attachmentId: string;
 }

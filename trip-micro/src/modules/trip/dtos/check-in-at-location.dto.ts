@@ -16,4 +16,8 @@ export class CheckInAtLocationDto {
   @IsDateString()
   @IsNotEmpty()
   timestamp: Date;
+
+  @IsUUID()
+  @IsNotEmpty()
+  attachmentId: string;
 }

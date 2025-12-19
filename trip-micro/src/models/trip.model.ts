@@ -1,7 +1,8 @@
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity, OneToMany, OneToOne } from 'typeorm';
 import { BaseModel } from './base.model';
 import { TripLocation } from './trip-location.model';
 import { TripStatusEnum } from 'src/models/trip-status.enum';
+import { TripProgress } from 'src/models/trip-progress.model';
 
 @Entity({ name: 'trips' })
 export class Trip extends BaseModel {
@@ -14,7 +15,7 @@ export class Trip extends BaseModel {
   @Column({
     type: 'enum',
     enum: TripStatusEnum,
-    default: TripStatusEnum.PENDING,
+    nullable: false,
   })
   status: TripStatusEnum;
 
@@ -44,4 +45,7 @@ export class Trip extends BaseModel {
 
   @OneToMany(() => TripLocation, (tripLocation) => tripLocation.trip)
   tripLocations: TripLocation[];
+
+  @OneToOne(() => TripProgress, (tripProgress) => tripProgress.trip)
+  tripProgress: TripProgress;
 }

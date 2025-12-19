@@ -3,5 +3,6 @@ import { Trip } from './trip.model';
 import { TripLocation } from './trip-location.model';
 import { Location } from './location.model';
 import { Task } from './task.model';
+import { TripProgress } from './trip-progress.model';
 
-export const tableSchemas = [BaseModel, Trip, TripLocation, Location, Task];
+export const tableSchemas = [BaseModel, Trip, TripLocation, Location, Task, TripProgress];

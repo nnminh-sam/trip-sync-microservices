@@ -4,18 +4,13 @@ export const TRIP_STATUS_TRANSISTION_MAP: Record<
   TripStatusEnum,
   TripStatusEnum[]
 > = {
-  proposing: [TripStatusEnum.PENDING, TripStatusEnum.CANCELED],
-  pending: [
-    TripStatusEnum.IN_PROGRESS,
-    TripStatusEnum.CANCELED,
-    TripStatusEnum.OVERDUE,
+  waiting_for_approval: [
+    TripStatusEnum.NOT_APPROVED,
+    TripStatusEnum.NOT_STARTED,
   ],
-  in_progress: [
-    TripStatusEnum.COMPLETED,
-    TripStatusEnum.CANCELED,
-    TripStatusEnum.OVERDUE,
-  ],
+  not_approved: [],
+  not_started: [TripStatusEnum.IN_PROGRESS, TripStatusEnum.CANCELED],
+  in_progress: [TripStatusEnum.COMPLETED, TripStatusEnum.CANCELED],
   completed: [],
   canceled: [],
-  overdue: [],
 };

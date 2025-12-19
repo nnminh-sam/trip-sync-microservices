@@ -1,0 +1,133 @@
+    {
+      "id": "2a0400f5-17c0-4c58-87ee-b1542c6b64cf",
+      "createdAt": "2025-12-17T01:30:51.689Z",
+      "updatedAt": "2025-12-18T12:56:36.864Z",
+      "deletedAt": null,
+      "title": "Đi công tác",
+      "assigneeId": "fbda153b-b952-4489-bb58-2bdc8522fdb4",
+      "status": "completed",
+      "purpose": "Abc",
+      "goal": "Goal",
+      "schedule": "2025-12-17T03:16:00.000Z",
+      "deadline": "2025-12-18T01:17:00.000Z",
+      "note": "123",
+      "managerId": "d158b20e-7c68-48f1-86c2-f249e99b2269",
+      "startedAt": null,
+      "decidedAt": "2025-12-17T01:30:52.000Z",
+      "tripProgress": [
+        {
+          "id": "d3f3e2f3-5f4b-4e2a-8f4a-5c6d7e8f9a0b",
+          "actorId": "fbda153b-b952-4489-bb58-2bdc8522fdb4",
+          "status": "not_started",
+          "title": "Chuyến công tác được tạo và đang chờ thực hiện",
+          "description": "Chuyến công tác đã được tạo và đang chờ để bắt đầu vào ngày 17 tháng 12, 2025",
+          "created_at": "2025-12-17T01:30:51.724Z"
+        },
+        {
+          "id": "d3f3e2f3-5f4b-4e2a-8f4a-5c6d7e8f9a0b",
+          "actorId": "fbda153b-b952-4489-bb58-2bdc8522fdb4",
+          "status": "in_progress",
+          "title": "Đã bắt đầu, đang di chuyển đến địa điểm 1",
+          "description": "Nhân viên đã bắt đầu chuyến công tác và đang di chuyển đến địa điểm 1 vào ngày 17 tháng 12, 2025",
+          "created_at": "2025-12-17T01:30:51.724Z"
+        },
+        {
+          "id": "d3f3e2f3-5f4b-4e2a-8f4a-5c6d7e8f9a0b",
+          "actorId": "fbda153b-b952-4489-bb58-2bdc8522fdb4",
+          "status": "in_progress",
+          "title": "Nhân viên đã check-in tại địa điểm 1. Bắt đầu thực hiện công tác ở địa điểm 1",
+          "description": "Nhân viên đến địa điểm 1 và đã check-in để bắt đầu thực hiện các nhiệm vụ được giao vào ngày 17 tháng 12, 2025",
+          "created_at": "2025-12-17T01:30:51.724Z"
+        },
+        {
+          "id": "d3f3e2f3-5f4b-4e2a-8f4a-5c6d7e8f9a0b",
+          "actorId": "fbda153b-b952-4489-bb58-2bdc8522fdb4",
+          "status": "in_progress",
+          "title": "Nhân viên hoàn thành công tác tại địa điểm 1 và check-out",
+          "description": "Nhân viên đã hoàn thành tất cả các nhiệm vụ tại địa điểm 1 và đã check-out để di chuyển đến địa điểm tiếp theo vào ngày 17 tháng 12, 2025",
+          "created_at": "2025-12-17T01:30:51.724Z"
+        },
+        {
+          "id": "d3f3e2f3-5f4b-4e2a-8f4a-5c6d7e8f9a0b",
+          "actorId": "fbda153b-b952-4489-bb58-2bdc8522fdb4",
+          "status": "in_progress",
+          "title": "Nhân viên đã đến địa điểm 2 và check-in",
+          "description": "Nhân viên đã đến địa điểm 2 và đã check-in để bắt đầu thực hiện các nhiệm vụ được giao vào ngày 17 tháng 12, 2025",
+          "created_at": "2025-12-17T01:30:51.724Z"
+        },
+        {
+          "id": "d3f3e2f3-5f4b-4e2a-8f4a-5c6d7e8f9a0b",
+          "actorId": "fbda153b-b952-4489-bb58-2bdc8522fdb4",
+          "status": "in_progress",
+          "title": "Nhân viên đã hoàn thành công tác tại địa điểm 2 và check-out",
+          "description": "Nhân viên đã hoàn thành tất cả các nhiệm vụ tại địa điểm 2 và đã check-out để kết thúc chuyến công tác vào ngày 17 tháng 12, 2025",
+          "created_at": "2025-12-17T01:30:51.724Z"
+        },
+        {
+          "id": "d3f3e2f3-5f4b-4e2a-8f4a-5c6d7e8f9a0b",
+          "actorId": "fbda153b-b952-4489-bb58-2bdc8522fdb4",
+          "status": "completed",
+          "title": "Nhân viên đã hoàn thành chuyến công tác",
+          "description": "Nhân viên đã hoàn thành tất cả các nhiệm vụ được giao trong chuyến công tác vào ngày 18 tháng 12, 2025",
+          "created_at": "2025-12-17T01:30:51.724Z"
+        }
+      ],
+      "tripLocations": [
+        {
+          "id": "0cf07cab-589c-4498-a170-058f20423211",
+          "createdAt": "2025-12-17T01:30:51.698Z",
+          "updatedAt": "2025-12-17T01:30:51.698Z",
+          "deletedAt": null,
+          "tripId": "2a0400f5-17c0-4c58-87ee-b1542c6b64cf",
+          "baseLocationId": "70be2141-db6a-46e0-a3ba-77cfb4c4f2e7",
+          "nameSnapshot": "fpt",
+          "latitudeSnapshot": "10.83557360",
+          "longitudeSnapshot": "106.80825110",
+          "offsetRadiusSnapshot": 150,
+          "locationPointSnapshot": {
+            "x": 106.8082511,
+            "y": 10.8355736
+          },
+          "arrivalOrder": 2,
+          "checkInPoint": {
+            "x": 0,
+            "y": 0
+          },
+          "checkInTimestamp": null,
+          "checkOutPoint": {
+            "x": 0,
+            "y": 0
+          },
+          "checkOutTimestamp": null,
+          "location": null
+        },
+        {
+          "id": "902e07b7-b174-4c8d-bf77-d2227ffefaab",
+          "createdAt": "2025-12-17T01:30:51.698Z",
+          "updatedAt": "2025-12-17T01:30:51.698Z",
+          "deletedAt": null,
+          "tripId": "2a0400f5-17c0-4c58-87ee-b1542c6b64cf",
+          "baseLocationId": "01a468f8-a799-4fc7-9157-a4572f38e57e",
+          "nameSnapshot": "FPT Shop",
+          "latitudeSnapshot": "21.04166580",
+          "longitudeSnapshot": "105.78127030",
+          "offsetRadiusSnapshot": 150,
+          "locationPointSnapshot": {
+            "x": 105.7812703,
+            "y": 21.0416658
+          },
+          "arrivalOrder": 1,
+          "checkInPoint": {
+            "x": 0,
+            "y": 0
+          },
+          "checkInTimestamp": null,
+          "checkOutPoint": {
+            "x": 0,
+            "y": 0
+          },
+          "checkOutTimestamp": null,
+          "location": null
+        }
+      ]
+    },

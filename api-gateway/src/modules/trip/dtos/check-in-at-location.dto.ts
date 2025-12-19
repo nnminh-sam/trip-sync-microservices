@@ -33,4 +33,13 @@ export class CheckInAtLocationDto {
   @IsDateString()
   @IsNotEmpty()
   timestamp: Date;
+
+  @ApiProperty({
+    description: "Client's check-in attachment ID",
+    type: 'string',
+    required: true,
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  attachmentId: string;
 }

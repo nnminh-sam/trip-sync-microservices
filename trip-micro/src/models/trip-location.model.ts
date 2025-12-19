@@ -64,6 +64,9 @@ export class TripLocation extends BaseModel {
   @Column({ type: 'datetime', name: 'checkin_timestamp', nullable: true })
   checkInTimestamp: Date;
 
+  @Column({ type: 'uuid', name: 'checkin_attachment_id', nullable: true })
+  checkInAttachmentId: string;
+
   @Column({
     name: 'checkout_point',
     type: 'geometry',
@@ -76,6 +79,9 @@ export class TripLocation extends BaseModel {
 
   @Column({ type: 'datetime', name: 'checkout_timestamp', nullable: true })
   checkOutTimestamp: Date;
+
+  @Column({ type: 'uuid', name: 'checkout_attachment_id', nullable: true })
+  checkOutAttachmentId: string;
 
   @ManyToOne(() => Trip, (trip) => trip.tripLocations, { onUpdate: 'CASCADE' })
   trip: Trip;

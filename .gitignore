@@ -50,3 +50,4 @@ docker/*.env*
 databases
 
 tracking-micro
+communication-micro
