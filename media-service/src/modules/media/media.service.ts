@@ -22,10 +22,6 @@ export class MediaService {
   ): Promise<{ data: Media[]; total: number }> {
     const query = this.mediaRepository.createQueryBuilder('media');
 
-    if (filter.taskId) {
-      query.where('media.taskId = :taskId', { taskId: filter.taskId });
-    }
-
     if (filter.uploaderId) {
       query.andWhere('media.uploaderId = :uploaderId', {
         uploaderId: filter.uploaderId,
@@ -44,12 +40,6 @@ export class MediaService {
     const [data, total] = await query.getManyAndCount();
 
     return { data, total };
-  }
-
-  async findByTaskId(taskId: string): Promise<Media[]> {
-    return await this.mediaRepository.find({
-      where: { taskId },
-    });
   }
 
   async create(

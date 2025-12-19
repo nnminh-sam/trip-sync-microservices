@@ -42,13 +42,7 @@ export class MediaController {
   ) {}
 
   /**
-   * GET /api/v1/media?task-id={taskId}
-   *
-   * Fetch many media files based on task ID.
-   *
-   * When task ID is provided:
-   * 1. Query media directly by task ID
-   * 2. Return all media for that task
+   * GET /api/v1/media
    */
   @Get()
   @ApiOperation({
@@ -75,7 +69,6 @@ export class MediaController {
               gcsUrl: { type: 'string' },
               publicUrl: { type: 'string' },
               uploaderId: { type: 'string' },
-              taskId: { type: 'string' },
               status: { type: 'string' },
               description: { type: 'string', nullable: true },
               signatureVerified: { type: 'boolean' },
@@ -91,11 +84,6 @@ export class MediaController {
   })
   async findMany(@Query() filter: FilterMediaDto) {
     this.logger.debug(`Finding media with filter:`, filter);
-
-    if (filter.taskId) {
-      const media = await this.mediaService.findByTaskId(filter.taskId);
-      return { data: media, total: media.length };
-    }
 
     return await this.mediaService.findAll(filter);
   }
@@ -129,7 +117,6 @@ export class MediaController {
         gcsUrl: { type: 'string' },
         publicUrl: { type: 'string' },
         uploaderId: { type: 'string' },
-        taskId: { type: 'string' },
         status: { type: 'string' },
         description: { type: 'string', nullable: true },
         signatureVerified: { type: 'boolean' },
@@ -156,7 +143,7 @@ export class MediaController {
   }
 
   /**
-   * POST /api/v1/media?task-id={taskId}
+   * POST /api/v1/media
    *
    * Upload a new media file to the media service with GnuPG signature verification.
    *
@@ -182,7 +169,6 @@ export class MediaController {
    * 8. Return created media object
    *
    * @param file - Uploaded file buffer (multipart, key: 'file')
-   * @param taskId - Task UUID from query parameter (required)
    * @param body - Form body containing signature, originalFilename, mimetype
    * @param req - Express request (contains user info from JWT)
    * @returns Created media object with signatureVerified: true
@@ -197,12 +183,6 @@ export class MediaController {
       'Upload a new media file with GnuPG signature verification. The file is uploaded to GCS and a media record is created in the database.',
   })
   @ApiConsumes('multipart/form-data')
-  @ApiQuery({
-    name: 'task-id',
-    description: 'Task UUID to associate media with',
-    required: true,
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
   @ApiBody({
     schema: {
       type: 'object',
@@ -253,7 +233,6 @@ export class MediaController {
         gcsUrl: { type: 'string' },
         publicUrl: { type: 'string' },
         uploaderId: { type: 'string' },
-        taskId: { type: 'string' },
         status: { type: 'string' },
         description: { type: 'string', nullable: true },
         signatureVerified: { type: 'boolean' },
@@ -273,7 +252,6 @@ export class MediaController {
   })
   async uploadMedia(
     @UploadedFile() file: Express.Multer.File,
-    @Query('task-id') taskId: string,
     @Body()
     body: { signature: string; originalFilename: string; mimetype: string },
     @Req() req: any,
@@ -282,13 +260,6 @@ export class MediaController {
     if (!file) {
       throw new BadRequestException(
         'No file uploaded. Expected form field: "file"',
-      );
-    }
-
-    // Validate task ID is provided
-    if (!taskId) {
-      throw new BadRequestException(
-        'Task ID is required. Expected query parameter: task-id',
       );
     }
 
@@ -313,10 +284,6 @@ export class MediaController {
       );
     }
 
-    this.logger.debug(
-      `Uploading media task: ${taskId}, file: ${body.originalFilename}`,
-    );
-
     // Extract JWT token from Authorization header
     const authHeader = req.headers.authorization || '';
     const jwtToken = authHeader.replace('Bearer ', '');
@@ -331,7 +298,6 @@ export class MediaController {
     console.log('🚀 ~ MediaController ~ uploadMedia ~ req.user:', req.user);
     const uploadRequest = {
       uploaderId: req.user.sub,
-      taskId,
       signature: body.signature,
       jwtToken,
     };
@@ -439,7 +405,6 @@ export class MediaController {
       gcsUrl: media.gcsUrl,
       publicUrl: media.publicUrl,
       uploaderId: media.uploaderId,
-      taskId: media.taskId,
       status: media.status,
       description: media.description,
       signatureVerified: media.signatureVerified,

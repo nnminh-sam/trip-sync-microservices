@@ -8,7 +8,6 @@ import { Media } from '../../../models';
 import axios from 'axios';
 
 export interface MediaUploadRequest {
-  taskId: string;
   uploaderId: string;
   signature?: string;
   jwtToken?: string;
@@ -83,7 +82,6 @@ export class MediaUploadService {
       const storageFilename = this.generateStorageFilename(
         // uploadRequest.uploaderId,
         '123',
-        uploadRequest.taskId,
         filename,
       );
 
@@ -112,7 +110,6 @@ export class MediaUploadService {
         size: fileSize,
         gcsUrl: gcsUploadResult.gcsUrl,
         publicUrl: gcsUploadResult.publicUrl,
-        taskId: uploadRequest.taskId,
         status: 'uploaded',
         description: uploadRequest.description,
         signatureVerified: false,
@@ -222,7 +219,6 @@ export class MediaUploadService {
       const storageFilename = this.generateStorageFilename(
         // uploadRequest.uploaderId,
         '123',
-        uploadRequest.taskId,
         filename,
       );
 
@@ -251,7 +247,6 @@ export class MediaUploadService {
         size: fileSize,
         gcsUrl: gcsUploadResult.gcsUrl,
         publicUrl: gcsUploadResult.publicUrl,
-        taskId: uploadRequest.taskId,
         status: 'verified',
         description: uploadRequest.description,
         signatureVerified: true,
@@ -287,39 +282,6 @@ export class MediaUploadService {
   }
 
   /**
-   * Find media by trip ID
-   * @param tripId - The trip ID
-   * @returns List of media files for the trip
-   */
-  async findMediaByTripId(
-    tripId: string,
-  ): Promise<{ data: Media[]; total: number }> {
-    try {
-      const tasks = await this.getTasksByTripId(tripId);
-
-      if (!tasks || tasks.length === 0) {
-        return { data: [], total: 0 };
-      }
-
-      const taskIds = tasks.map((t: any) => t.id);
-      const mediaList: Media[] = [];
-
-      for (const taskId of taskIds) {
-        const media = await this.mediaService.findByTaskId(taskId);
-        mediaList.push(...media);
-      }
-
-      return {
-        data: mediaList,
-        total: mediaList.length,
-      };
-    } catch (error) {
-      this.logger.error(`Failed to find media by trip: ${error}`);
-      return { data: [], total: 0 };
-    }
-  }
-
-  /**
    * Delete media from GCS storage
    * @param filename - The filename to delete
    */
@@ -346,21 +308,6 @@ export class MediaUploadService {
     } catch (error) {
       this.logger.warn(`Failed to verify user in trip: ${error}`);
       return false;
-    }
-  }
-
-  /**
-   * Get all tasks in a trip
-   */
-  private async getTasksByTripId(tripId: string): Promise<any[]> {
-    try {
-      const response = await axios.get(
-        `${this.tripServiceUrl}/api/v1/trips/${tripId}/tasks`,
-      );
-      return response.data?.data || [];
-    } catch (error) {
-      this.logger.warn(`Failed to get tasks from trip service: ${error}`);
-      return [];
     }
   }
 
@@ -417,22 +364,15 @@ export class MediaUploadService {
    * The bucket name (proof-media) is configured separately in GCS.
    *
    * @param uploaderId - The uploader's ID
-   * @param taskId - Optional task ID
    * @param originalFilename - The original filename
    * @returns Generated filename (relative path, no bucket prefix)
    */
   private generateStorageFilename(
     uploaderId: string,
-    taskId: string | undefined,
     originalFilename: string,
   ): string {
     const timestamp = Date.now();
     const extension = this.getFileExtension(originalFilename);
-
-    if (taskId) {
-      return `media_${uploaderId}_${taskId}_${timestamp}.${extension}`;
-    }
-
     return `media_${uploaderId}_${timestamp}.${extension}`;
   }
 

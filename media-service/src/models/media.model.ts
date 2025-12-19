@@ -24,9 +24,6 @@ export class Media extends BaseModel {
   @Column({ type: 'uuid' })
   uploaderId: string;
 
-  @Column({ type: 'uuid', nullable: true })
-  taskId?: string;
-
   @Column({ type: 'varchar', length: 50 })
   status: string; // 'uploaded', 'verified', 'failed'
 

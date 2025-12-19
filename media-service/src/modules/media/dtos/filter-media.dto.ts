@@ -4,14 +4,6 @@ import { Type } from 'class-transformer';
 
 export class FilterMediaDto {
   @ApiPropertyOptional({
-    description: 'Filter by task ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsOptional()
-  @IsString()
-  taskId?: string;
-
-  @ApiPropertyOptional({
     description: 'Filter by uploader ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })

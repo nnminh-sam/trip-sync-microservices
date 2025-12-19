@@ -23,17 +23,15 @@ const fs = require('fs');
 const path = require('path');
 
 const GPG_KEYS_DIR = path.join(__dirname, '../gpg-keys');
-const KEYS_DIR = path.join(__dirname, '../test/resources/keys');
 const MEDIA_DIR = path.join(__dirname, '../test/resources/media');
 const SIGNED_MEDIA_DIR = path.join(__dirname, '../test/resources/signed-media');
 
 // Ensure directories exist
-[KEYS_DIR, MEDIA_DIR, SIGNED_MEDIA_DIR].forEach(dir => {
+[GPG_KEYS_DIR, MEDIA_DIR, SIGNED_MEDIA_DIR].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
-
 
 /**
  * Sign a single media file
@@ -50,12 +48,16 @@ async function signFile(filePath) {
     const privateKeyPath = path.join(GPG_KEYS_DIR, 'admin_private.asc');
     if (!fs.existsSync(privateKeyPath)) {
       console.error(`❌ Private key not found at: ${privateKeyPath}`);
-      console.error('   Expected location: @user-micro/gpg-keys/admin_private.asc');
+      console.error(
+        '   Expected location: @user-micro/gpg-keys/admin_private.asc',
+      );
       process.exit(1);
     }
 
     const privateKeyArmored = fs.readFileSync(privateKeyPath, 'utf-8');
-    const privateKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmored });
+    const privateKey = await openpgp.readPrivateKey({
+      armoredKey: privateKeyArmored,
+    });
 
     // Read file data
     const fileData = fs.readFileSync(filePath);
@@ -98,7 +100,7 @@ async function signFile(filePath) {
     // Display signature preview
     console.log('\n📋 Signature preview (first 5 lines):');
     const signatureLines = signatureData.split('\n').slice(0, 5);
-    signatureLines.forEach(line => console.log(`   ${line}`));
+    signatureLines.forEach((line) => console.log(`   ${line}`));
     console.log('   ...');
 
     return {
@@ -125,14 +127,16 @@ async function signAllFiles() {
     }
 
     const files = fs.readdirSync(MEDIA_DIR);
-    const mediaFiles = files.filter(f => {
+    const mediaFiles = files.filter((f) => {
       const fullPath = path.join(MEDIA_DIR, f);
       return fs.statSync(fullPath).isFile();
     });
 
     if (mediaFiles.length === 0) {
       console.log(`⚠️  No media files found in ${MEDIA_DIR}`);
-      console.log('📝 Add media files to this folder, then run: npm run sign-media -- --sign-all');
+      console.log(
+        '📝 Add media files to this folder, then run: npm run sign-media -- --sign-all',
+      );
       return;
     }
 
@@ -153,7 +157,7 @@ async function signAllFiles() {
     summary += `Generated: ${new Date().toISOString()}\n\n`;
     summary += '## Files Signed\n\n';
 
-    results.forEach(result => {
+    results.forEach((result) => {
       summary += `### ${result.fileName}\n`;
       summary += `- Signature file: \`${path.basename(result.signaturePath)}\`\n`;
       summary += `- Metadata: \`${path.basename(result.metadataPath)}\`\n\n`;
@@ -188,7 +192,9 @@ function displayPublicKey() {
   const publicKeyPath = path.join(GPG_KEYS_DIR, 'admin_pubkey.asc');
   if (!fs.existsSync(publicKeyPath)) {
     console.error(`❌ Public key not found at: ${publicKeyPath}`);
-    console.error('   Expected location: @user-micro/gpg-keys/admin_pubkey.asc');
+    console.error(
+      '   Expected location: @user-micro/gpg-keys/admin_pubkey.asc',
+    );
     process.exit(1);
   }
 
@@ -231,7 +237,9 @@ This tool uses pre-generated GPG keys from @user-micro/gpg-keys:
   switch (command) {
     case '--sign':
       if (!args[1]) {
-        console.error('❌ Please specify a file path: npm run sign-media -- --sign <file-path>');
+        console.error(
+          '❌ Please specify a file path: npm run sign-media -- --sign <file-path>',
+        );
         process.exit(1);
       }
       await signFile(args[1]);
@@ -253,7 +261,7 @@ This tool uses pre-generated GPG keys from @user-micro/gpg-keys:
 }
 
 // Run the script
-main().catch(error => {
+main().catch((error) => {
   console.error('❌ Fatal error:', error);
   process.exit(1);
 });
