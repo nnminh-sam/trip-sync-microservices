@@ -3,13 +3,11 @@ services:
     image: nats:2.10-alpine
     container_name: nats
     ports:
-      - '4222:4222' # Client connections
-      - '8222:8222' # HTTP monitoring
+      - '4222:4222'
+      - '8222:8222'
     volumes:
       - ./volumes/nats:/data
     restart: unless-stopped
-    networks:
-      - shared-net
     healthcheck:
       test:
         [
@@ -35,8 +33,6 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
       - ./volumes/redis:/data
-    networks:
-      - shared-net
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
     healthcheck:
       test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
@@ -62,8 +58,6 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
-    networks:
-      - shared-net
     healthcheck:
       test:
         [
