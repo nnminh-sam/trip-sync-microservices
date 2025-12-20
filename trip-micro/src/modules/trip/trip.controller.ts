@@ -98,7 +98,11 @@ export class TripController {
       });
     }
 
-    return await this.tripService.update(id, payload.request.body);
+    return await this.tripService.update(
+      payload.claims.sub,
+      id,
+      payload.request.body,
+    );
   }
 
   @MessagePattern(TripMessagePattern.DELETE)
@@ -141,7 +145,7 @@ export class TripController {
     const { id } = payload.request.path;
     const dto = payload.request.body;
 
-    return this.tripService.approve(id, dto);
+    return this.tripService.approve(id, dto, payload.claims.sub);
   }
 
   @MessagePattern(TripMessagePattern.LOCATIONS)
@@ -158,7 +162,7 @@ export class TripController {
     });
 
     const { id } = payload.request.path;
-    return this.tripService.getTripLocations(id);
+    return this.tripService.getTripLocations(payload.claims.sub, id);
   }
 
   @MessagePattern(TripMessagePattern.CHECK_IN)

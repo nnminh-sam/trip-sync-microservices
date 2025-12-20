@@ -25,6 +25,7 @@ import { NATSClient } from 'src/client/clients';
 import { NatsClientSender } from 'src/utils';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { MessagePayloadDto } from 'src/dtos/message-payload.dto';
+import { FirebaseService } from 'src/modules/firebase/firebase.service';
 
 @Injectable()
 export class TripService {
@@ -43,6 +44,9 @@ export class TripService {
     private readonly taskService: TaskService,
 
     private readonly dataSource: DataSource,
+
+    private readonly firebaseService: FirebaseService,
+
     @Inject(NATSClient.name)
     private readonly natsClient: ClientProxy,
   ) {
@@ -215,6 +219,37 @@ export class TripService {
 
       await queryRunner.commitTransaction();
 
+      if (isProposal) {
+        this.firebaseService.sendNotification({
+          path: `/noti/${managerId}/${new Date().getTime()}`,
+          data: {
+            senderId: creator.id,
+            receiverId: managerId,
+            title: 'New Trip Proposal',
+            message: `You have proposed a new trip "${trip.title}" and waiting for approval.`,
+          },
+        });
+        this.firebaseService.sendNotification({
+          path: `/noti/${creator.id}/${new Date().getTime()}`,
+          data: {
+            receiverId: creator.id,
+            senderId: managerId,
+            title: 'New Trip Proposal',
+            message: `A new trip titled "${trip.title}" has been proposed and is awaiting your approval.`,
+          },
+        });
+      } else {
+        this.firebaseService.sendNotification({
+          path: `/noti/${dto.assignee_id}/${new Date().getTime()}`,
+          data: {
+            senderId: creator.id,
+            receiverId: dto.assignee_id,
+            title: 'New Trip Assigned',
+            message: `A new trip titled "${trip.title}" has been assigned to you.`,
+          },
+        });
+      }
+
       return trip;
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -302,10 +337,27 @@ export class TripService {
       });
     }
 
+    // await this.firebaseService.sendNotification({
+    //   path: `/noti/${trip.id}/${requestId}`,
+    //   senderId: 'system',
+    //   receiverId: trip.assigneeId,
+    //   data: {
+    //     title: 'Trip Accessed',
+    //     body: `User viewed trip: ${trip.title}`,
+    //     senderId: requestId,
+    //     receiverId: trip.assigneeId,
+    //   },
+    //   description: `Notify assignee ${trip.assigneeId} about trip access`,
+    // });
+
     return trip;
   }
 
-  async update(id: string, dto: UpdateTripDto): Promise<Trip> {
+  async update(
+    requestId: string,
+    id: string,
+    dto: UpdateTripDto,
+  ): Promise<Trip> {
     const trip: Trip = await this.findOne(id);
     const { title, status, schedule, deadline, ...rest } = dto;
     if (title) {
@@ -343,6 +395,36 @@ export class TripService {
           message: error.message,
         });
       }
+
+      if (
+        trip.status === TripStatusEnum.NOT_STARTED &&
+        status === TripStatusEnum.IN_PROGRESS
+      ) {
+        trip.startedAt = new Date();
+        this.firebaseService.sendNotification({
+          path: `/noti/${trip.managerId}/${new Date().getTime()}`,
+          data: {
+            senderId: requestId,
+            receiverId: trip.managerId,
+            title: 'Trip Started',
+            message: `Employee has started the trip: ${trip.title}`,
+          },
+        });
+      } else if (
+        trip.status === TripStatusEnum.IN_PROGRESS &&
+        status === TripStatusEnum.COMPLETED
+      ) {
+        this.firebaseService.sendNotification({
+          path: `/noti/${trip.managerId}/${new Date().getTime()}`,
+          data: {
+            senderId: requestId,
+            receiverId: trip.managerId,
+            title: 'Trip Completed',
+            message: `Employee has completed the trip: ${trip.title}`,
+          },
+        });
+      }
+
       if (status !== undefined) trip.status = status;
     }
 
@@ -368,7 +450,11 @@ export class TripService {
     }
   }
 
-  async approve(tripId: string, dto: ApproveTripDto): Promise<Trip> {
+  async approve(
+    tripId: string,
+    dto: ApproveTripDto,
+    managerId: string,
+  ): Promise<Trip> {
     const trip = await this.findOne(tripId);
 
     if (trip.status !== TripStatusEnum.WAITING_FOR_APPROVAL) {
@@ -387,10 +473,23 @@ export class TripService {
       dto.decision === 'approve'
         ? TripStatusEnum.NOT_STARTED
         : TripStatusEnum.NOT_APPROVED;
-    return await this.tripRepo.save(trip);
+
+    const result = await this.tripRepo.save(trip);
+
+    this.firebaseService.sendNotification({
+      path: `/noti/${trip.assigneeId}/${new Date().getTime()}`,
+      data: {
+        senderId: managerId,
+        receiverId: trip.assigneeId,
+        title: 'Trip decision made',
+        message: 'Your trip has been ' + dto.decision,
+      },
+    });
+
+    return result;
   }
 
-  async getTripLocations(tripId: string): Promise<any[]> {
+  async getTripLocations(requestId: string, tripId: string): Promise<any[]> {
     const trip = await this.findOne(tripId);
 
     const locations = await this.tripLocationRepo.find({
@@ -467,6 +566,7 @@ export class TripService {
         message: 'Location identifier not found.',
       });
     }
+    const trip = await this.findOne(rawResult.tripLocation_tripId);
 
     const distance = parseFloat(rawResult.distanceInMeter);
     const radius = parseFloat(rawResult.tripLocation_offset_radius_snapshot);
@@ -493,6 +593,16 @@ export class TripService {
         rawResult.tripLocation_tripId,
         checkInDto.timestamp,
       );
+
+      this.firebaseService.sendNotification({
+        path: `/noti/${trip.managerId}/${new Date().getTime()}`,
+        data: {
+          senderId: assigneeId,
+          receiverId: trip.managerId,
+          title: 'Employee checked in at location',
+          message: `Employee have checked in at location: ${rawResult.tripLocation_name_snapshot} of the trip ${trip.title}`,
+        },
+      });
 
       return await this.tripLocationRepo.save(updatePayload);
     } catch (error) {
@@ -530,6 +640,8 @@ export class TripService {
       });
     }
 
+    const trip = await this.findOne(rawResult.tripLocation_tripId);
+
     const distance = parseFloat(rawResult.distanceInMeter);
     const radius = parseFloat(rawResult.tripLocation_offset_radius_snapshot);
 
@@ -562,6 +674,16 @@ export class TripService {
           { tripLocationId: rawResult.tripLocation_id },
           { status: TaskStatusEnum.COMPLETED },
         );
+
+        this.firebaseService.sendNotification({
+          path: `/noti/${trip.managerId}/${new Date().getTime()}`,
+          data: {
+            senderId: assigneeId,
+            receiverId: trip.managerId,
+            title: 'Employee checked out at location',
+            message: `Employee have checked out at location: ${rawResult.tripLocation_name_snapshot} of the trip ${trip.title}`,
+          },
+        });
 
         this.logger.log(
           `Checkout success for location ${savedLocation.id}. Associated task marked as COMPLETED.`,

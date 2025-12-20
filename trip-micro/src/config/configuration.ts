@@ -18,6 +18,8 @@ export interface EnvSchema {
   SYSAD_PASSWORD: string;
   REDIS_HOST: string;
   REDIS_PORT: number;
+  FIREBASE_CREDENTIALS_PATH?: string;
+  FIREBASE_DATABASE_URL?: string;
 }
 
 export const validationSchema = Joi.object<EnvSchema>({
@@ -38,4 +40,6 @@ export const validationSchema = Joi.object<EnvSchema>({
   SYSAD_PASSWORD: Joi.string().required(),
   REDIS_HOST: Joi.string().required(),
   REDIS_PORT: Joi.number().required(),
+  FIREBASE_CREDENTIALS_PATH: Joi.string().optional(),
+  FIREBASE_DATABASE_URL: Joi.string().optional(),
 });

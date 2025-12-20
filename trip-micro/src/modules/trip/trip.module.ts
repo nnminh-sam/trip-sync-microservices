@@ -8,6 +8,7 @@ import { LocationModule } from 'src/modules/location/location.module';
 import { TaskModule } from '../task/task.module';
 import { ClientModule } from 'src/client/client.module';
 import { TripProgress } from 'src/models/trip-progress.model';
+import { FirebaseModule } from 'src/modules/firebase/firebase.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { TripProgress } from 'src/models/trip-progress.model';
     LocationModule,
     TaskModule,
     ClientModule,
+    FirebaseModule,
   ],
   controllers: [TripController],
   providers: [TripService],

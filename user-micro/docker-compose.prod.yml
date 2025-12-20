@@ -1,8 +1,3 @@
-networks:
-  shared-net:
-    name: shared-microservices-net
-    external: true
-
 services:
   mysql:
     container_name: 'user_db'
@@ -17,8 +12,6 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - '3306:3306'
-    networks:
-      - shared-net
     command: ['--default-authentication-plugin=mysql_native_password']
     volumes:
       - ./docker-volumes/mysql_data:/var/lib/mysql
@@ -39,8 +32,6 @@ services:
     env_file:
       - .env.production
     restart: unless-stopped
-    networks:
-      - shared-net
     depends_on:
       mysql:
         condition: service_healthy

@@ -6,6 +6,7 @@ import { DatabaseModule } from './database/database.module';
 import { ClientModule } from './client/client.module';
 import { LocationModule } from './modules/location/location.module';
 import { TaskModule } from './modules/task/task.module';
+import { FirebaseModule } from './modules/firebase/firebase.module';
 import gcsConfig from './config/gcs.config';
 
 @Module({
@@ -17,6 +18,7 @@ import gcsConfig from './config/gcs.config';
       load: [gcsConfig],
     }),
     ClientModule,
+    FirebaseModule,
     TripModule,
     LocationModule,
     TaskModule,
