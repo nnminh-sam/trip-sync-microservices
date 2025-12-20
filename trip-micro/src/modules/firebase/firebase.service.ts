@@ -33,6 +33,7 @@ export class FirebaseService {
       const ref = this.database.ref(payload.path);
       await ref.set({
         ...payload.data,
+        ...(!payload.data?.is_read && { is_read: false }),
         timestamp: admin.database.ServerValue.TIMESTAMP,
       });
 

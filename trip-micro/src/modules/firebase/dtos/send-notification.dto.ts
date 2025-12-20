@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsObject,
+  IsBoolean,
+} from 'class-validator';
 
 export class SendNotificationDto {
   @IsString()
@@ -7,7 +13,7 @@ export class SendNotificationDto {
 
   @IsObject()
   @IsNotEmpty({ message: 'Notification data is required' })
-  data: Record<string, any>;
+  data: Record<string, any> | { is_read?: boolean };
 
   @IsString()
   @IsOptional()
