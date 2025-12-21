@@ -1,11 +1,11 @@
 import { BaseModel } from 'src/models/base.model';
 import { TripStatusEnum } from 'src/models/trip-status.enum';
 import { Trip } from 'src/models/trip.model';
-import { Column, Entity, JoinColumn, OneToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToOne } from 'typeorm';
 
 @Entity({ name: 'trip_progress' })
 export class TripProgress extends BaseModel {
-  @OneToOne(() => Trip, (trip) => trip.tripProgress)
+  @ManyToOne(() => Trip, (trip) => trip.tripProgress)
   @JoinColumn({ name: 'trip_id' })
   trip: Trip;
 

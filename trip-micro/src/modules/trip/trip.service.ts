@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Trip } from 'src/models/trip.model';
 import { TripLocation } from 'src/models/trip-location.model';
+import { TripProgress } from 'src/models/trip-progress.model';
 import { CreateTripDto } from './dtos/create-trip.dto';
 import { UpdateTripDto } from './dtos/update-trip.dto';
 import { FilterTripDto } from './dtos/filter-trip.dto';
@@ -38,6 +39,9 @@ export class TripService {
 
     @InjectRepository(TripLocation)
     private readonly tripLocationRepo: Repository<TripLocation>,
+
+    @InjectRepository(TripProgress)
+    private readonly tripProgressRepo: Repository<TripProgress>,
 
     private readonly locationService: LocationService,
 
@@ -77,6 +81,27 @@ export class TripService {
       `Authorized: ${claims.email} with role ${claims.role} can ${required.permission.action} ${required.permission.resource}`,
     );
     return true;
+  }
+
+  private async saveProgress(
+    trip: Trip,
+    actorId: string,
+    status: TripStatusEnum,
+    title: string,
+    description: string,
+  ): Promise<TripProgress> {
+    try {
+      const progress = this.tripProgressRepo.create({
+        trip,
+        actorId,
+        status,
+        title,
+        description,
+      });
+      return await this.tripProgressRepo.save(progress);
+    } catch (error) {
+      this.logger.error(`Failed to save trip progress: ${error.message}`, error.stack);
+    }
   }
 
   async validateLocationIds(locationIds: string[]) {
@@ -220,6 +245,13 @@ export class TripService {
       await queryRunner.commitTransaction();
 
       if (isProposal) {
+        await this.saveProgress(
+          trip,
+          creator.id,
+          TripStatusEnum.WAITING_FOR_APPROVAL,
+          'Trip Proposed',
+          `Employee has proposed a new trip "${trip.title}"`,
+        );
         this.firebaseService.sendNotification({
           path: `/noti/${managerId}/${new Date().getTime()}`,
           data: {
@@ -239,6 +271,22 @@ export class TripService {
           },
         });
       } else {
+        await this.saveProgress(
+          trip,
+          creator.id,
+          TripStatusEnum.NOT_STARTED,
+          'Trip Created',
+          `Manager has created a new trip "${trip.title}"`,
+        );
+        if (dto.assignee_id) {
+          await this.saveProgress(
+            trip,
+            creator.id,
+            TripStatusEnum.NOT_STARTED,
+            'Trip Assigned',
+            `Trip "${trip.title}" has been assigned to employee`,
+          );
+        }
         this.firebaseService.sendNotification({
           path: `/noti/${dto.assignee_id}/${new Date().getTime()}`,
           data: {
@@ -327,6 +375,7 @@ export class TripService {
       .leftJoinAndSelect('trip.tripLocations', 'tripLocation')
       .leftJoinAndSelect('tripLocation.location', 'location')
       .leftJoinAndSelect('tripLocation.task', 'task')
+      .leftJoinAndSelect('trip.tripProgress', 'tripProgress')
       .where('trip.id = :id', { id })
       .getOne();
 
@@ -360,6 +409,8 @@ export class TripService {
   ): Promise<Trip> {
     const trip: Trip = await this.findOne(id);
     const { title, status, schedule, deadline, ...rest } = dto;
+    const oldStatus = trip.status;
+
     if (title) {
       const titleExisted = await this.tripRepo.existsBy({
         title,
@@ -430,8 +481,19 @@ export class TripService {
 
     Object.assign(trip, rest);
 
-    await this.tripRepo.save(trip);
-    return trip;
+    const updatedTrip = await this.tripRepo.save(trip);
+
+    if (status && status !== oldStatus) {
+      await this.saveProgress(
+        updatedTrip,
+        requestId,
+        status,
+        `Trip Status Changed to ${status}`,
+        `Trip status has been changed from ${oldStatus} to ${status}`,
+      );
+    }
+
+    return updatedTrip;
   }
 
   async remove(id: string): Promise<{ success: boolean; id: string }> {
@@ -469,12 +531,28 @@ export class TripService {
       trip.note = dto.note;
     }
     trip.decidedAt = new Date();
-    trip.status =
+    const newStatus =
       dto.decision === 'approve'
         ? TripStatusEnum.NOT_STARTED
         : TripStatusEnum.NOT_APPROVED;
+    trip.status = newStatus;
 
     const result = await this.tripRepo.save(trip);
+
+    const progressTitle =
+      dto.decision === 'approve' ? 'Trip Approved' : 'Trip Rejected';
+    const progressDescription =
+      dto.decision === 'approve'
+        ? `Manager has approved the trip "${trip.title}"`
+        : `Manager has rejected the trip "${trip.title}"`;
+
+    await this.saveProgress(
+      result,
+      managerId,
+      newStatus,
+      progressTitle,
+      progressDescription,
+    );
 
     this.firebaseService.sendNotification({
       path: `/noti/${trip.assigneeId}/${new Date().getTime()}`,
@@ -604,7 +682,17 @@ export class TripService {
         },
       });
 
-      return await this.tripLocationRepo.save(updatePayload);
+      const savedLocation = await this.tripLocationRepo.save(updatePayload);
+
+      await this.saveProgress(
+        trip,
+        assigneeId,
+        trip.status,
+        'Checked In',
+        `Employee checked in at location: ${rawResult.tripLocation_name_snapshot}`,
+      );
+
+      return savedLocation;
     } catch (error) {
       this.logger.error(error);
       if (error instanceof RpcException) {
@@ -655,7 +743,7 @@ export class TripService {
       });
     }
 
-    return await this.tripLocationRepo.manager.transaction(
+    const savedLocation = await this.tripLocationRepo.manager.transaction(
       async (transactionalManager) => {
         const updateLocationPayload = {
           id: rawResult.tripLocation_id,
@@ -692,5 +780,15 @@ export class TripService {
         return savedLocation;
       },
     );
+
+    await this.saveProgress(
+      trip,
+      assigneeId,
+      trip.status,
+      'Checked Out',
+      `Employee checked out from location: ${rawResult.tripLocation_name_snapshot}`,
+    );
+
+    return savedLocation;
   }
 }

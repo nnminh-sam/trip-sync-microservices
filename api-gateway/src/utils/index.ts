@@ -24,7 +24,7 @@ export class NatsClientSender<TPatterns extends Record<string, string>> {
     const patternValue = this.patterns[messagePattern];
     return await firstValueFrom(
       this._client.send(patternValue, payload).pipe(
-        timeout(1000),
+        timeout(5000),
         catchError((error) => {
           this.logger.error(
             `Error occurred while sending message with pattern ${patternValue}: ${error.message}`,

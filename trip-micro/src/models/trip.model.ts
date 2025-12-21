@@ -46,6 +46,6 @@ export class Trip extends BaseModel {
   @OneToMany(() => TripLocation, (tripLocation) => tripLocation.trip)
   tripLocations: TripLocation[];
 
-  @OneToOne(() => TripProgress, (tripProgress) => tripProgress.trip)
+  @OneToMany(() => TripProgress, (tripProgress) => tripProgress.trip)
   tripProgress: TripProgress;
 }
