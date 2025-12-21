@@ -5,6 +5,8 @@ export const TripMessagePattern = {
   UPDATE: 'trip.update',
   DELETE: 'trip.delete',
   APPROVE: 'trip.approve',
+  REQUEST_CANCEL: 'trip.request_cancel',
+  RESOLVE_CANCEL: 'trip.resolve_cancel',
   LOCATIONS: 'trip.locations',
   APPROVALS: 'trip.approvals',
   CHECK_IN: 'trip.location.check_in',

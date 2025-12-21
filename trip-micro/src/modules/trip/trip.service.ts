@@ -840,13 +840,12 @@ export class TripService {
   }
 
   // TODO(mid): check is valid assignee
-  // TODO(low): add checked-in validation logic
   async checkIn(assigneeId: string, checkInDto: CheckInAtLocationDto) {
     const rawResult = await this.tripLocationRepo
       .createQueryBuilder('tripLocation')
       .addSelect(
         `ST_Distance_Sphere(
-        tripLocation.locationPointSnapshot, 
+        tripLocation.locationPointSnapshot,
         ST_GeomFromText(:userPoint, 4326)
       )`,
         'distanceInMeter',
@@ -865,6 +864,13 @@ export class TripService {
       });
     }
     const trip = await this.findOne(rawResult.tripLocation_tripId);
+
+    if (trip.status !== TripStatusEnum.IN_PROGRESS) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Trip must be in progress to check in.',
+      });
+    }
 
     const distance = parseFloat(rawResult.distanceInMeter);
     const radius = parseFloat(rawResult.tripLocation_offset_radius_snapshot);
@@ -925,14 +931,12 @@ export class TripService {
     }
   }
 
-  // TODO(mid): check is valid assignee
-  // TODO(low): add checked-out validation logic
   async checkOutAtLocation(assigneeId: string, dto: CheckOutAtLocationDto) {
     const rawResult = await this.tripLocationRepo
       .createQueryBuilder('tripLocation')
       .addSelect(
         `ST_Distance_Sphere(
-        tripLocation.locationPointSnapshot, 
+        tripLocation.locationPointSnapshot,
         ST_GeomFromText(:userPoint, 4326)
       )`,
         'distanceInMeter',
@@ -948,7 +952,21 @@ export class TripService {
       });
     }
 
+    if (!rawResult.tripLocation_check_in_timestamp) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'You must check in before checking out.',
+      });
+    }
+
     const trip = await this.findOne(rawResult.tripLocation_tripId);
+
+    if (trip.status !== TripStatusEnum.IN_PROGRESS) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Trip must be in progress to check out.',
+      });
+    }
 
     const distance = parseFloat(rawResult.distanceInMeter);
     const radius = parseFloat(rawResult.tripLocation_offset_radius_snapshot);

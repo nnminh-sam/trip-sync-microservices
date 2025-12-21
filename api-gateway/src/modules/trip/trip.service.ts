@@ -7,6 +7,8 @@ import { CreateTripDto } from './dtos/create-trip.dto';
 import { FilterTripDto } from './dtos/filter-trip.dto';
 import { UpdateTripDto } from './dtos/update-trip.dto';
 import { ApproveTripDto } from './dtos/approve-trip.dto';
+import { CancelTripDto } from './dtos/cancel-trip.dto';
+import { ResolveCancelationDto } from './dtos/resolve-cancelation.dto';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { CheckInAtLocationDto } from './dtos/check-in-at-location.dto';
 import { CheckOutAtLocationDto } from './dtos/check-out-at-location.dto';
@@ -169,6 +171,50 @@ export class TripService {
       payload: {
         claims,
         request: {
+          body: dto,
+        },
+      },
+    });
+    return result;
+  }
+
+  async requestCancel(
+    claims: TokenClaimsDto,
+    tripId: string,
+    dto: CancelTripDto,
+  ) {
+    this.logger.log(
+      `Sending request cancel trip for trip_id: ${tripId}`,
+    );
+
+    const result = await this.sender.send({
+      messagePattern: 'REQUEST_CANCEL',
+      payload: {
+        claims,
+        request: {
+          path: { id: tripId },
+          body: dto,
+        },
+      },
+    });
+    return result;
+  }
+
+  async resolveCancel(
+    claims: TokenClaimsDto,
+    cancelationId: string,
+    dto: ResolveCancelationDto,
+  ) {
+    this.logger.log(
+      `Sending resolve cancel request for cancelation_id: ${cancelationId}`,
+    );
+
+    const result = await this.sender.send({
+      messagePattern: 'RESOLVE_CANCEL',
+      payload: {
+        claims,
+        request: {
+          path: { id: cancelationId },
           body: dto,
         },
       },

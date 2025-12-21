@@ -24,6 +24,8 @@ import { CreateTripDto } from './dtos/create-trip.dto';
 import { UpdateTripDto } from './dtos/update-trip.dto';
 import { FilterTripDto } from './dtos/filter-trip.dto';
 import { ApproveTripDto } from './dtos/approve-trip.dto';
+import { CancelTripDto } from './dtos/cancel-trip.dto';
+import { ResolveCancelationDto } from './dtos/resolve-cancelation.dto';
 import { Trip } from 'src/models/trip.model';
 import { TripApproval } from 'src/models/trip-approval.model';
 import { RequestUserClaims } from 'src/common/decorators/request-user-claims.decorator';
@@ -169,5 +171,42 @@ export class TripController {
     @Body() dto: CheckOutAtLocationDto,
   ) {
     return await this.tripService.checkOutAtLocation(claims, dto);
+  }
+
+  @Post(':id/cancelations/request')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Request to cancel a trip' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiBody({ type: CancelTripDto })
+  @ApiResponseConstruction({
+    status: 201,
+    description: 'Trip cancellation request created',
+  })
+  async requestCancel(
+    @Param('id') id: string,
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Body() dto: CancelTripDto,
+  ) {
+    return this.tripService.requestCancel(claims, id, dto);
+  }
+
+  @Post(':id/cancelations/resolve')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Resolve a trip cancellation request' })
+  @ApiParam({ name: 'id', type: String, description: 'Cancelation ID' })
+  @ApiBody({ type: ResolveCancelationDto })
+  @ApiResponseConstruction({
+    status: 201,
+    description: 'Trip cancellation request resolved',
+    model: Trip,
+  })
+  async resolveCancel(
+    @Param('id') id: string,
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Body() dto: ResolveCancelationDto,
+  ) {
+    return this.tripService.resolveCancel(claims, id, dto);
   }
 }
