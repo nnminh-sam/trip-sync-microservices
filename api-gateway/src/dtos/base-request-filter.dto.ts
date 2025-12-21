@@ -44,5 +44,5 @@ export class BaseRequestFilterDto {
   @Transform(({ value }) => parseInt(value, 10))
   @IsInt()
   @Min(1)
-  size?: number = 10;
+  size?: number = 1000;
 }
