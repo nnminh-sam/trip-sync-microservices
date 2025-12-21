@@ -1,6 +1,6 @@
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { Trip } from 'src/models/trip.model';
 import { TripLocation } from 'src/models/trip-location.model';
 import { TripProgress } from 'src/models/trip-progress.model';
@@ -399,8 +399,8 @@ export class TripService {
       });
     }
 
-    // Fetch associated cancellation requests
-    const cancelationRequests = await this.cancelationRepo.find({
+    // Fetch trip-level cancellation requests
+    const tripCancelationRequests = await this.cancelationRepo.find({
       where: {
         targetEntity: CancelationTargetEntity.TRIP,
         targetId: id,
@@ -408,10 +408,40 @@ export class TripService {
       order: { createdAt: 'DESC' },
     });
 
-    // attach cancelation requests to trip object
+    // Fetch task-level cancellation requests for all tasks in this trip
+    const taskIds = trip.tripLocations
+      .filter(location => location.task && location.task.id)
+      .map(location => location.task.id);
+
+    let taskCancelationRequests: Cancelation[] = [];
+    if (taskIds.length > 0) {
+      taskCancelationRequests = await this.cancelationRepo.find({
+        where: {
+          targetEntity: CancelationTargetEntity.TASK,
+          targetId: In(taskIds),
+        },
+        order: { createdAt: 'DESC' },
+      });
+    }
+
+    // Attach cancellation requests to each task in trip locations
+    const tripLocationsWithCancelations = trip.tripLocations.map(location => ({
+      ...location,
+      task: location.task
+        ? {
+            ...location.task,
+            cancelationRequests: taskCancelationRequests.filter(
+              c => c.targetId === location.task.id,
+            ),
+          }
+        : null,
+    }));
+
+    // Return trip with all cancellation requests
     return {
       ...trip,
-      cancelationRequests,
+      tripLocations: tripLocationsWithCancelations,
+      cancelationRequests: tripCancelationRequests,
     };
   }
 
