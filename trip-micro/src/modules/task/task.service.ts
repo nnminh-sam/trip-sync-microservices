@@ -1,6 +1,7 @@
 import { throwRpcException } from 'src/utils';
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import axios from 'axios';
 import { Task } from 'src/models/task.model';
 import { Cancelation } from 'src/models/cancelation.model';
 import { EntityManager, Repository } from 'typeorm';
@@ -58,6 +59,46 @@ export class TaskService {
     }
   }
 
+  private async fetchAttachmentDetails(attachmentId: string): Promise<any> {
+    try {
+      const response = await axios.get(
+        `http://34.142.235.151/api/v1/media/${attachmentId}`,
+        { timeout: 5000 },
+      );
+      return response.data;
+    } catch (error: any) {
+      // Gracefully handle 404 - return null instead of throwing
+      if (error.response?.status === 404) {
+        this.logger.debug(
+          `Attachment not found for ID: ${attachmentId}`,
+        );
+        return null;
+      }
+      // Log other errors but don't throw - continue with enrichment
+      this.logger.warn(
+        `Failed to fetch attachment ${attachmentId}: ${error.message}`,
+      );
+      return null;
+    }
+  }
+
+  private async enrichCancelationsWithAttachments(
+    cancelations: Cancelation[],
+  ): Promise<any[]> {
+    return Promise.all(
+      cancelations.map(async (cancelation) => {
+        const attachment = cancelation.attachmentId
+          ? await this.fetchAttachmentDetails(cancelation.attachmentId)
+          : null;
+
+        return {
+          ...cancelation,
+          ...(attachment && { attachment }),
+        };
+      }),
+    );
+  }
+
   async findOne(id: string): Promise<any> {
     const task = await this.taskRepository.findOne({ where: { id } });
 
@@ -77,10 +118,14 @@ export class TaskService {
       order: { createdAt: 'DESC' },
     });
 
-    // attach cancelation requests to task object
+    // Enrich cancellation requests with attachment details
+    const enrichedCancelationRequests =
+      await this.enrichCancelationsWithAttachments(cancelationRequests);
+
+    // attach enriched cancelation requests to task object
     return {
       ...task,
-      cancelationRequests,
+      cancelationRequests: enrichedCancelationRequests,
     };
   }
 

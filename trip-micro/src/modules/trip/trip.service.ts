@@ -1,6 +1,7 @@
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
+import axios from 'axios';
 import { Trip } from 'src/models/trip.model';
 import { TripLocation } from 'src/models/trip-location.model';
 import { TripProgress } from 'src/models/trip-progress.model';
@@ -382,6 +383,76 @@ export class TripService {
     });
   }
 
+  private async fetchAttachmentDetails(attachmentId: string): Promise<any> {
+    try {
+      const response = await axios.get(
+        `http://34.142.235.151/api/v1/media/${attachmentId}`,
+        { timeout: 5000 },
+      );
+      return response.data;
+    } catch (error: any) {
+      // Gracefully handle 404 - return null instead of throwing
+      if (error.response?.status === 404) {
+        this.logger.debug(`Attachment not found for ID: ${attachmentId}`);
+        return null;
+      }
+      // Log other errors but don't throw - continue with enrichment
+      this.logger.warn(
+        `Failed to fetch attachment ${attachmentId}: ${error.message}`,
+      );
+      return null;
+    }
+  }
+
+  private async enrichCancelationsWithAttachments(
+    cancelations: Cancelation[],
+  ): Promise<any[]> {
+    return Promise.all(
+      cancelations.map(async (cancelation) => {
+        const attachment = cancelation.attachmentId
+          ? await this.fetchAttachmentDetails(cancelation.attachmentId)
+          : null;
+
+        return {
+          ...cancelation,
+          ...(attachment && { attachment }),
+        };
+      }),
+    );
+  }
+
+  private async enrichTripLocationsWithAttachments(
+    tripLocations: any[],
+  ): Promise<any[]> {
+    return Promise.all(
+      tripLocations.map(async (location) => {
+        const enrichedLocation = { ...location };
+
+        // Fetch and enrich check-in attachment
+        if (location.checkInAttachmentId) {
+          const checkInAttachment = await this.fetchAttachmentDetails(
+            location.checkInAttachmentId,
+          );
+          if (checkInAttachment) {
+            enrichedLocation.checkInAttachment = checkInAttachment;
+          }
+        }
+
+        // Fetch and enrich check-out attachment
+        if (location.checkOutAttachmentId) {
+          const checkOutAttachment = await this.fetchAttachmentDetails(
+            location.checkOutAttachmentId,
+          );
+          if (checkOutAttachment) {
+            enrichedLocation.checkOutAttachment = checkOutAttachment;
+          }
+        }
+
+        return enrichedLocation;
+      }),
+    );
+  }
+
   async findOne(id: string): Promise<any> {
     const trip = await this.tripRepo
       .createQueryBuilder('trip')
@@ -410,8 +481,8 @@ export class TripService {
 
     // Fetch task-level cancellation requests for all tasks in this trip
     const taskIds = trip.tripLocations
-      .filter(location => location.task && location.task.id)
-      .map(location => location.task.id);
+      .filter((location) => location.task && location.task.id)
+      .map((location) => location.task.id);
 
     let taskCancelationRequests: Cancelation[] = [];
     if (taskIds.length > 0) {
@@ -424,24 +495,39 @@ export class TripService {
       });
     }
 
-    // Attach cancellation requests to each task in trip locations
-    const tripLocationsWithCancelations = trip.tripLocations.map(location => ({
-      ...location,
-      task: location.task
-        ? {
-            ...location.task,
-            cancelationRequests: taskCancelationRequests.filter(
-              c => c.targetId === location.task.id,
-            ),
-          }
-        : null,
-    }));
+    // Enrich trip-level cancellation requests with attachment details
+    const enrichedTripCancelations =
+      await this.enrichCancelationsWithAttachments(tripCancelationRequests);
 
-    // Return trip with all cancellation requests
+    // Enrich task-level cancellation requests with attachment details
+    const enrichedTaskCancelations =
+      await this.enrichCancelationsWithAttachments(taskCancelationRequests);
+
+    // Attach enriched cancellation requests to each task in trip locations
+    const tripLocationsWithCancelations = trip.tripLocations.map(
+      (location) => ({
+        ...location,
+        task: location.task
+          ? {
+              ...location.task,
+              cancelationRequests: enrichedTaskCancelations.filter(
+                (c) => c.targetId === location.task.id,
+              ),
+            }
+          : null,
+      }),
+    );
+
+    // Enrich trip locations with check-in and check-out attachments
+    const enrichedTripLocations = await this.enrichTripLocationsWithAttachments(
+      tripLocationsWithCancelations,
+    );
+
+    // Return trip with all enriched data (cancellations and location attachments)
     return {
       ...trip,
-      tripLocations: tripLocationsWithCancelations,
-      cancelationRequests: tripCancelationRequests,
+      tripLocations: enrichedTripLocations,
+      cancelationRequests: enrichedTripCancelations,
     };
   }
 
@@ -817,9 +903,7 @@ export class TripService {
     return updatedTrip;
   }
 
-  async getCancelationRequests(
-    tripId: string,
-  ): Promise<Cancelation[]> {
+  async getCancelationRequests(tripId: string): Promise<Cancelation[]> {
     const trip = await this.findOne(tripId);
 
     const cancelations = await this.cancelationRepo.find({
@@ -994,6 +1078,10 @@ export class TripService {
       .where('tripLocation.id = :id', { id: dto.tripLocationId })
       .setParameter('userPoint', `POINT(${dto.latitude} ${dto.longitude})`)
       .getRawOne();
+    console.log(
+      '🚀 ~ TripService ~ checkOutAtLocation ~ rawResult:',
+      rawResult,
+    );
 
     if (!rawResult) {
       throwRpcException({
@@ -1002,7 +1090,7 @@ export class TripService {
       });
     }
 
-    if (!rawResult.tripLocation_check_in_timestamp) {
+    if (!rawResult.tripLocation_checkin_timestamp) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'You must check in before checking out.',
