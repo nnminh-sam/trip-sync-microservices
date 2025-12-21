@@ -100,7 +100,10 @@ export class TripService {
       });
       return await this.tripProgressRepo.save(progress);
     } catch (error) {
-      this.logger.error(`Failed to save trip progress: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to save trip progress: ${error.message}`,
+        error.stack,
+      );
     }
   }
 
@@ -193,6 +196,7 @@ export class TripService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
+    console.log('🚀 ~ TripService ~ create ~ creator:', creator);
     const isProposal = creator.role === 'employee';
     const tripStatus: TripStatusEnum = isProposal
       ? TripStatusEnum.WAITING_FOR_APPROVAL
@@ -244,6 +248,7 @@ export class TripService {
 
       await queryRunner.commitTransaction();
 
+      console.log('🚀 ~ TripService ~ create ~ isProposal:', isProposal);
       if (isProposal) {
         await this.saveProgress(
           trip,
@@ -253,19 +258,19 @@ export class TripService {
           `Employee has proposed a new trip "${trip.title}"`,
         );
         this.firebaseService.sendNotification({
-          path: `/noti/${managerId}/${new Date().getTime()}`,
+          path: `/noti/${creator.id}/${new Date().getTime()}`,
           data: {
-            senderId: creator.id,
-            receiverId: managerId,
+            senderId: managerId,
+            receiverId: creator.id,
             title: 'New Trip Proposal',
             message: `You have proposed a new trip "${trip.title}" and waiting for approval.`,
           },
         });
         this.firebaseService.sendNotification({
-          path: `/noti/${creator.id}/${new Date().getTime()}`,
+          path: `/noti/${managerId}/${new Date().getTime()}`,
           data: {
-            receiverId: creator.id,
-            senderId: managerId,
+            senderId: creator.id,
+            receiverId: managerId,
             title: 'New Trip Proposal',
             message: `A new trip titled "${trip.title}" has been proposed and is awaiting your approval.`,
           },
