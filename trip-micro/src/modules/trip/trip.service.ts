@@ -382,7 +382,7 @@ export class TripService {
     });
   }
 
-  async findOne(id: string): Promise<Trip> {
+  async findOne(id: string): Promise<any> {
     const trip = await this.tripRepo
       .createQueryBuilder('trip')
       .leftJoinAndSelect('trip.tripLocations', 'tripLocation')
@@ -399,20 +399,20 @@ export class TripService {
       });
     }
 
-    // await this.firebaseService.sendNotification({
-    //   path: `/noti/${trip.id}/${requestId}`,
-    //   senderId: 'system',
-    //   receiverId: trip.assigneeId,
-    //   data: {
-    //     title: 'Trip Accessed',
-    //     body: `User viewed trip: ${trip.title}`,
-    //     senderId: requestId,
-    //     receiverId: trip.assigneeId,
-    //   },
-    //   description: `Notify assignee ${trip.assigneeId} about trip access`,
-    // });
+    // Fetch associated cancellation requests
+    const cancelationRequests = await this.cancelationRepo.find({
+      where: {
+        targetEntity: CancelationTargetEntity.TRIP,
+        targetId: id,
+      },
+      order: { createdAt: 'DESC' },
+    });
 
-    return trip;
+    // attach cancelation requests to trip object
+    return {
+      ...trip,
+      cancelationRequests,
+    };
   }
 
   async update(

@@ -58,7 +58,7 @@ export class TaskService {
     }
   }
 
-  async findOne(id: string): Promise<Task> {
+  async findOne(id: string): Promise<any> {
     const task = await this.taskRepository.findOne({ where: { id } });
 
     if (!task) {
@@ -68,7 +68,20 @@ export class TaskService {
       });
     }
 
-    return task;
+    // Fetch associated cancellation requests
+    const cancelationRequests = await this.cancelationRepo.find({
+      where: {
+        targetEntity: CancelationTargetEntity.TASK,
+        targetId: id,
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    // attach cancelation requests to task object
+    return {
+      ...task,
+      cancelationRequests,
+    };
   }
 
   async update(id: string, payload: UpdateTaskDto): Promise<Task> {
