@@ -9,4 +9,7 @@ export const TaskMessagePattern = {
   start: 'task.start',
   complete: 'task.complete',
   cancel: 'task.cancel',
+  requestCancel: 'task.request_cancel',
+  resolveCancel: 'task.resolve_cancel',
+  getCancelations: 'task.get_cancelations',
 } as const;

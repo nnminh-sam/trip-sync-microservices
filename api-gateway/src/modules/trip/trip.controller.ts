@@ -209,4 +209,20 @@ export class TripController {
   ) {
     return this.tripService.resolveCancel(claims, id, dto);
   }
+
+  @Get(':id/cancelations')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get trip cancellation requests' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'List of trip cancellation requests',
+    isArray: true,
+  })
+  async getCancelationRequests(
+    @Param('id') id: string,
+    @RequestUserClaims() claims: TokenClaimsDto,
+  ) {
+    return this.tripService.getCancelationRequests(claims, id);
+  }
 }

@@ -9,6 +9,8 @@ import { ApproveTaskDto } from 'src/modules/task/dtos/approve-task.dto';
 import { RejectTaskDto } from 'src/modules/task/dtos/reject-task.dto';
 import { CompleteTaskDto } from 'src/modules/task/dtos/complete-task.dto';
 import { CancelTaskDto } from 'src/modules/task/dtos/cancel-task.dto';
+import { RequestTaskCancelDto } from 'src/modules/task/dtos/request-task-cancel.dto';
+import { ResolveTaskCancelationDto } from 'src/modules/task/dtos/resolve-task-cancelation.dto';
 import { FileUploadDto, BulkFileUploadDto } from 'src/modules/task/dtos/file-upload.dto';
 import { TaskMessagePattern } from 'src/modules/task/task-message.pattern';
 import { NatsClientSender } from 'src/utils';
@@ -252,6 +254,95 @@ export class TaskService {
     } catch (error) {
       this.logger.error(
         `cancel failed for id: ${id}`,
+        error.stack || error,
+      );
+      throw error;
+    }
+  }
+
+  async requestCancel(
+    claims: TokenClaimsDto,
+    taskId: string,
+    dto: RequestTaskCancelDto,
+  ) {
+    this.logger.log(
+      `requestCancel called for task_id: ${taskId}`,
+    );
+    try {
+      const result = await this.sender.send({
+        messagePattern: 'requestCancel',
+        payload: {
+          claims,
+          request: {
+            path: { id: taskId },
+            body: dto,
+          },
+        },
+      });
+      this.logger.log(`requestCancel success for task_id: ${taskId}`);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `requestCancel failed for task_id: ${taskId}`,
+        error.stack || error,
+      );
+      throw error;
+    }
+  }
+
+  async resolveCancel(
+    claims: TokenClaimsDto,
+    cancelationId: string,
+    dto: ResolveTaskCancelationDto,
+  ) {
+    this.logger.log(
+      `resolveCancel called for cancelation_id: ${cancelationId}`,
+    );
+    try {
+      const result = await this.sender.send({
+        messagePattern: 'resolveCancel',
+        payload: {
+          claims,
+          request: {
+            path: { id: cancelationId },
+            body: dto,
+          },
+        },
+      });
+      this.logger.log(
+        `resolveCancel success for cancelation_id: ${cancelationId}`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `resolveCancel failed for cancelation_id: ${cancelationId}`,
+        error.stack || error,
+      );
+      throw error;
+    }
+  }
+
+  async getCancelationRequests(claims: TokenClaimsDto, taskId: string) {
+    this.logger.log(
+      `getCancelationRequests called for task_id: ${taskId}`,
+    );
+    try {
+      const result = await this.sender.send({
+        messagePattern: 'getCancelations',
+        payload: {
+          claims,
+          request: {
+            path: { id: taskId },
+          },
+        },
+      });
+      this.logger.log(
+        `getCancelationRequests success for task_id: ${taskId}`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `getCancelationRequests failed for task_id: ${taskId}`,
         error.stack || error,
       );
       throw error;

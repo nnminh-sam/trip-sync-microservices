@@ -11,6 +11,8 @@ import {
   UseInterceptors,
   UploadedFile,
   UploadedFiles,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -40,6 +42,8 @@ import { ApproveTaskDto } from 'src/modules/task/dtos/approve-task.dto';
 import { RejectTaskDto } from 'src/modules/task/dtos/reject-task.dto';
 import { CompleteTaskDto } from 'src/modules/task/dtos/complete-task.dto';
 import { CancelTaskDto } from 'src/modules/task/dtos/cancel-task.dto';
+import { RequestTaskCancelDto } from 'src/modules/task/dtos/request-task-cancel.dto';
+import { ResolveTaskCancelationDto } from 'src/modules/task/dtos/resolve-task-cancelation.dto';
 import { FileUploadDto, BulkFileUploadDto, FileUploadResponseDto } from 'src/modules/task/dtos/file-upload.dto';
 import { TaskService } from 'src/modules/task/task.service';
 
@@ -234,6 +238,66 @@ export class TaskController {
     @Body() payload: CancelTaskDto,
   ) {
     return await this.taskService.cancel(claims, id, payload);
+  }
+
+  @Post(':id/cancelations/request')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Request to cancel a task' })
+  @ApiResponseConstruction({
+    status: 201,
+    description: 'Task cancellation request created',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+  })
+  @ApiBody({ type: RequestTaskCancelDto })
+  async requestCancel(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('id') id: string,
+    @Body() payload: RequestTaskCancelDto,
+  ) {
+    return await this.taskService.requestCancel(claims, id, payload);
+  }
+
+  @Post(':id/cancelations/resolve')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Resolve a task cancellation request' })
+  @ApiResponseConstruction({
+    status: 201,
+    description: 'Task cancellation request resolved',
+    model: Task,
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Cancelation ID',
+  })
+  @ApiBody({ type: ResolveTaskCancelationDto })
+  async resolveCancel(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('id') id: string,
+    @Body() payload: ResolveTaskCancelationDto,
+  ) {
+    return await this.taskService.resolveCancel(claims, id, payload);
+  }
+
+  @Get(':id/cancelations')
+  @ApiOperation({ summary: 'Get task cancellation requests' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'List of task cancellation requests',
+    isArray: true,
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+  })
+  async getCancelationRequests(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Param('id') id: string,
+  ) {
+    return await this.taskService.getCancelationRequests(claims, id);
   }
 
   @Get(':id/proofs')

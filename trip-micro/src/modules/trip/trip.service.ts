@@ -787,6 +787,26 @@ export class TripService {
     return updatedTrip;
   }
 
+  async getCancelationRequests(
+    tripId: string,
+  ): Promise<Cancelation[]> {
+    const trip = await this.findOne(tripId);
+
+    const cancelations = await this.cancelationRepo.find({
+      where: {
+        targetEntity: CancelationTargetEntity.TRIP,
+        targetId: tripId,
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    this.logger.log(
+      `Retrieved ${cancelations.length} cancellation requests for trip: ${tripId}`,
+    );
+
+    return cancelations;
+  }
+
   async getTripLocations(requestId: string, tripId: string): Promise<any[]> {
     const trip = await this.findOne(tripId);
 

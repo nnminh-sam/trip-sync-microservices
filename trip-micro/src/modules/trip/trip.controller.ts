@@ -204,6 +204,30 @@ export class TripController {
     return this.tripService.resolveCancel(id, dto, payload.claims.sub);
   }
 
+  @MessagePattern(TripMessagePattern.GET_CANCELATIONS)
+  async getCancelationRequests(@Payload() payload: MessagePayloadDto) {
+    await this.tripService.authorizeClaims({
+      claims: payload.claims,
+      required: {
+        roles: ['system admin', 'manager', 'employee'],
+        permission: {
+          action: 'read',
+          resource: 'trip',
+        },
+      },
+    });
+
+    const { id } = payload.request.path;
+    if (!id) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Required Trip ID',
+      });
+    }
+
+    return await this.tripService.getCancelationRequests(id);
+  }
+
   @MessagePattern(TripMessagePattern.LOCATIONS)
   async getTripLocations(@Payload() payload: MessagePayloadDto) {
     await this.tripService.authorizeClaims({

@@ -221,4 +221,21 @@ export class TripService {
     });
     return result;
   }
+
+  async getCancelationRequests(claims: TokenClaimsDto, tripId: string) {
+    this.logger.log(
+      `Sending get cancelation requests for trip_id: ${tripId}`,
+    );
+
+    const result = await this.sender.send({
+      messagePattern: 'GET_CANCELATIONS',
+      payload: {
+        claims,
+        request: {
+          path: { id: tripId },
+        },
+      },
+    });
+    return result;
+  }
 }
