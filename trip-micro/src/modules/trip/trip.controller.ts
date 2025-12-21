@@ -8,6 +8,8 @@ import { TripMessagePattern } from './trip-message.pattern';
 import { MessagePayloadDto } from 'src/dtos/message-payload.dto';
 import { throwRpcException } from 'src/utils';
 import { ApproveTripDto } from './dtos/approve-trip.dto';
+import { CancelTripDto } from './dtos/cancel-trip.dto';
+import { ResolveCancelationDto } from './dtos/resolve-cancelation.dto';
 import { CheckInAtLocationDto } from './dtos/check-in-at-location.dto';
 import { CheckOutAtLocationDto } from './dtos/check-out-at-location.dto';
 
@@ -146,6 +148,60 @@ export class TripController {
     const dto = payload.request.body;
 
     return this.tripService.approve(id, dto, payload.claims.sub);
+  }
+
+  @MessagePattern(TripMessagePattern.REQUEST_CANCEL)
+  async requestCancel(@Payload() payload: MessagePayloadDto<CancelTripDto>) {
+    await this.tripService.authorizeClaims({
+      claims: payload.claims,
+      required: {
+        roles: ['manager', 'system admin', 'employee'],
+        permission: {
+          action: 'update',
+          resource: 'trip',
+        },
+      },
+    });
+
+    const { id } = payload.request.path;
+    if (!id) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Required Trip ID',
+      });
+    }
+
+    const dto = payload.request.body;
+
+    return this.tripService.requestCancel(id, dto, payload.claims.sub);
+  }
+
+  @MessagePattern(TripMessagePattern.RESOLVE_CANCEL)
+  async resolveCancel(
+    @Payload() payload: MessagePayloadDto<ResolveCancelationDto>,
+  ) {
+    await this.tripService.authorizeClaims({
+      claims: payload.claims,
+      required: {
+        roles: ['manager', 'system admin'],
+        permission: {
+          action: 'update',
+          resource: 'trip',
+        },
+      },
+    });
+
+    const { id } = payload.request.path;
+    if (!id) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Required Cancelation ID',
+      });
+    }
+
+    const dto = payload.request.body;
+
+    return this.tripService.resolveCancel(id, dto, payload.claims.sub);
   }
 
   @MessagePattern(TripMessagePattern.LOCATIONS)

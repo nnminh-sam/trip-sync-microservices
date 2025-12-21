@@ -7,6 +7,8 @@ import { TripProgress } from 'src/models/trip-progress.model';
 import { CreateTripDto } from './dtos/create-trip.dto';
 import { UpdateTripDto } from './dtos/update-trip.dto';
 import { FilterTripDto } from './dtos/filter-trip.dto';
+import { CancelTripDto } from './dtos/cancel-trip.dto';
+import { ResolveCancelationDto } from './dtos/resolve-cancelation.dto';
 import { throwRpcException } from 'src/utils';
 import { ListDataDto } from 'src/dtos/list-data.dto';
 import { AuthorizeClaimsPayloadDto } from './dtos/authorize-claims-payload.dto';
@@ -27,6 +29,9 @@ import { NatsClientSender } from 'src/utils';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { MessagePayloadDto } from 'src/dtos/message-payload.dto';
 import { FirebaseService } from 'src/modules/firebase/firebase.service';
+import { Cancelation } from 'src/models/cancelation.model';
+import { CancelationTargetEntity } from 'src/models/enums/TargetEntity.enum';
+import { CancelationDecision } from 'src/models/enums/CancelationDecision.enum';
 
 @Injectable()
 export class TripService {
@@ -42,6 +47,9 @@ export class TripService {
 
     @InjectRepository(TripProgress)
     private readonly tripProgressRepo: Repository<TripProgress>,
+
+    @InjectRepository(Cancelation)
+    private readonly cancelationRepo: Repository<Cancelation>,
 
     private readonly locationService: LocationService,
 
@@ -570,6 +578,213 @@ export class TripService {
     });
 
     return result;
+  }
+
+  private async cancelEntity(payload: {
+    decision: CancelationDecision;
+    targetEntity: CancelationTargetEntity;
+    targetId: string;
+    reason: string;
+    attachmentId: string;
+    createdBy: string;
+    resolvedBy: string;
+    resolvedAt: Date;
+  }): Promise<Cancelation> {
+    const cancelation = this.cancelationRepo.create({
+      targetEntity: payload.targetEntity,
+      targetId: payload.targetId,
+      decision: payload.decision,
+      reason: payload.reason,
+      attachmentId: payload.attachmentId,
+      createdBy: payload.createdBy,
+      resolvedBy: payload.resolvedBy,
+      resolvedAt: payload.resolvedAt,
+    });
+    return await this.cancelationRepo.save(cancelation);
+  }
+
+  async requestCancel(
+    tripId: string,
+    dto: CancelTripDto,
+    userId: string,
+  ): Promise<Cancelation> {
+    const trip = await this.findOne(tripId);
+
+    if (trip.status === TripStatusEnum.COMPLETED) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Cannot cancel a completed trip',
+      });
+    }
+
+    if (trip.status === TripStatusEnum.CANCELED) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Trip is already canceled',
+      });
+    }
+
+    if (trip.status === TripStatusEnum.NOT_APPROVED) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Cannot cancel a rejected trip',
+      });
+    }
+
+    try {
+      TripStatusValidator.validateTransition(
+        trip.status,
+        TripStatusEnum.CANCELED,
+      );
+    } catch (error) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: error.message,
+      });
+    }
+
+    const cancelation = await this.cancelEntity({
+      decision: null,
+      targetEntity: CancelationTargetEntity.TRIP,
+      targetId: trip.id,
+      reason: dto.reason,
+      attachmentId: dto.attachmentId,
+      createdBy: userId,
+      resolvedBy: null,
+      resolvedAt: null,
+    });
+
+    await this.saveProgress(
+      trip,
+      userId,
+      trip.status,
+      `Trip Cancelation Request for trip: ${trip.title}`,
+      `A trip cancellation request has been created. ${dto.reason ? 'Reason: ' + dto.reason : ''}`,
+    );
+
+    this.firebaseService.sendNotification({
+      path: `/noti/${trip.assigneeId}/${new Date().getTime()}`,
+      data: {
+        senderId: userId,
+        receiverId: trip.assigneeId,
+        title: `Trip Cancelation Request for trip: ${trip.title}`,
+        message: `A cancellation request has been made for trip "${trip.title}" ${dto.reason ? 'with reason: ' + dto.reason : ''}`,
+      },
+    });
+
+    this.firebaseService.sendNotification({
+      path: `/noti/${trip.managerId}/${new Date().getTime()}`,
+      data: {
+        senderId: userId,
+        receiverId: trip.managerId,
+        title: `Trip Cancelation Request for trip: ${trip.title}`,
+        message: `A trip has been requested to be canceled. ${dto.reason ? 'Reason: ' + dto.reason : ''}`,
+      },
+    });
+
+    return cancelation;
+  }
+
+  async resolveCancel(
+    cancelationId: string,
+    dto: ResolveCancelationDto,
+    userId: string,
+  ): Promise<Trip> {
+    const cancelation = await this.cancelationRepo.findOne({
+      where: { id: cancelationId },
+    });
+
+    if (!cancelation) {
+      throwRpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'Cancelation request not found',
+      });
+    }
+
+    if (cancelation.decision !== null) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'This cancellation request has already been resolved',
+      });
+    }
+
+    const trip = await this.findOne(cancelation.targetId);
+
+    cancelation.decision = dto.decision;
+    cancelation.resolvedBy = userId;
+    cancelation.resolvedAt = new Date();
+    if (dto.note) {
+      cancelation.resolveNote = dto.note;
+    }
+    await this.cancelationRepo.save(cancelation);
+
+    let updatedTrip = trip;
+
+    if (dto.decision === CancelationDecision.APPROVE) {
+      trip.status = TripStatusEnum.CANCELED;
+      if (dto.note) {
+        trip.note = dto.note;
+      }
+      updatedTrip = await this.tripRepo.save(trip);
+
+      await this.saveProgress(
+        updatedTrip,
+        userId,
+        TripStatusEnum.CANCELED,
+        `Trip Cancellation Approved for trip: ${trip.title}`,
+        `Trip cancellation has been approved. ${dto.note ? 'Note: ' + dto.note : ''}`,
+      );
+
+      this.firebaseService.sendNotification({
+        path: `/noti/${trip.assigneeId}/${new Date().getTime()}`,
+        data: {
+          senderId: userId,
+          receiverId: trip.assigneeId,
+          title: `Trip Cancellation Approved`,
+          message: `Your cancellation request for trip "${trip.title}" has been approved.`,
+        },
+      });
+
+      this.firebaseService.sendNotification({
+        path: `/noti/${trip.managerId}/${new Date().getTime()}`,
+        data: {
+          senderId: userId,
+          receiverId: trip.managerId,
+          title: `Trip Cancellation Approved`,
+          message: `Trip "${trip.title}" cancellation has been approved.`,
+        },
+      });
+    } else if (dto.decision === CancelationDecision.REJECT) {
+      await this.saveProgress(
+        trip,
+        userId,
+        trip.status,
+        `Trip Cancellation Rejected for trip: ${trip.title}`,
+        `Trip cancellation request has been rejected. ${dto.note ? 'Note: ' + dto.note : ''}`,
+      );
+
+      this.firebaseService.sendNotification({
+        path: `/noti/${trip.assigneeId}/${new Date().getTime()}`,
+        data: {
+          senderId: userId,
+          receiverId: trip.assigneeId,
+          title: `Trip Cancellation Rejected`,
+          message: `Your cancellation request for trip "${trip.title}" has been rejected.`,
+        },
+      });
+
+      this.firebaseService.sendNotification({
+        path: `/noti/${trip.managerId}/${new Date().getTime()}`,
+        data: {
+          senderId: userId,
+          receiverId: trip.managerId,
+          title: `Trip Cancellation Rejected`,
+          message: `Cancellation request for trip "${trip.title}" has been rejected.`,
+        },
+      });
+    }
+
+    return updatedTrip;
   }
 
   async getTripLocations(requestId: string, tripId: string): Promise<any[]> {
