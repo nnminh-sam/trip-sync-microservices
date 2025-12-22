@@ -33,6 +33,7 @@ import { FirebaseService } from 'src/modules/firebase/firebase.service';
 import { Cancelation } from 'src/models/cancelation.model';
 import { CancelationTargetEntity } from 'src/models/enums/TargetEntity.enum';
 import { CancelationDecision } from 'src/models/enums/CancelationDecision.enum';
+import { TripEvaluation } from 'src/models/trip-evaluation.model';
 
 @Injectable()
 export class TripService {
@@ -51,6 +52,9 @@ export class TripService {
 
     @InjectRepository(Cancelation)
     private readonly cancelationRepo: Repository<Cancelation>,
+
+    @InjectRepository(TripEvaluation)
+    private readonly tripEvaluationRepo: Repository<TripEvaluation>,
 
     private readonly locationService: LocationService,
 
@@ -471,6 +475,12 @@ export class TripService {
       });
     }
 
+    // Fetch trip evaluations ordered by version DESC
+    const evaluations = await this.tripEvaluationRepo.find({
+      where: { tripId: id },
+      order: { version: 'DESC' },
+    });
+
     // Fetch trip-level cancellation requests
     const tripCancelationRequests = await this.cancelationRepo.find({
       where: {
@@ -524,11 +534,12 @@ export class TripService {
       tripLocationsWithCancelations,
     );
 
-    // Return trip with all enriched data (cancellations and location attachments)
+    // Return trip with all enriched data (cancellations, location attachments, and evaluations)
     return {
       ...trip,
       tripLocations: enrichedTripLocations,
       cancelationRequests: enrichedTripCancelations,
+      evaluations,
     };
   }
 

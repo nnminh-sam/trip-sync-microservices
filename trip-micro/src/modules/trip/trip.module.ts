@@ -10,10 +10,11 @@ import { ClientModule } from 'src/client/client.module';
 import { TripProgress } from 'src/models/trip-progress.model';
 import { FirebaseModule } from 'src/modules/firebase/firebase.module';
 import { Cancelation } from 'src/models/cancelation.model';
+import { TripEvaluation } from 'src/models/trip-evaluation.model';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Trip, TripLocation, TripProgress, Cancelation]),
+    TypeOrmModule.forFeature([Trip, TripLocation, TripProgress, Cancelation, TripEvaluation]),
     LocationModule,
     TaskModule,
     ClientModule,

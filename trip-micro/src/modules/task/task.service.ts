@@ -14,6 +14,8 @@ import { CancelationDecision } from 'src/models/enums/CancelationDecision.enum';
 import { TaskStatusEnum } from 'src/models/task-status.enum';
 import { FirebaseService } from 'src/modules/firebase/firebase.service';
 import { TripLocation } from 'src/models/trip-location.model';
+import { Trip } from 'src/models/trip.model';
+import { TripStatusEnum } from 'src/models/trip-status.enum';
 
 @Injectable()
 export class TaskService {
@@ -28,6 +30,9 @@ export class TaskService {
 
     @InjectRepository(TripLocation)
     private readonly tripLocationRepo: Repository<TripLocation>,
+
+    @InjectRepository(Trip)
+    private readonly tripRepository: Repository<Trip>,
 
     private readonly firebaseService: FirebaseService,
   ) {}
@@ -325,6 +330,31 @@ export class TaskService {
               message: `Your cancellation request for task "${task.title}" has been approved.`,
             },
           });
+        }
+
+        // Check if all tasks in the trip are either canceled or completed
+        // If so, update trip status to ENDED
+        const allTripLocations = await this.tripLocationRepo.find({
+          where: { trip: { id: trip.id } },
+          relations: ['task'],
+        });
+
+        const hasPendingTasks = allTripLocations.some(
+          (location) =>
+            location.task &&
+            location.task.status !== TaskStatusEnum.COMPLETED &&
+            location.task.status !== TaskStatusEnum.CANCELED,
+        );
+
+        if (!hasPendingTasks && trip.status !== TripStatusEnum.ENDED) {
+          await this.tripRepository.update(
+            { id: trip.id },
+            { status: TripStatusEnum.ENDED },
+          );
+
+          this.logger.log(
+            `Trip status updated to ENDED for trip: ${trip.id} (all tasks completed or canceled)`,
+          );
         }
       }
 

@@ -6,6 +6,7 @@ import { DatabaseModule } from 'src/database/database.module';
 import { Task } from 'src/models/task.model';
 import { Cancelation } from 'src/models/cancelation.model';
 import { TripLocation } from 'src/models/trip-location.model';
+import { Trip } from 'src/models/trip.model';
 import { FirebaseModule } from 'src/modules/firebase/firebase.module';
 import gcsConfig from 'src/config/gcs.config';
 import { TaskService } from './task.service';
@@ -13,7 +14,7 @@ import { TaskService } from './task.service';
 @Module({
   imports: [
     DatabaseModule,
-    TypeOrmModule.forFeature([Task, Cancelation, TripLocation]),
+    TypeOrmModule.forFeature([Task, Cancelation, TripLocation, Trip]),
     ConfigModule.forFeature(gcsConfig),
     FirebaseModule,
   ],
