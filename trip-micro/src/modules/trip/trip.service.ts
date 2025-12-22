@@ -540,6 +540,17 @@ export class TripService {
     const { title, status, schedule, deadline, ...rest } = dto;
     const oldStatus = trip.status;
 
+    if (
+      dto.status &&
+      dto.status !== TripStatusEnum.IN_PROGRESS &&
+      dto.status !== TripStatusEnum.ENDED
+    ) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Can only update trip to IN_PROGRESS or ENDED status',
+      });
+    }
+
     if (title) {
       const titleExisted = await this.tripRepo.existsBy({
         title,
@@ -592,7 +603,7 @@ export class TripService {
         });
       } else if (
         trip.status === TripStatusEnum.IN_PROGRESS &&
-        status === TripStatusEnum.COMPLETED
+        status === TripStatusEnum.ENDED
       ) {
         this.firebaseService.sendNotification({
           path: `/noti/${trip.managerId}/${new Date().getTime()}`,
@@ -726,7 +737,7 @@ export class TripService {
   ): Promise<Cancelation> {
     const trip = await this.findOne(tripId);
 
-    if (trip.status === TripStatusEnum.COMPLETED) {
+    if (trip.status === TripStatusEnum.ENDED) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'Cannot cancel a completed trip',
@@ -814,6 +825,13 @@ export class TripService {
       throwRpcException({
         statusCode: HttpStatus.NOT_FOUND,
         message: 'Cancelation request not found',
+      });
+    }
+
+    if (cancelation.resolvedBy === userId) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'You cannot resolve your own cancellation request',
       });
     }
 
