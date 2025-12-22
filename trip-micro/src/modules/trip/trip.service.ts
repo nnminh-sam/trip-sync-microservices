@@ -840,17 +840,17 @@ export class TripService {
       });
     }
 
-    if (cancelation.resolvedBy === userId) {
-      throwRpcException({
-        statusCode: HttpStatus.BAD_REQUEST,
-        message: 'You cannot resolve your own cancellation request',
-      });
-    }
-
     if (cancelation.decision !== null) {
       throwRpcException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'This cancellation request has already been resolved',
+      });
+    }
+
+    if (cancelation.createdBy === userId) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'You cannot resolve your own cancellation request',
       });
     }
 
