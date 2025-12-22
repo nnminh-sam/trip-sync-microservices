@@ -14,6 +14,7 @@ import { LocationModule } from './modules/location/location.module';
 import { TripModule } from './modules/trip/trip.module';
 import { GpsModule } from './modules/gps/gps.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { EvaluationModule } from './modules/evaluation/evaluation.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtGuard } from './common/guards/jwt.guard';
 
@@ -35,6 +36,7 @@ import { JwtGuard } from './common/guards/jwt.guard';
     TripModule,
     GpsModule,
     AuditModule,
+    EvaluationModule,
   ],
   controllers: [AppController],
   providers: [

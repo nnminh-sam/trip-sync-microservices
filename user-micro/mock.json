@@ -1,209 +1,98 @@
+// POST /api/v1/evaluations
+
+// Params
+
+// Payload
+
+{
+  "trip_id": "62463624-5003-46e9-81cf-10fad2c71f23",
+  "evaluation_value": "successful", // (successful, partially_successful, unsuccessful, postponed, reconnaissance)
+  "comment": "This trip was completed great"
+}
+
+// Response
+
 {
   "data": {
-    "id": "62463624-5003-46e9-81cf-10fad2c71f23",
-    "createdAt": "2025-12-21T10:55:00.801Z",
-    "updatedAt": "2025-12-21T11:03:12.967Z",
-    "deletedAt": null,
-    "title": "Go meet client at metro Thu Duc begin from personal home vel impedit qui",
-    "assigneeId": "233370b8-006c-4d08-a083-7ac1fbde8c15",
-    "status": "canceled",
-    "purpose": "Get client's requirements about the project",
-    "goal": "A detail requirement list",
-    "schedule": "2025-12-16T08:30:00.000Z",
-    "deadline": "2025-12-17T08:30:00.000Z",
-    "note": "Approved due to valid reason",
-    "managerId": "4566437d-e37a-43de-a919-84833e253fb5",
-    "startedAt": "2025-12-21T10:55:38.000Z",
-    "decidedAt": "2025-12-21T10:55:01.000Z",
-    "tripLocations": [
-      {
-        "id": "02c3200d-4203-4a90-a9b3-e70841cc5556",
-        "createdAt": "2025-12-21T10:55:00.938Z",
-        "updatedAt": "2025-12-21T10:55:00.938Z",
-        "deletedAt": null,
-        "tripId": "62463624-5003-46e9-81cf-10fad2c71f23",
-        "baseLocationId": "e6fb0da5-7691-41b7-8b53-72cf216a664e",
-        "nameSnapshot": "Sam's home",
-        "latitudeSnapshot": "10.85045600",
-        "longitudeSnapshot": "106.81298300",
-        "offsetRadiusSnapshot": 100,
-        "locationPointSnapshot": {
-          "x": 106.812983,
-          "y": 10.850456
-        },
-        "arrivalOrder": 1,
-        "checkInPoint": {
-          "x": 0,
-          "y": 0
-        },
-        "checkInTimestamp": null,
-        "checkInAttachmentId": null,
-        "checkOutPoint": {
-          "x": 0,
-          "y": 0
-        },
-        "checkOutTimestamp": null,
-        "checkOutAttachmentId": null,
-        "location": null,
-        "task": {
-          "id": "4dda219d-1386-4be1-8ed8-9153506e225c",
-          "createdAt": "2025-12-21T10:55:01.269Z",
-          "updatedAt": "2025-12-21T12:34:44.600Z",
-          "deletedAt": null,
-          "tripLocationId": "02c3200d-4203-4a90-a9b3-e70841cc5556",
-          "title": "Task qui eveniet sit",
-          "description": "Task description",
-          "status": "completed",
-          "note": "Task note",
-          "cancelationRequests": [
-            {
-              "id": "a3513815-560f-4a15-90dc-a1e1937b45fa",
-              "createdAt": "2025-12-21T12:32:55.308Z",
-              "updatedAt": "2025-12-21T12:34:44.431Z",
-              "deletedAt": null,
-              "targetEntity": "task",
-              "targetId": "4dda219d-1386-4be1-8ed8-9153506e225c",
-              "decision": "approve",
-              "reason": "Task no longer needed",
-              "attachmentId": "550e8400-e29b-41d4-a716-446655440000",
-              "createdBy": "4566437d-e37a-43de-a919-84833e253fb5",
-              "resolvedBy": "4566437d-e37a-43de-a919-84833e253fb5",
-              "resolvedAt": "2025-12-21T12:34:44.000Z",
-              "resolveNote": "Approved due to valid reason"
-            }
-          ]
-        }
-      },
-      {
-        "id": "278c6f3b-fe4f-4d4f-907f-e2971b263a2d",
-        "createdAt": "2025-12-21T10:55:00.938Z",
-        "updatedAt": "2025-12-21T10:55:00.938Z",
-        "deletedAt": null,
-        "tripId": "62463624-5003-46e9-81cf-10fad2c71f23",
-        "baseLocationId": "28795445-99a1-49d4-b2b8-ba6bb10c682c",
-        "nameSnapshot": "Ga Metro thu Duc",
-        "latitudeSnapshot": "10.84640000",
-        "longitudeSnapshot": "106.77160000",
-        "offsetRadiusSnapshot": 50,
-        "locationPointSnapshot": {
-          "x": 106.7716,
-          "y": 10.8464
-        },
-        "arrivalOrder": 2,
-        "checkInPoint": {
-          "x": 0,
-          "y": 0
-        },
-        "checkInTimestamp": null,
-        "checkInAttachmentId": null,
-        "checkOutPoint": {
-          "x": 0,
-          "y": 0
-        },
-        "checkOutTimestamp": null,
-        "checkOutAttachmentId": null,
-        "location": null,
-        "task": {
-          "id": "567dcb53-66e5-4b1f-b18f-f0643dad912e",
-          "createdAt": "2025-12-21T10:55:01.333Z",
-          "updatedAt": "2025-12-21T13:20:15.304Z",
-          "deletedAt": null,
-          "tripLocationId": "278c6f3b-fe4f-4d4f-907f-e2971b263a2d",
-          "title": "Task voluptatum aut dolor",
-          "description": "Task description",
-          "status": "canceled",
-          "note": null,
-          "cancelationRequests": [
-            {
-              "id": "a3513815-560f-4a15-90dc-a1e1937b45fa",
-              "createdAt": "2025-12-21T12:32:55.308Z",
-              "updatedAt": "2025-12-21T12:34:44.431Z",
-              "deletedAt": null,
-              "targetEntity": "task",
-              "targetId": "4dda219d-1386-4be1-8ed8-9153506e225c",
-              "decision": "approve",
-              "reason": "Task no longer needed",
-              "attachmentId": "550e8400-e29b-41d4-a716-446655440000",
-              "createdBy": "4566437d-e37a-43de-a919-84833e253fb5",
-              "resolvedBy": "4566437d-e37a-43de-a919-84833e253fb5",
-              "resolvedAt": "2025-12-21T12:34:44.000Z",
-              "resolveNote": "Approved due to valid reason"
-            }
-          ]
-        }
-      }
-    ],
-    "tripProgress": [
-      {
-        "id": "2f811fe9-a5ac-47d1-9a6f-a3bc5a554842",
-        "createdAt": "2025-12-21T11:03:13.179Z",
-        "updatedAt": "2025-12-21T11:03:13.179Z",
-        "deletedAt": null,
-        "actorId": "4566437d-e37a-43de-a919-84833e253fb5",
-        "status": "canceled",
-        "title": "Trip Cancellation Approved for trip: Go meet client at metro Thu Duc begin from personal home vel impedit qui",
-        "description": "Trip cancellation has been approved. Note: Approved due to valid reason"
-      },
-      {
-        "id": "3663dcd7-6ef9-44d5-95f3-a822687db184",
-        "createdAt": "2025-12-21T10:55:01.721Z",
-        "updatedAt": "2025-12-21T10:55:01.721Z",
-        "deletedAt": null,
-        "actorId": "4566437d-e37a-43de-a919-84833e253fb5",
-        "status": "not_started",
-        "title": "Trip Created",
-        "description": "Manager has created a new trip \"Go meet client at metro Thu Duc begin from personal home vel impedit qui\""
-      },
-      {
-        "id": "47fa19e7-041f-4fa0-9b2c-3e9260d1ab2d",
-        "createdAt": "2025-12-21T10:55:38.630Z",
-        "updatedAt": "2025-12-21T10:55:38.630Z",
-        "deletedAt": null,
-        "actorId": "233370b8-006c-4d08-a083-7ac1fbde8c15",
-        "status": "in_progress",
-        "title": "Trip Status Changed to in_progress",
-        "description": "Trip status has been changed from not_started to in_progress"
-      },
-      {
-        "id": "5fc58931-77de-4eea-9a55-cc497c34a849",
-        "createdAt": "2025-12-21T10:55:01.984Z",
-        "updatedAt": "2025-12-21T10:55:01.984Z",
-        "deletedAt": null,
-        "actorId": "4566437d-e37a-43de-a919-84833e253fb5",
-        "status": "not_started",
-        "title": "Trip Assigned",
-        "description": "Trip \"Go meet client at metro Thu Duc begin from personal home vel impedit qui\" has been assigned to employee"
-      },
-      {
-        "id": "80f47403-e319-4523-9736-0481895bd610",
-        "createdAt": "2025-12-21T11:02:54.169Z",
-        "updatedAt": "2025-12-21T11:02:54.169Z",
-        "deletedAt": null,
-        "actorId": "233370b8-006c-4d08-a083-7ac1fbde8c15",
-        "status": "in_progress",
-        "title": "Trip Cancelation Request for trip: Go meet client at metro Thu Duc begin from personal home vel impedit qui",
-        "description": "A trip cancellation request has been created. Reason: Change of plans"
-      }
-    ],
-    "cancelationRequests": [
-      {
-        "id": "92574337-9d68-4855-b041-9b2ffd81cec5",
-        "createdAt": "2025-12-21T11:02:53.940Z",
-        "updatedAt": "2025-12-21T11:03:12.576Z",
-        "deletedAt": null,
-        "targetEntity": "trip",
-        "targetId": "62463624-5003-46e9-81cf-10fad2c71f23",
-        "decision": "approve",
-        "reason": "Change of plans",
-        "attachmentId": "550e8400-e29b-41d4-a716-446655440000",
-        "createdBy": "233370b8-006c-4d08-a083-7ac1fbde8c15",
-        "resolvedBy": "4566437d-e37a-43de-a919-84833e253fb5",
-        "resolvedAt": "2025-12-21T11:03:12.000Z",
-        "resolveNote": "Approved due to valid reason"
-      }
-    ]
+    "id": "62463624-5003-46e9-81cf-10fad2c71f24",
+    "trip_id": "62463624-5003-46e9-81cf-10fad2c71f23",
+    "evaluation_value": "successful", // (successful, partially_successful, unsuccessful, postponed, reconnaissance)
+    "comment": "This trip was completed great",
+    "version": 1, // Auto generated, default 1
+    "created_at": "2025-12-21T13:25:20.094Z"
   },
   "path": "/api/v1/trips/62463624-5003-46e9-81cf-10fad2c71f23",
   "method": "GET",
   "timestamp": "2025-12-21T13:25:20.094Z"
 }
+
+// GET /api/v1/evaluations
+
+// Params
+
+// Query Parameters
+
+// ?trip_id=62463624-5003-46e9-81cf-10fad2c71f23
+// ?version=1
+// ?evaluation_value=successful
+// ?created_at_before=2025-12-31T23:59:59.999Z
+// ?created_at_after=2025-01-01T00:00:00.000Z
+
+// Payload
+
+// Response
+
+{
+  "data": [
+    {
+      "id": "62463624-5003-46e9-81cf-10fad2c71f24",
+      "trip_id": "62463624-5003-46e9-81cf-10fad2c71f23",
+      "evaluation_value": "successful", // (successful, partially_successful, unsuccessful, postponed, reconnaissance)
+      "comment": "This trip was completed great",
+      "version": 1, // Auto generated, default 1
+      "created_at": "2025-12-21T13:25:20.094Z"
+    },
+    {
+      "id": "62463624-5003-46e9-81cf-10fad2c71f24",
+      "trip_id": "62463624-5003-46e9-81cf-10fad2c71f23",
+      "evaluation_value": "successful", // (successful, partially_successful, unsuccessful, postponed, reconnaissance)
+      "comment": "This trip was completed great",
+      "version": 2, // Auto generated, default 1
+      "created_at": "2025-12-21T13:25:20.094Z"
+    },
+    {
+      "id": "62463624-5003-46e9-81cf-10fad2c71f24",
+      "trip_id": "62463624-5003-46e9-81cf-10fad2c71f23",
+      "evaluation_value": "successful", // (successful, partially_successful, unsuccessful, postponed, reconnaissance)
+      "comment": "This trip was completed great",
+      "version": 1, // Auto generated, default 1
+      "created_at": "2025-12-21T13:25:20.094Z"
+    }
+  ],
+  "path": "/api/v1/trips/62463624-5003-46e9-81cf-10fad2c71f23",
+  "method": "GET",
+  "timestamp": "2025-12-21T13:25:20.094Z"
+}
+
+// GET /api/v1/evaluations/{evaluation_id}
+
+// Params
+
+// Payload
+
+// Response
+
+{
+  "data": {
+    "id": "62463624-5003-46e9-81cf-10fad2c71f24",
+    "trip_id": "62463624-5003-46e9-81cf-10fad2c71f23",
+    "evaluation_value": "successful", // (successful, partially_successful, unsuccessful, postponed, reconnaissance)
+    "comment": "This trip was completed great",
+    "version": 1, // Auto generated, default 1
+    "created_at": "2025-12-21T13:25:20.094Z"
+  },
+  "path": "/api/v1/trips/62463624-5003-46e9-81cf-10fad2c71f23",
+  "method": "GET",
+  "timestamp": "2025-12-21T13:25:20.094Z"
+}
+

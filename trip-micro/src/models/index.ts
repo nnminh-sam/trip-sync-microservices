@@ -5,6 +5,7 @@ import { Location } from './location.model';
 import { Task } from './task.model';
 import { TripProgress } from './trip-progress.model';
 import { Cancelation } from 'src/models/cancelation.model';
+import { TripEvaluation } from 'src/models/trip-evaluation.model';
 
 export const tableSchemas = [
   BaseModel,
@@ -14,4 +15,5 @@ export const tableSchemas = [
   Task,
   TripProgress,
   Cancelation,
+  TripEvaluation,
 ];

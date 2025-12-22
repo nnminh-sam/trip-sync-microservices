@@ -7,6 +7,7 @@ import { ClientModule } from './client/client.module';
 import { LocationModule } from './modules/location/location.module';
 import { TaskModule } from './modules/task/task.module';
 import { FirebaseModule } from './modules/firebase/firebase.module';
+import { EvaluationModule } from './modules/evaluation/evaluation.module';
 import gcsConfig from './config/gcs.config';
 
 @Module({
@@ -22,6 +23,7 @@ import gcsConfig from './config/gcs.config';
     TripModule,
     LocationModule,
     TaskModule,
+    EvaluationModule,
   ],
 })
 export class AppModule {}
