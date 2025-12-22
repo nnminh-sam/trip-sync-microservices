@@ -11,7 +11,7 @@ export const TRIP_STATUS_TRANSISTION_MAP: Record<
   ],
   not_approved: [],
   not_started: [TripStatusEnum.IN_PROGRESS, TripStatusEnum.CANCELED],
-  in_progress: [TripStatusEnum.COMPLETED, TripStatusEnum.CANCELED],
-  completed: [],
+  in_progress: [TripStatusEnum.ENDED, TripStatusEnum.CANCELED],
+  ended: [],
   canceled: [],
 };
