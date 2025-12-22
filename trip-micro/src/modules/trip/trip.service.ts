@@ -271,7 +271,7 @@ export class TripService {
           data: {
             senderId: managerId,
             receiverId: creator.id,
-            title: 'New Trip Proposal',
+            title: `New Trip Proposal: ${trip.title}`,
             message: `You have proposed a new trip "${trip.title}" and waiting for approval.`,
           },
         });
@@ -280,7 +280,7 @@ export class TripService {
           data: {
             senderId: creator.id,
             receiverId: managerId,
-            title: 'New Trip Proposal',
+            title: `New Trip Proposal: ${trip.title}`,
             message: `A new trip titled "${trip.title}" has been proposed and is awaiting your approval.`,
           },
         });
@@ -306,7 +306,7 @@ export class TripService {
           data: {
             senderId: creator.id,
             receiverId: dto.assignee_id,
-            title: 'New Trip Assigned',
+            title: `Trip Assigned: ${trip.title}`,
             message: `A new trip titled "${trip.title}" has been assigned to you.`,
           },
         });
@@ -461,6 +461,7 @@ export class TripService {
       .leftJoinAndSelect('tripLocation.task', 'task')
       .leftJoinAndSelect('trip.tripProgress', 'tripProgress')
       .where('trip.id = :id', { id })
+      .orderBy('tripProgress.createdAt', 'DESC')
       .getOne();
 
     if (!trip) {
@@ -597,7 +598,7 @@ export class TripService {
           data: {
             senderId: requestId,
             receiverId: trip.managerId,
-            title: 'Trip Started',
+            title: `Trip Started: ${trip.title}`,
             message: `Employee has started the trip: ${trip.title}`,
           },
         });
@@ -610,8 +611,8 @@ export class TripService {
           data: {
             senderId: requestId,
             receiverId: trip.managerId,
-            title: 'Trip Completed',
-            message: `Employee has completed the trip: ${trip.title}`,
+            title: `Trip ended: ${trip.title}`,
+            message: `Employee has ended the trip: ${trip.title}`,
           },
         });
       }
@@ -699,7 +700,7 @@ export class TripService {
       data: {
         senderId: managerId,
         receiverId: trip.assigneeId,
-        title: 'Trip decision made',
+        title: `Trip Decision: ${trip.title}`,
         message: 'Your trip has been ' + dto.decision,
       },
     });
@@ -794,7 +795,7 @@ export class TripService {
       data: {
         senderId: userId,
         receiverId: trip.assigneeId,
-        title: `Trip Cancelation Request for trip: ${trip.title}`,
+        title: `Cancellation Request: ${trip.title}`,
         message: `A cancellation request has been made for trip "${trip.title}" ${dto.reason ? 'with reason: ' + dto.reason : ''}`,
       },
     });
@@ -804,7 +805,7 @@ export class TripService {
       data: {
         senderId: userId,
         receiverId: trip.managerId,
-        title: `Trip Cancelation Request for trip: ${trip.title}`,
+        title: `Cancellation Request: ${trip.title}`,
         message: `A trip has been requested to be canceled. ${dto.reason ? 'Reason: ' + dto.reason : ''}`,
       },
     });
@@ -874,7 +875,7 @@ export class TripService {
         data: {
           senderId: userId,
           receiverId: trip.assigneeId,
-          title: `Trip Cancellation Approved`,
+          title: `Cancellation request approved for trip: ${trip.title}`,
           message: `Your cancellation request for trip "${trip.title}" has been approved.`,
         },
       });
@@ -884,7 +885,7 @@ export class TripService {
         data: {
           senderId: userId,
           receiverId: trip.managerId,
-          title: `Trip Cancellation Approved`,
+          title: `Cancellation request approved for trip: ${trip.title}`,
           message: `Trip "${trip.title}" cancellation has been approved.`,
         },
       });
@@ -902,7 +903,7 @@ export class TripService {
         data: {
           senderId: userId,
           receiverId: trip.assigneeId,
-          title: `Trip Cancellation Rejected`,
+          title: `Cancellation request has been rejected for trip: ${trip.title}`,
           message: `Your cancellation request for trip "${trip.title}" has been rejected.`,
         },
       });
@@ -912,7 +913,7 @@ export class TripService {
         data: {
           senderId: userId,
           receiverId: trip.managerId,
-          title: `Trip Cancellation Rejected`,
+          title: `Cancellation request has been rejected for trip: ${trip.title}`,
           message: `Cancellation request for trip "${trip.title}" has been rejected.`,
         },
       });
@@ -1055,7 +1056,7 @@ export class TripService {
         data: {
           senderId: assigneeId,
           receiverId: trip.managerId,
-          title: 'Employee checked in at location',
+          title: `Employee checked-in at location ${rawResult.tripLocation_name_snapshot} of trip ${trip.title}`,
           message: `Employee have checked in at location: ${rawResult.tripLocation_name_snapshot} of the trip ${trip.title}`,
         },
       });
@@ -1162,7 +1163,7 @@ export class TripService {
           data: {
             senderId: assigneeId,
             receiverId: trip.managerId,
-            title: 'Employee checked out at location',
+            title: `Employee checked-out at location ${rawResult.tripLocation_name_snapshot} of trip ${trip.title}`,
             message: `Employee have checked out at location: ${rawResult.tripLocation_name_snapshot} of the trip ${trip.title}`,
           },
         });
