@@ -11,6 +11,7 @@ import { UserService } from 'src/modules/user/user.service';
 import { throwRpcException } from 'src/utils';
 import { PermissionGuard } from 'src/common/guards/permission.guard';
 import { RequirePermission } from 'src/common/decorators/require-permission.decorator';
+import { UpdateKeyDto } from 'src/modules/user/dtos/update-key.dto';
 
 @Controller('user')
 @UseGuards(PermissionGuard)
@@ -198,15 +199,13 @@ export class UserController {
   @MessagePattern(UserMessagePattern.updatePublicKey)
   async updatePublicKey(
     @Payload()
-    payload: MessagePayloadDto<{ publicKey: string }>,
+    payload: MessagePayloadDto<UpdateKeyDto>,
   ) {
     const { claims } = payload;
-    const publicKey = payload.request.body.publicKey;
+    const dto = payload.request.body;
+    console.log('🚀 ~ UserController ~ updatePublicKey ~ dto:', dto);
 
-    const result = await this.userService.updatePublicKey(
-      claims.sub,
-      publicKey,
-    );
+    const result = await this.userService.updatePublicKey(claims.sub, dto);
     // Fire-and-forget audit log call
     this.auditLogService
       .log(claims, {

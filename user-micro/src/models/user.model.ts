@@ -44,4 +44,7 @@ export class User extends BaseModel {
 
   @Column({ type: 'text', nullable: true })
   publicKey?: string; // GPG public key for signature verification
+
+  @Column({ name: 'device_token', type: 'varchar', nullable: true })
+  deviceToken: string;
 }

@@ -13,7 +13,15 @@ export class SendNotificationDto {
 
   @IsObject()
   @IsNotEmpty({ message: 'Notification data is required' })
-  data: Record<string, any> | { is_read?: boolean };
+  data:
+    | Record<string, any>
+    | {
+        senderId: string;
+        receiverId: string;
+        title: string;
+        message: string;
+        is_read?: boolean;
+      };
 
   @IsString()
   @IsOptional()

@@ -1,5 +1,6 @@
 import { Injectable, Logger, HttpStatus } from '@nestjs/common';
 import * as admin from 'firebase-admin';
+import axios from 'axios';
 import { FirebaseConfigService } from '../../config/firebase.config';
 import {
   SendNotificationDto,
@@ -8,18 +9,110 @@ import {
   DeleteDataDto,
 } from './dtos';
 import { throwRpcException } from '../../utils';
+import { GoogleAuth } from 'google-auth-library';
 
 @Injectable()
 export class FirebaseService {
   private readonly logger = new Logger(FirebaseService.name);
   private database: admin.database.Database;
+  private auth: GoogleAuth;
 
   constructor(private firebaseConfig: FirebaseConfigService) {
     this.database = firebaseConfig.getDatabase();
+    this.auth = new GoogleAuth({
+      keyFile: 'cert.json',
+      scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+    });
+  }
+
+  async getAccessToken() {
+    const client = await this.auth.getClient();
+    const accessTokenResponse = await client.getAccessToken();
+    return accessTokenResponse.token;
   }
 
   /**
-   * Send notification data to Firebase Realtime Database
+   * Extract userId from notification path
+   * Path format: /noti/{userId}/{timestamp}
+   * @param path Notification path
+   * @returns string User ID or null
+   */
+  private extractUserIdFromPath(path: string): string | null {
+    const pathParts = path.split('/');
+    if (pathParts.length >= 3 && pathParts[1] === 'noti') {
+      return pathParts[2];
+    }
+    return null;
+  }
+
+  /**
+   * Send FCM notification to a specific user
+   * @param userId User ID to send notification to
+   * @param title Notification title
+   * @param message Notification message
+   * @param data Additional data to include in notification
+   */
+  private async sendFCMNotification(
+    userId: string,
+    title: string,
+    message: string,
+    data?: Record<string, any>,
+  ): Promise<void> {
+    try {
+      const serverKey = this.firebaseConfig.getServerKey();
+
+      if (!serverKey) {
+        this.logger.warn(
+          `FCM_SERVER_KEY not configured. Skipping push notification for user ${userId}`,
+        );
+        return;
+      }
+
+      const topic = `user_${userId}`;
+
+      const fcmPayload = {
+        token:
+          'eOm-8G2cRnujpfjkrXcHPm:APA91bFylN--1m8yjHy3nsVIUN6_AMQtYGdeMlF_hon9U8tgR750GuYgk4yGJPun3KlSH5kKb5CB0SwW8tGf4sV-142UAnUNbAfKANJp8yWcUNiektlptq0',
+        notification: {
+          title,
+          body: message,
+        },
+        data: {
+          receiverId: userId,
+          timestamp: new Date().getTime().toString(),
+          ...(data && data),
+        },
+        android: {
+          priority: 'high',
+        },
+      };
+
+      const response = await axios.post(
+        'https://fcm.googleapis.com/v1/projects/tripsyncgrad/messages:send',
+        { message: fcmPayload },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${await this.getAccessToken()}`,
+          },
+          timeout: 5000,
+        },
+      );
+
+      this.logger.log(
+        `FCM push notification sent successfully to topic ${topic}. Response: ${response.status}`,
+      );
+    } catch (error) {
+      console.log('🚀 ~ FirebaseService ~ sendFCMNotification ~ error:', error);
+      // Log FCM error but don't throw - notification in DB is primary channel
+      this.logger.warn(
+        `Failed to send FCM push notification to user ${userId}: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Send notification data to Firebase Realtime Database and FCM
    * @param payload SendNotificationDto containing path and notification data
    * @returns Promise<any> Firebase response
    */
@@ -38,6 +131,21 @@ export class FirebaseService {
       });
 
       this.logger.log(`Notification sent successfully to ${payload.path}`);
+
+      // Send FCM notification in addition to database notification
+      const userId = this.extractUserIdFromPath(payload.path);
+      if (userId && payload.data?.title && payload.data?.message) {
+        await this.sendFCMNotification(
+          userId,
+          payload.data.title,
+          payload.data.message,
+          {
+            senderId: payload.data.senderId,
+            receiverId: payload.data.receiverId,
+            ...payload.data,
+          },
+        );
+      }
 
       return {
         success: true,

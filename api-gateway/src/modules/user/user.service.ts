@@ -4,6 +4,7 @@ import { NATSClient } from 'src/client/clients';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { CreateUserDto } from 'src/modules/user/dtos/create-user.dto';
 import { FilterUserDto } from 'src/modules/user/dtos/filter-user.dto';
+import { UpdateKeyDto } from 'src/modules/user/dtos/update-key.dto';
 import { UpdateUserDto } from 'src/modules/user/dtos/update-user.dto';
 import { UserMessagePattern } from 'src/modules/user/user-message.pattern';
 import { CatchErrors, NatsClientSender } from 'src/utils';
@@ -147,13 +148,17 @@ export class UserService {
     rpcMessage: 'User service unavailable',
     defaultMessage: 'Update public key failed',
   })
-  async updatePublicKey(claims: TokenClaimsDto, publicKey: string) {
+  async updatePublicKey(claims: TokenClaimsDto, updateKeyDto: UpdateKeyDto) {
+    console.log(
+      '🚀 ~ UserService ~ updatePublicKey ~ updateKeyDto:',
+      updateKeyDto,
+    );
     this.logger.log(`updatePublicKey called for user id: ${claims.sub}`);
     const result = await this.sender.send({
       messagePattern: 'updatePublicKey',
       payload: {
         claims,
-        request: { body: { publicKey } },
+        request: { body: { ...updateKeyDto } },
       },
     });
     this.logger.log(`updatePublicKey success for user id: ${claims.sub}`);

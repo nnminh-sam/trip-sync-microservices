@@ -13,6 +13,7 @@ import * as bcrypt from 'bcryptjs';
 import { ListDataDto } from 'src/dtos/list-data.dto';
 import { Gender } from 'src/models/enums/gender.enum';
 import * as crypto from 'crypto';
+import { UpdateKeyDto } from 'src/modules/user/dtos/update-key.dto';
 
 @Injectable()
 export class UserService {
@@ -108,7 +109,10 @@ export class UserService {
         'user.dateOfBirth',
         'user.isActive',
         'user.managerId',
+        'user.publicKey',
+        'user.deviceToken',
       ])
+      .leftJoinAndSelect('user.role', 'role')
       .where('user.id = :id', { id })
       .getOne();
 
@@ -481,18 +485,21 @@ export class UserService {
     return userWithoutPassword as User;
   }
 
-  async updatePublicKey(userId: string, publicKey: string) {
+  async updatePublicKey(userId: string, dto: UpdateKeyDto) {
+    console.log('🚀 ~ UserService ~ updatePublicKey ~ dto:', dto);
     this.logger.log(`Updating public key for user with ID: ${userId}`);
 
-    if (!publicKey || publicKey.trim().length === 0) {
-      this.logger.warn(
-        `Public key update failed - empty public key for user ID: ${userId}`,
-      );
-      throwRpcException({
-        statusCode: HttpStatus.BAD_REQUEST,
-        message: 'Public key cannot be empty',
-      });
-    }
+    const { publicKey, deviceToken } = dto;
+
+    // if (!publicKey || publicKey.trim().length === 0) {
+    //   this.logger.warn(
+    //     `Public key update failed - empty public key for user ID: ${userId}`,
+    //   );
+    //   throwRpcException({
+    //     statusCode: HttpStatus.BAD_REQUEST,
+    //     message: 'Public key cannot be empty',
+    //   });
+    // }
 
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -508,8 +515,16 @@ export class UserService {
       });
     }
 
-    user.publicKey = publicKey;
+    if (publicKey) {
+      user.publicKey = publicKey;
+    }
+    user.deviceToken = deviceToken;
+    console.log('🚀 ~ UserService ~ updatePublicKey ~ user:', user);
     const updatedUser = await this.userRepository.save(user);
+    console.log(
+      '🚀 ~ UserService ~ updatePublicKey ~ updatedUser:',
+      updatedUser,
+    );
 
     // Remove password from response
     const { password, ...userWithoutPassword } = updatedUser;

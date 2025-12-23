@@ -18,6 +18,7 @@ import { UserService } from 'src/modules/user/user.service';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
 import { User } from 'src/models/user.model';
+import { UpdateKeyDto } from 'src/modules/user/dtos/update-key.dto';
 
 @ApiTags('User')
 @Controller('users')
@@ -139,22 +140,14 @@ export class UserController {
     model: User,
   })
   @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        publicKey: {
-          type: 'string',
-          description: 'GPG public key in armored format',
-        },
-      },
-      required: ['publicKey'],
-    },
+    type: UpdateKeyDto,
   })
   async updatePublicKey(
     @RequestUserClaims() claims: TokenClaimsDto,
-    @Body('publicKey') publicKey: string,
+    @Body() dto: UpdateKeyDto,
   ) {
-    return await this.userService.updatePublicKey(claims, publicKey);
+    console.log("🚀 ~ UserController ~ updatePublicKey ~ dto:", dto)
+    return await this.userService.updatePublicKey(claims, dto);
   }
 
   @Get('my/public-key')

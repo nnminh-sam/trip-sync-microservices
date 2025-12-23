@@ -66,4 +66,12 @@ export class FirebaseConfigService {
   getAuth(): admin.auth.Auth {
     return admin.auth();
   }
+
+  getServerKey(): string {
+    const serverKey = this.configService.get<string>('FCM_SERVER_KEY');
+    if (!serverKey) {
+      this.logger.warn('FCM_SERVER_KEY not found in environment variables');
+    }
+    return serverKey;
+  }
 }
