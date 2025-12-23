@@ -1,4 +1,4 @@
-import { Injectable, Logger, HttpStatus } from '@nestjs/common';
+import { Injectable, Logger, HttpStatus, Inject } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import axios from 'axios';
 import { FirebaseConfigService } from '../../config/firebase.config';
@@ -8,20 +8,32 @@ import {
   UpdateDataDto,
   DeleteDataDto,
 } from './dtos';
-import { throwRpcException } from '../../utils';
+import { throwRpcException, NatsClientSender } from '../../utils';
 import { GoogleAuth } from 'google-auth-library';
+import { ClientProxy } from '@nestjs/microservices';
+import { NATSClient } from '../../client/clients';
+import { MessagePayloadDto } from '../../dtos/message-payload.dto';
+import { TokenClaimsDto } from '../../dtos/token-claims.dto';
 
 @Injectable()
 export class FirebaseService {
   private readonly logger = new Logger(FirebaseService.name);
   private database: admin.database.Database;
   private auth: GoogleAuth;
+  private readonly userSender: NatsClientSender<{ findById: string }>;
 
-  constructor(private firebaseConfig: FirebaseConfigService) {
+  constructor(
+    private firebaseConfig: FirebaseConfigService,
+    @Inject(NATSClient.name)
+    private readonly natsClient: ClientProxy,
+  ) {
     this.database = firebaseConfig.getDatabase();
     this.auth = new GoogleAuth({
       keyFile: 'cert.json',
       scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+    });
+    this.userSender = new NatsClientSender(this.natsClient, {
+      findById: 'user.find.id',
     });
   }
 
@@ -50,12 +62,14 @@ export class FirebaseService {
    * @param userId User ID to send notification to
    * @param title Notification title
    * @param message Notification message
+   * @param claims Token claims for user service call
    * @param data Additional data to include in notification
    */
   private async sendFCMNotification(
     userId: string,
     title: string,
     message: string,
+    claims: TokenClaimsDto,
     data?: Record<string, any>,
   ): Promise<void> {
     try {
@@ -68,14 +82,41 @@ export class FirebaseService {
         return;
       }
 
-      const topic = `user_${userId}`;
+      let deviceToken: string;
+
+      try {
+        const payload: MessagePayloadDto = {
+          claims,
+        };
+
+        const user: any = await this.userSender.send({
+          messagePattern: 'findById',
+          payload,
+        });
+        console.log('🚀 ~ FirebaseService ~ sendFCMNotification ~ user:', user);
+
+        deviceToken = user?.deviceToken;
+
+        if (!deviceToken) {
+          this.logger.warn(
+            `Device token not found for user ${userId}. Skipping FCM notification.`,
+          );
+          return;
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to fetch device token for user ${userId}: ${error.message}`,
+        );
+        return;
+      }
 
       const fcmPayload = {
-        token:
-          'eOm-8G2cRnujpfjkrXcHPm:APA91bFylN--1m8yjHy3nsVIUN6_AMQtYGdeMlF_hon9U8tgR750GuYgk4yGJPun3KlSH5kKb5CB0SwW8tGf4sV-142UAnUNbAfKANJp8yWcUNiektlptq0',
+        token: deviceToken,
         notification: {
           title,
           body: message,
+          image:
+            'https://storage.googleapis.com/proof-media/z7355405043313_bcc87cc6b8a3b1767ff809a75824ccb1.jpg',
         },
         data: {
           receiverId: userId,
@@ -100,7 +141,7 @@ export class FirebaseService {
       );
 
       this.logger.log(
-        `FCM push notification sent successfully to topic ${topic}. Response: ${response.status}`,
+        `FCM push notification sent successfully to user ${userId}. Response: ${response.status}`,
       );
     } catch (error) {
       console.log('🚀 ~ FirebaseService ~ sendFCMNotification ~ error:', error);
@@ -134,15 +175,20 @@ export class FirebaseService {
 
       // Send FCM notification in addition to database notification
       const userId = this.extractUserIdFromPath(payload.path);
-      if (userId && payload.data?.title && payload.data?.message) {
+      if (
+        userId &&
+        payload.data?.title &&
+        payload.data?.message &&
+        payload.claims
+      ) {
         await this.sendFCMNotification(
           userId,
           payload.data.title,
           payload.data.message,
+          payload.claims,
           {
             senderId: payload.data.senderId,
             receiverId: payload.data.receiverId,
-            ...payload.data,
           },
         );
       }

@@ -17,6 +17,7 @@ import { TripLocation } from 'src/models/trip-location.model';
 import { Trip } from 'src/models/trip.model';
 import { TripStatusEnum } from 'src/models/trip-status.enum';
 import { TripProgress } from 'src/models/trip-progress.model';
+import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 
 @Injectable()
 export class TaskService {
@@ -262,6 +263,14 @@ export class TaskService {
         `A cancellation request has been made for task "${task.title}". ${dto.reason ? 'Reason: ' + dto.reason : ''}`,
       );
 
+      const claims: TokenClaimsDto = {
+        jit: '',
+        iat: Date.now(),
+        sub: userId,
+        email: '',
+        role: '',
+      };
+
       // Send notification to trip manager
       this.firebaseService.sendNotification({
         path: `/noti/${trip.managerId}/${new Date().getTime()}`,
@@ -271,6 +280,7 @@ export class TaskService {
           title: `Task Cancellation Request: ${task.title} (${trip.title})`,
           message: `A cancellation request has been made for task "${task.title}" in trip "${trip.title}" ${dto.reason ? 'with reason: ' + dto.reason : ''}`,
         },
+        claims,
       });
 
       // Send notification to trip assignee if exists
@@ -283,6 +293,7 @@ export class TaskService {
             title: `Task Cancellation Request: ${task.title} (${trip.title})`,
             message: `A cancellation request has been made for task "${task.title}" in trip "${trip.title}" ${dto.reason ? 'with reason: ' + dto.reason : ''}`,
           },
+          claims,
         });
       }
     }
@@ -340,6 +351,14 @@ export class TaskService {
 
     let updatedTask = task;
 
+    const claims: TokenClaimsDto = {
+      jit: '',
+      iat: Date.now(),
+      sub: userId,
+      email: '',
+      role: '',
+    };
+
     if (dto.decision === CancelationDecision.APPROVE) {
       // Mark task as canceled when cancellation is approved
       updatedTask = await this.taskRepository.save({
@@ -369,6 +388,7 @@ export class TaskService {
             title: `Task Cancellation Approved: ${task.title} (${trip.title})`,
             message: `The cancellation request for task "${task.title}" in trip "${trip.title}" has been approved. ${dto.note ? 'Note: ' + dto.note : ''}`,
           },
+          claims,
         });
 
         if (trip.assigneeId) {
@@ -380,6 +400,7 @@ export class TaskService {
               title: `Task Cancellation Approved: ${task.title} (${trip.title})`,
               message: `Your cancellation request for task "${task.title}" in trip "${trip.title}" has been approved.`,
             },
+            claims,
           });
         }
 
@@ -432,6 +453,7 @@ export class TaskService {
             title: `Task Cancellation Rejected: ${task.title} (${trip.title})`,
             message: `The cancellation request for task "${task.title}" in trip "${trip.title}" has been rejected. ${dto.note ? 'Note: ' + dto.note : ''}`,
           },
+          claims,
         });
 
         if (trip.assigneeId) {
@@ -443,6 +465,7 @@ export class TaskService {
               title: `Task Cancellation Rejected: ${task.title} (${trip.title})`,
               message: `Your cancellation request for task "${task.title}" in trip "${trip.title}" has been rejected.`,
             },
+            claims,
           });
         }
       }

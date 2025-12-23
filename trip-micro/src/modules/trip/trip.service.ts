@@ -262,6 +262,13 @@ export class TripService {
       await queryRunner.commitTransaction();
 
       console.log('🚀 ~ TripService ~ create ~ isProposal:', isProposal);
+      const claims: TokenClaimsDto = {
+        jit: '',
+        iat: Date.now(),
+        sub: creator.id,
+        email: '',
+        role: creator.role,
+      };
       if (isProposal) {
         await this.saveProgress(
           trip,
@@ -278,6 +285,7 @@ export class TripService {
             title: `New Trip Proposal: ${trip.title}`,
             message: `You have proposed a new trip "${trip.title}" and waiting for approval.`,
           },
+          claims,
         });
         this.firebaseService.sendNotification({
           path: `/noti/${managerId}/${new Date().getTime()}`,
@@ -287,6 +295,7 @@ export class TripService {
             title: `New Trip Proposal: ${trip.title}`,
             message: `A new trip titled "${trip.title}" has been proposed and is awaiting your approval.`,
           },
+          claims,
         });
       } else {
         await this.saveProgress(
@@ -313,6 +322,7 @@ export class TripService {
             title: `Trip Assigned: ${trip.title}`,
             message: `A new trip titled "${trip.title}" has been assigned to you.`,
           },
+          claims,
         });
       }
 
@@ -604,6 +614,13 @@ export class TripService {
         status === TripStatusEnum.IN_PROGRESS
       ) {
         trip.startedAt = new Date();
+        const claims: TokenClaimsDto = {
+          jit: '',
+          iat: Date.now(),
+          sub: requestId,
+          email: '',
+          role: '',
+        };
         this.firebaseService.sendNotification({
           path: `/noti/${trip.managerId}/${new Date().getTime()}`,
           data: {
@@ -612,11 +629,19 @@ export class TripService {
             title: `Trip Started: ${trip.title}`,
             message: `Employee has started the trip: ${trip.title}`,
           },
+          claims,
         });
       } else if (
         trip.status === TripStatusEnum.IN_PROGRESS &&
         status === TripStatusEnum.ENDED
       ) {
+        const claims: TokenClaimsDto = {
+          jit: '',
+          iat: Date.now(),
+          sub: requestId,
+          email: '',
+          role: '',
+        };
         this.firebaseService.sendNotification({
           path: `/noti/${trip.managerId}/${new Date().getTime()}`,
           data: {
@@ -625,6 +650,7 @@ export class TripService {
             title: `Trip ended: ${trip.title}`,
             message: `Employee has ended the trip: ${trip.title}`,
           },
+          claims,
         });
       }
 
@@ -706,6 +732,14 @@ export class TripService {
       progressDescription,
     );
 
+    const claims: TokenClaimsDto = {
+      jit: '',
+      iat: Date.now(),
+      sub: managerId,
+      email: '',
+      role: '',
+    };
+
     this.firebaseService.sendNotification({
       path: `/noti/${trip.assigneeId}/${new Date().getTime()}`,
       data: {
@@ -714,6 +748,7 @@ export class TripService {
         title: `Trip Decision: ${trip.title}`,
         message: 'Your trip has been ' + dto.decision,
       },
+      claims,
     });
 
     return result;
@@ -801,6 +836,14 @@ export class TripService {
       `A trip cancellation request has been created. ${dto.reason ? 'Reason: ' + dto.reason : ''}`,
     );
 
+    const claims: TokenClaimsDto = {
+      jit: '',
+      iat: Date.now(),
+      sub: userId,
+      email: '',
+      role: '',
+    };
+
     this.firebaseService.sendNotification({
       path: `/noti/${trip.assigneeId}/${new Date().getTime()}`,
       data: {
@@ -809,6 +852,7 @@ export class TripService {
         title: `Cancellation Request: ${trip.title}`,
         message: `A cancellation request has been made for trip "${trip.title}" ${dto.reason ? 'with reason: ' + dto.reason : ''}`,
       },
+      claims,
     });
 
     this.firebaseService.sendNotification({
@@ -819,6 +863,7 @@ export class TripService {
         title: `Cancellation Request: ${trip.title}`,
         message: `A trip has been requested to be canceled. ${dto.reason ? 'Reason: ' + dto.reason : ''}`,
       },
+      claims,
     });
 
     return cancelation;
@@ -866,6 +911,14 @@ export class TripService {
 
     let updatedTrip = trip;
 
+    const claims: TokenClaimsDto = {
+      jit: '',
+      iat: Date.now(),
+      sub: userId,
+      email: '',
+      role: '',
+    };
+
     if (dto.decision === CancelationDecision.APPROVE) {
       trip.status = TripStatusEnum.CANCELED;
       if (dto.note) {
@@ -889,6 +942,7 @@ export class TripService {
           title: `Cancellation request approved for trip: ${trip.title}`,
           message: `Your cancellation request for trip "${trip.title}" has been approved.`,
         },
+        claims,
       });
 
       this.firebaseService.sendNotification({
@@ -899,6 +953,7 @@ export class TripService {
           title: `Cancellation request approved for trip: ${trip.title}`,
           message: `Trip "${trip.title}" cancellation has been approved.`,
         },
+        claims,
       });
     } else if (dto.decision === CancelationDecision.REJECT) {
       await this.saveProgress(
@@ -917,6 +972,7 @@ export class TripService {
           title: `Cancellation request has been rejected for trip: ${trip.title}`,
           message: `Your cancellation request for trip "${trip.title}" has been rejected.`,
         },
+        claims,
       });
 
       this.firebaseService.sendNotification({
@@ -927,6 +983,7 @@ export class TripService {
           title: `Cancellation request has been rejected for trip: ${trip.title}`,
           message: `Cancellation request for trip "${trip.title}" has been rejected.`,
         },
+        claims,
       });
     }
 
@@ -1062,6 +1119,14 @@ export class TripService {
         checkInDto.timestamp,
       );
 
+      const claims: TokenClaimsDto = {
+        jit: '',
+        iat: Date.now(),
+        sub: assigneeId,
+        email: '',
+        role: '',
+      };
+
       this.firebaseService.sendNotification({
         path: `/noti/${trip.managerId}/${new Date().getTime()}`,
         data: {
@@ -1070,6 +1135,7 @@ export class TripService {
           title: `Employee checked-in at location ${rawResult.tripLocation_name_snapshot} of trip ${trip.title}`,
           message: `Employee have checked in at location: ${rawResult.tripLocation_name_snapshot} of the trip ${trip.title}`,
         },
+        claims,
       });
 
       const savedLocation = await this.tripLocationRepo.save(updatePayload);
@@ -1169,6 +1235,14 @@ export class TripService {
           { status: TaskStatusEnum.COMPLETED },
         );
 
+        const claims: TokenClaimsDto = {
+          jit: '',
+          iat: Date.now(),
+          sub: assigneeId,
+          email: '',
+          role: '',
+        };
+
         this.firebaseService.sendNotification({
           path: `/noti/${trip.managerId}/${new Date().getTime()}`,
           data: {
@@ -1177,6 +1251,7 @@ export class TripService {
             title: `Employee checked-out at location ${rawResult.tripLocation_name_snapshot} of trip ${trip.title}`,
             message: `Employee have checked out at location: ${rawResult.tripLocation_name_snapshot} of the trip ${trip.title}`,
           },
+          claims,
         });
 
         this.logger.log(

@@ -5,6 +5,7 @@ import {
   IsObject,
   IsBoolean,
 } from 'class-validator';
+import { TokenClaimsDto } from '../../../dtos/token-claims.dto';
 
 export class SendNotificationDto {
   @IsString()
@@ -26,4 +27,8 @@ export class SendNotificationDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsObject()
+  @IsOptional()
+  claims?: TokenClaimsDto;
 }
