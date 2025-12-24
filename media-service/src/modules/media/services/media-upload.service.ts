@@ -4,17 +4,28 @@ import {
   GnuPgVerificationService,
   SignatureVerificationResult,
 } from './gnupg-verification.service';
-import { GcsUploadService } from './gcs-upload.service';
+import { GcsUploadService, UploadResult } from './gcs-upload.service';
 import { MediaService } from '../media.service';
 import { CreateMediaDto } from '../dtos';
 import { Media } from '../../../models';
+import { EnvSchema } from 'src/config';
+import { MediaStatusEnum } from 'src/models/enums/media-status.enum';
+import { setTimeout } from 'node:timers/promises';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+
+export type VerificationPayload = {
+  jwtToken: string;
+  signature: string;
+  metadata: string;
+};
 
 export interface MediaUploadRequest {
   uploaderId: string;
-  signature?: string;
-  jwtToken?: string;
-  tripId?: string;
-  description?: string;
+  verification: {
+    perform: boolean;
+    payload?: VerificationPayload;
+  };
 }
 
 export interface MediaUploadValidationResult {
@@ -33,118 +44,19 @@ export interface MediaUploadResponse {
 @Injectable()
 export class MediaUploadService {
   private readonly logger = new Logger(MediaUploadService.name);
+  private readonly bucketName: string;
 
   constructor(
     private readonly gnuPgVerificationService: GnuPgVerificationService,
     private readonly gcsUploadService: GcsUploadService,
-    private readonly mediaService: MediaService,
-    private readonly configService: ConfigService,
-  ) {}
+    @InjectRepository(Media)
+    private readonly mediaRepository: Repository<Media>,
 
-  /**
-   * Upload media file to GCS and save metadata to database
-   * @param fileBuffer - The file content
-   * @param filename - The original filename
-   * @param mimetype - The MIME type
-   * @param fileSize - The file size in bytes
-   * @param uploadRequest - Additional upload metadata
-   * @returns MediaUploadResponse with saved media or error
-   */
-  async uploadMedia(
-    fileBuffer: Buffer,
-    filename: string,
-    mimetype: string,
-    fileSize: number,
-    uploadRequest: MediaUploadRequest,
-  ): Promise<MediaUploadResponse> {
-    try {
-      // Validate file
-      this.validateFile(fileBuffer, fileSize, mimetype);
-
-      // Upload file to GCS
-      const storageFilename = this.generateStorageFilename(
-        // uploadRequest.uploaderId,
-        '123',
-        filename,
-      );
-
-      const gcsUploadResult = await this.gcsUploadService.uploadFile(
-        fileBuffer,
-        storageFilename,
-        {
-          contentType: mimetype,
-        },
-      );
-
-      if (!gcsUploadResult.success) {
-        this.logger.error(`GCS upload failed: ${gcsUploadResult.error}`);
-        return {
-          success: false,
-          error:
-            gcsUploadResult.error || 'Failed to upload file to cloud storage',
-        };
-      }
-
-      // Save media metadata to database
-      const createMediaDto: CreateMediaDto = {
-        filename: storageFilename,
-        originalName: filename,
-        mimetype,
-        size: fileSize,
-        gcsUrl: gcsUploadResult.gcsUrl,
-        publicUrl: gcsUploadResult.publicUrl,
-        status: 'uploaded',
-        description: uploadRequest.description,
-        signatureVerified: false,
-      };
-
-      const savedMedia = await this.mediaService.create(
-        // uploadRequest.uploaderId,
-        '123',
-        createMediaDto,
-      );
-
-      this.logger.debug(`Media uploaded successfully: ${savedMedia.id}`);
-
-      // Verify signature asynchronously (non-blocking)
-      this.verifySignatureAsync(savedMedia.id, fileBuffer);
-
-      return {
-        success: true,
-        media: savedMedia,
-      };
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.logger.error(`Media upload error: ${errorMessage}`);
-
-      return {
-        success: false,
-        error: errorMessage,
-      };
-    }
+    private readonly configService: ConfigService<EnvSchema>,
+  ) {
+    this.bucketName = configService.get('GCS_BUCKET_NAME');
   }
 
-  /**
-   * Upload media file with GnuPG signature verification (synchronous).
-   *
-   * Process:
-   * 1. Validate file and signature
-   * 2. Verify GnuPG signature against file buffer
-   * 3. Upload file to GCS
-   * 4. Create media record in database
-   * 5. Mark signature as verified
-   * 6. Return created media object
-   *
-   * Note: Signature verification happens BEFORE upload to ensure file authenticity.
-   *
-   * @param fileBuffer - The file content
-   * @param filename - The original filename
-   * @param mimetype - The MIME type
-   * @param fileSize - The file size in bytes
-   * @param uploadRequest - Additional upload metadata including signature
-   * @returns MediaUploadResponse with saved media or error
-   */
   async uploadMediaWithSignature(
     fileBuffer: Buffer,
     filename: string,
@@ -153,102 +65,55 @@ export class MediaUploadService {
     uploadRequest: MediaUploadRequest,
   ): Promise<MediaUploadResponse> {
     try {
-      // TODO: validate the uploader's ID with the assignee of the task base on the Task ID. This task is prosponed until Trip Service is Ready
+      const { uploaderId, verification } = uploadRequest;
 
       // Validate file
-      this.validateFile(fileBuffer, fileSize, mimetype);
+      this.validateFile(fileSize, mimetype);
 
-      // Validate signature is present
-      if (!uploadRequest.signature) {
-        return {
-          success: false,
-          error: 'GnuPG signature is required for verification',
-        };
+      if (verification.perform) {
+        await this.verifySignature(verification.payload);
       }
 
-      // Verify GnuPG signature synchronously (blocking - must succeed before upload)
-      this.logger.debug(`Verifying GnuPG signature for file: ${filename}`);
-
-      // Validate JWT token is provided
-      if (!uploadRequest.jwtToken) {
-        return {
-          success: false,
-          error: 'JWT token is required for signature verification',
-        };
-      }
-
-      // const signatureValidation =
-      //   await this.gnuPgVerificationService.verifySignature(
-      //     fileBuffer,
-      //     uploadRequest.signature,
-      //     uploadRequest.jwtToken,
-      //   );
-      const signatureValidation: SignatureVerificationResult = {
-        isValid: true,
-        error: null,
-      };
-
-      if (!signatureValidation.isValid) {
-        this.logger.warn(
-          `Signature verification failed for file ${filename}: ${signatureValidation.error}`,
-        );
-        return {
-          success: false,
-          error: `Signature verification failed: ${signatureValidation.error}`,
-        };
-      }
-
-      this.logger.debug(
-        `Signature verified successfully for key ${signatureValidation.signerKeyId}`,
-      );
-
-      // Upload file to GCS
       const storageFilename = this.generateStorageFilename(
-        // uploadRequest.uploaderId,
-        '123',
+        uploaderId,
         filename,
       );
 
-      const gcsUploadResult = await this.gcsUploadService.uploadFile(
-        fileBuffer,
-        storageFilename,
-        {
-          contentType: mimetype,
-        },
-      );
+      const sanitizedFilename = this.sanitizeFilename(storageFilename);
 
-      if (!gcsUploadResult.success) {
-        this.logger.error(`GCS upload failed: ${gcsUploadResult.error}`);
-        return {
-          success: false,
-          error:
-            gcsUploadResult.error || 'Failed to upload file to cloud storage',
-        };
-      }
+      const gcsUrl = `gs://${this.bucketName}/${sanitizedFilename}`;
+      const publicUrl = `https://storage.googleapis.com/${this.bucketName}/${sanitizedFilename}`;
 
-      // Save media metadata to database with signature verified flag
       const createMediaDto: CreateMediaDto = {
         filename: storageFilename,
         originalName: filename,
         mimetype,
         size: fileSize,
-        gcsUrl: gcsUploadResult.gcsUrl,
-        publicUrl: gcsUploadResult.publicUrl,
-        status: 'verified',
-        description: uploadRequest.description,
-        signatureVerified: true,
-        signatureData: uploadRequest.signature,
+        gcsUrl,
+        publicUrl,
       };
-
-      const savedMedia = await this.mediaService.create(
-        uploadRequest.uploaderId,
-        // '123',
-        createMediaDto,
-      );
-
       this.logger.debug(
-        `Media uploaded and signature verified successfully: ${savedMedia.id}`,
+        `Creating an attachment with this payload: ${JSON.stringify(createMediaDto)}`,
       );
+      const media = this.mediaRepository.create({
+        uploaderId,
+        status: MediaStatusEnum.NOT_READY,
+        ...createMediaDto,
+      });
+      const savedMedia = await this.mediaRepository.save(media);
+      this.logger.log(`Attachment created successfully: ${savedMedia.id}`);
+
+      this.gcsUploadService
+        .uploadFile({
+          fileBuffer,
+          filename: sanitizedFilename,
+          metadata: { contentType: mimetype },
+        })
+        .then(async () => {
+          media.status = MediaStatusEnum.READY;
+          await this.mediaRepository.save(media);
+          this.logger.log(`Media ${media.id} is ready`);
+        });
 
       return {
         success: true,
@@ -268,41 +133,18 @@ export class MediaUploadService {
     }
   }
 
-  /**
-   * Delete media from GCS storage
-   * @param filename - The filename to delete
-   */
-  async deleteFromGCS(filename: string): Promise<void> {
-    try {
-      await this.gcsUploadService.deleteFile(filename);
-    } catch (error) {
-      this.logger.warn(`Failed to delete from GCS: ${error}`);
-    }
-  }
+  private async verifySignature(payload: VerificationPayload) {
+    this.logger.debug(
+      `Performing verification process with payload: ${payload}`,
+    );
 
-
-  /**
-   * Verify GPG signature asynchronously (non-blocking)
-   */
-  private async verifySignatureAsync(
-    mediaId: string,
-    fileBuffer: Buffer,
-  ): Promise<void> {
-    try {
-      setImmediate(async () => {
-        // Future: implement GPG signature verification
-        // For now, just mark as processed
-        this.logger.debug(`Signature verification queued for media ${mediaId}`);
-      });
-    } catch (error) {
-      this.logger.warn(`Signature verification failed: ${error}`);
-    }
+    await setTimeout(200);
   }
 
   /**
    * Validate file before upload
    */
-  private validateFile(buffer: Buffer, size: number, mimetype: string): void {
+  private validateFile(size: number, mimetype: string): void {
     // Check file size (max 50MB)
     const maxSize = 50 * 1024 * 1024;
     if (size > maxSize) {
@@ -344,6 +186,20 @@ export class MediaUploadService {
     const timestamp = Date.now();
     const extension = this.getFileExtension(originalFilename);
     return `media_${uploaderId}_${timestamp}.${extension}`;
+  }
+
+  /**
+   * Sanitize filename for safe storage
+   * @param filename - The original filename
+   * @returns Sanitized filename
+   */
+  private sanitizeFilename(filename: string): string {
+    // Remove any path separators and special characters
+    return filename
+      .replace(/[\/\\]/g, '_')
+      .replace(/[<>:"|?*]/g, '_')
+      .replace(/\s+/g, '_')
+      .substring(0, 255); // GCS filename limit
   }
 
   /**

@@ -26,10 +26,11 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiGatewayGuard } from '../../auth/api-gateway.guard';
+import { ApiGatewayGuard } from '../auth/api-gateway.guard';
 import { MediaService } from './media.service';
-import { MediaUploadService } from './services';
+import { MediaUploadRequest, MediaUploadService } from './services';
 import { FilterMediaDto } from './dtos';
+import { UploadFileDto } from './dtos/upload-file.dto';
 
 @ApiTags('media')
 @Controller('api/v1/media')
@@ -40,53 +41,6 @@ export class MediaController {
     private readonly mediaService: MediaService,
     private readonly mediaUploadService: MediaUploadService,
   ) {}
-
-  /**
-   * GET /api/v1/media
-   */
-  @Get()
-  @ApiOperation({
-    summary: 'Get media files',
-    description:
-      'Fetch media files with optional filtering by task ID, uploader ID, or status. Supports pagination.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'List of media files',
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              filename: { type: 'string' },
-              originalName: { type: 'string' },
-              mimetype: { type: 'string' },
-              size: { type: 'number' },
-              gcsUrl: { type: 'string' },
-              publicUrl: { type: 'string' },
-              uploaderId: { type: 'string' },
-              status: { type: 'string' },
-              description: { type: 'string', nullable: true },
-              signatureVerified: { type: 'boolean' },
-              signatureData: { type: 'string', nullable: true },
-              createdAt: { type: 'string', format: 'date-time' },
-              updatedAt: { type: 'string', format: 'date-time' },
-            },
-          },
-        },
-        total: { type: 'number' },
-      },
-    },
-  })
-  async findMany(@Query() filter: FilterMediaDto) {
-    this.logger.debug(`Finding media with filter:`, filter);
-
-    return await this.mediaService.findAll(filter);
-  }
 
   /**
    * GET /api/v1/media/{id}
@@ -186,12 +140,16 @@ export class MediaController {
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['file', 'signature', 'originalFilename', 'mimetype'],
+      required: ['file', 'originalFilename', 'mimetype'],
       properties: {
         file: {
           type: 'string',
           format: 'binary',
           description: 'Media file (image/video)',
+        },
+        metadata: {
+          type: 'string',
+          description: 'Required business metadata of file',
         },
         signature: {
           type: 'string',
@@ -252,35 +210,15 @@ export class MediaController {
   })
   async uploadMedia(
     @UploadedFile() file: Express.Multer.File,
-    @Body()
-    body: { signature: string; originalFilename: string; mimetype: string },
+    @Body() body: UploadFileDto,
     @Req() req: any,
   ) {
+    const { signature, metadata, originalFilename, mimetype } = body;
+
     // Validate file is present
     if (!file) {
       throw new BadRequestException(
         'No file uploaded. Expected form field: "file"',
-      );
-    }
-
-    // Validate signature is present
-    if (!body?.signature) {
-      throw new BadRequestException(
-        'GnuPG signature is required. Expected form field: "signature"',
-      );
-    }
-
-    // Validate original filename is present
-    if (!body?.originalFilename) {
-      throw new BadRequestException(
-        'Original filename is required. Expected form field: "originalFilename"',
-      );
-    }
-
-    // Validate MIME type is present
-    if (!body?.mimetype) {
-      throw new BadRequestException(
-        'MIME type is required. Expected form field: "mimetype"',
       );
     }
 
@@ -295,18 +233,22 @@ export class MediaController {
     }
 
     // Prepare upload request with signature and JWT token
-    console.log('🚀 ~ MediaController ~ uploadMedia ~ req.user:', req.user);
-    const uploadRequest = {
+    const performVerification: boolean = signature !== null && metadata != null;
+    const uploadRequest: MediaUploadRequest = {
       uploaderId: req.user.sub,
-      signature: body.signature,
-      jwtToken,
+      verification: {
+        perform: performVerification,
+        ...(performVerification && {
+          payload: { jwtToken, signature, metadata },
+        }),
+      },
     };
 
     // Call new uploadMediaWithSignature method with synchronous verification
     const result = await this.mediaUploadService.uploadMediaWithSignature(
       file.buffer,
-      body.originalFilename,
-      body.mimetype,
+      originalFilename,
+      mimetype,
       file.size,
       uploadRequest,
     );
@@ -318,78 +260,6 @@ export class MediaController {
 
     // Return the created media object
     return this.mapToResponse(result.media);
-  }
-
-  /**
-   * DELETE /api/v1/media/{id}
-   *
-   * Delete a media file by its ID (soft delete).
-   *
-   * Authentication: Required (JWT Bearer token)
-   * Authorization: User must own the media or be an admin
-   */
-  @Delete(':id')
-  @UseGuards(ApiGatewayGuard)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({
-    summary: 'Delete media file',
-    description:
-      'Delete a media file by its ID (soft delete). Only the uploader can delete their own media files.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Media file ID (UUID)',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Media file deleted successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Media deleted successfully' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad request - permission denied or deletion failed',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - JWT token missing or invalid',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Media not found',
-  })
-  async deleteMedia(@Param('id') id: string, @Req() req: any) {
-    this.logger.debug(`Deleting media ${id} for user ${req.user.sub}`);
-
-    const media = await this.mediaService.findById(id);
-
-    if (!media) {
-      throw new NotFoundException(`Media with ID ${id} not found`);
-    }
-
-    if (media.uploaderId !== req.user.sub) {
-      throw new BadRequestException(
-        'You do not have permission to delete this media',
-      );
-    }
-
-    const deleted = await this.mediaService.delete(id);
-
-    if (!deleted) {
-      throw new BadRequestException('Failed to delete media');
-    }
-
-    if (media.gcsUrl) {
-      await this.mediaUploadService.deleteFromGCS(media.filename);
-    }
-
-    return { success: true, message: 'Media deleted successfully' };
   }
 
   /**

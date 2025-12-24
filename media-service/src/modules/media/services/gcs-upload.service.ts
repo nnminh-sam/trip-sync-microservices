@@ -3,11 +3,15 @@ import { ConfigService } from '@nestjs/config';
 import { Storage, Bucket } from '@google-cloud/storage';
 
 export interface UploadResult {
-  success: boolean;
   gcsUrl?: string;
   publicUrl?: string;
-  error?: string;
 }
+
+export type GcsUploadOptions = {
+  fileBuffer: Buffer;
+  filename: string;
+  metadata?: { contentType?: string; [key: string]: any };
+};
 
 @Injectable()
 export class GcsUploadService {
@@ -67,13 +71,10 @@ export class GcsUploadService {
    * @param fileBuffer - The file content as Buffer
    * @param filename - The filename for storage
    * @param metadata - Optional metadata (contentType, etc.)
-   * @returns UploadResult with GCS URL
+   * @returns void
    */
-  async uploadFile(
-    fileBuffer: Buffer,
-    filename: string,
-    metadata?: { contentType?: string; [key: string]: any },
-  ): Promise<UploadResult> {
+  async uploadFile(payload: GcsUploadOptions): Promise<void> {
+    const { fileBuffer, filename, metadata } = payload;
     try {
       if (!this.bucket) {
         throw new BadRequestException('GCS bucket not initialized');
@@ -87,11 +88,8 @@ export class GcsUploadService {
         throw new BadRequestException('Filename is required');
       }
 
-      // Sanitize filename
-      const sanitizedFilename = this.sanitizeFilename(filename);
-
       // Create file object
-      const file = this.bucket.file(sanitizedFilename);
+      const file = this.bucket.file(filename);
 
       // Prepare upload options
       const uploadOptions: any = {
@@ -107,26 +105,11 @@ export class GcsUploadService {
 
       // Upload the file
       await file.save(fileBuffer, uploadOptions);
-
-      const gcsUrl = `gs://${this.bucket.name}/${sanitizedFilename}`;
-      const publicUrl = `https://storage.googleapis.com/${this.bucket.name}/${sanitizedFilename}`;
-
-      this.logger.debug(`File uploaded successfully: ${gcsUrl}`);
-
-      return {
-        success: true,
-        gcsUrl,
-        publicUrl,
-      };
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to upload file to GCS: ${errorMessage}`);
-
-      return {
-        success: false,
-        error: errorMessage,
-      };
+      throw new BadRequestException(error);
     }
   }
 
@@ -174,19 +157,5 @@ export class GcsUploadService {
       this.logger.error(`Error checking file existence: ${errorMessage}`);
       return false;
     }
-  }
-
-  /**
-   * Sanitize filename for safe storage
-   * @param filename - The original filename
-   * @returns Sanitized filename
-   */
-  private sanitizeFilename(filename: string): string {
-    // Remove any path separators and special characters
-    return filename
-      .replace(/[\/\\]/g, '_')
-      .replace(/[<>:"|?*]/g, '_')
-      .replace(/\s+/g, '_')
-      .substring(0, 255); // GCS filename limit
   }
 }

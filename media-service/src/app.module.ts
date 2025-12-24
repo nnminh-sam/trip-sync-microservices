@@ -5,7 +5,7 @@ import { AppController } from './app.controller';
 import { validationSchema, configuration } from './config/configuration';
 import { DatabaseModule } from './database/database.module';
 import { MediaModule } from './modules/media/media.module';
-import { AuthModule } from './auth/auth.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 @Module({
@@ -28,4 +28,3 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
   ],
 })
 export class AppModule {}
-

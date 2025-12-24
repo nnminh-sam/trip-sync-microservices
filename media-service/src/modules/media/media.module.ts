@@ -8,13 +8,10 @@ import {
   GcsUploadService,
   MediaUploadService,
 } from './services';
-import { AuthModule } from '../../auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Media]),
-    AuthModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Media]), AuthModule],
   controllers: [MediaController],
   providers: [
     MediaService,

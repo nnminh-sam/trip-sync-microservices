@@ -1,5 +1,6 @@
 import { Entity, Column } from 'typeorm';
 import { BaseModel } from './base.model';
+import { MediaStatusEnum } from './enums/media-status.enum';
 
 @Entity('media')
 export class Media extends BaseModel {
@@ -15,20 +16,20 @@ export class Media extends BaseModel {
   @Column({ type: 'int' })
   size: number;
 
-  @Column({ type: 'varchar', length: 500 })
-  gcsUrl: string;
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  gcsUrl?: string;
 
-  @Column({ type: 'varchar', length: 500 })
-  publicUrl: string;
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  publicUrl?: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: false })
   uploaderId: string;
 
-  @Column({ type: 'varchar', length: 50 })
-  status: string; // 'uploaded', 'verified', 'failed'
+  @Column({ type: 'enum', enum: MediaStatusEnum, nullable: false })
+  status: MediaStatusEnum;
 
-  @Column({ type: 'text', nullable: true })
-  description?: string;
+  @Column({ type: 'varchar', nullable: true })
+  metadata: string;
 
   @Column({ type: 'boolean', default: false })
   signatureVerified: boolean;
