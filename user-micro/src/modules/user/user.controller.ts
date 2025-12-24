@@ -23,6 +23,19 @@ export class UserController {
     private readonly userService: UserService,
   ) {}
 
+  @MessagePattern(UserMessagePattern.findOneById)
+  async findOneById(@Payload() payload: MessagePayloadDto) {
+    const { id } = payload.request.path;
+    if (!id) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'User ID is required',
+      });
+    }
+    const user = await this.userService.findById(id);
+    return user;
+  }
+
   @MessagePattern(UserMessagePattern.findById)
   async findById(@Payload() payload: MessagePayloadDto) {
     const { claims } = payload;

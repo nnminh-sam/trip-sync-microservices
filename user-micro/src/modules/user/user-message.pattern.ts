@@ -1,6 +1,7 @@
 export const UserMessagePattern = {
   findById: 'user.find.id',
   findByToken: 'user.find.token',
+  findOneById: 'user.find.one.id',
   findAll: 'user.find',
   create: 'user.create',
   update: 'user.update',

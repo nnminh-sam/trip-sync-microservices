@@ -5,13 +5,20 @@ Trip status
 ```mermaid
 stateDiagram-v2
     state if_state <<choice>>
+    state if_state2 <<choice>>
+    state if_state3 <<choice>>
     [*] --> if_state
     if_state --> waiting_for_approval: employee proposed
+    waiting_for_approval --> not_started: manager approved
     if_state --> not_started: manager assigned<br/>to an employee
     waiting_for_approval --> not_approved: manager rejected
-    waiting_for_approval --> not_started: manager approved
-    not_started --> canceled: employee/manager<br/>cancel the trip
-    not_started --> in_progress: employee begin to work
+    not_started --> in_progress: employee start trip
+    not_started --> if_state2: request to<br/>cancel
+    if_state2 --> not_started: rejected
+    if_state2 --> canceled: approved
+    in_progress --> if_state3: request to cancel
+    if_state3 --> not_started: rejected
+    if_state3 --> canceled: approved
     in_progress --> ended: employee finished<br/>all the work
     not_approved --> [*]
     canceled --> [*]
@@ -22,9 +29,12 @@ Task state
 
 ```mermaid
 stateDiagram-v2
+    state if_state <<choice>>
     [*] --> pending: task created
+    pending --> if_state: request to<br/>cancel task
     pending --> completed: employee completed<br/>the task
-    pending --> canceled: employee/manager<br/>canceled task
+    if_state --> pending: rejected
+    if_state --> canceled: approved
     completed --> [*]
     canceled --> [*]
 ```

@@ -33,7 +33,7 @@ export class FirebaseService {
       scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
     });
     this.userSender = new NatsClientSender(this.natsClient, {
-      findById: 'user.find.id',
+      findById: 'user.find.one.id',
     });
   }
 
@@ -72,9 +72,13 @@ export class FirebaseService {
     claims: TokenClaimsDto,
     data?: Record<string, any>,
   ): Promise<void> {
+    console.log('🚀 ~ FirebaseService ~ sendFCMNotification ~ userId:', userId);
     try {
       const serverKey = this.firebaseConfig.getServerKey();
-
+      console.log(
+        '🚀 ~ FirebaseService ~ sendFCMNotification ~ serverKey:',
+        serverKey,
+      );
       if (!serverKey) {
         this.logger.warn(
           `FCM_SERVER_KEY not configured. Skipping push notification for user ${userId}`,
@@ -86,7 +90,11 @@ export class FirebaseService {
 
       try {
         const payload: MessagePayloadDto = {
-          claims,
+          request: {
+            path: {
+              id: userId,
+            },
+          },
         };
 
         const user: any = await this.userSender.send({
@@ -112,6 +120,8 @@ export class FirebaseService {
 
       const fcmPayload = {
         token: deviceToken,
+        // token:
+        //   'cyDJLfKzTHq3u3k0VGrSq7:APA91bGCO2FN_0FXmHKqCg7N8YcARST0bUwHEThZN1eIbRKXj9chaFVMRIQjnkLlBB1W2qlg5PPRP37GlBD-boJeXxDVXCz4tPrxFIn-j3C8rF-i988G9fY',
         notification: {
           title,
           body: message,
@@ -174,7 +184,9 @@ export class FirebaseService {
       this.logger.log(`Notification sent successfully to ${payload.path}`);
 
       // Send FCM notification in addition to database notification
-      const userId = this.extractUserIdFromPath(payload.path);
+      // const userId = this.extractUserIdFromPath(payload.path);
+      const userId = payload.data?.receiverId;
+      console.log('🚀 ~ FirebaseService ~ sendNotification ~ userId:', userId);
       if (
         userId &&
         payload.data?.title &&
