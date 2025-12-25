@@ -2,15 +2,12 @@ import {
   Controller,
   Get,
   Post,
-  Delete,
   Param,
-  Query,
   Body,
   UseGuards,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
-  ForbiddenException,
   NotFoundException,
   Req,
   Logger,
@@ -20,16 +17,14 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
-  ApiQuery,
   ApiParam,
   ApiConsumes,
   ApiBody,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiGatewayGuard } from '../auth/api-gateway.guard';
-import { MediaService } from './media.service';
+import { MediaService } from './services/media.service';
 import { MediaUploadRequest, MediaUploadService } from './services';
-import { FilterMediaDto } from './dtos';
 import { UploadFileDto } from './dtos/upload-file.dto';
 
 @ApiTags('media')
@@ -150,11 +145,14 @@ export class MediaController {
         metadata: {
           type: 'string',
           description: 'Required business metadata of file',
+          example:
+            '"{\"latitude\":10.8974189,\"longitude\":106.8990514,\"timestamp\":\"1766629256399\"}"',
         },
         signature: {
           type: 'string',
           description: 'GnuPG signature (ASCII armored)',
-          example: '-----BEGIN PGP SIGNATURE-----...',
+          example:
+            'G/V0XAwPvJ0J4iTle//UUtZNN4nxnyd+J0rdR6Sg+SfbPB5R96th8WeQuTMNKTorhFoFZNZu0JMAIe30qMBzDQ==',
         },
         originalFilename: {
           type: 'string',

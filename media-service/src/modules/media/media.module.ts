@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Media } from '../../models';
 import { MediaController } from './media.controller';
-import { MediaService } from './media.service';
+import { MediaService } from './services/media.service';
 import {
-  GnuPgVerificationService,
+  VerificationService,
   GcsUploadService,
   MediaUploadService,
 } from './services';
@@ -15,13 +15,13 @@ import { AuthModule } from '../auth/auth.module';
   controllers: [MediaController],
   providers: [
     MediaService,
-    GnuPgVerificationService,
+    VerificationService,
     GcsUploadService,
     MediaUploadService,
   ],
   exports: [
     MediaService,
-    GnuPgVerificationService,
+    VerificationService,
     GcsUploadService,
     MediaUploadService,
   ],

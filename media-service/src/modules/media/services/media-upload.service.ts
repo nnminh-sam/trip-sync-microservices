@@ -1,16 +1,19 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
-  GnuPgVerificationService,
-  SignatureVerificationResult,
-} from './gnupg-verification.service';
-import { GcsUploadService, UploadResult } from './gcs-upload.service';
-import { MediaService } from '../media.service';
+  VerificationService,
+  VerificationResult,
+} from './verification.service';
+import { GcsUploadService } from './gcs-upload.service';
 import { CreateMediaDto } from '../dtos';
 import { Media } from '../../../models';
 import { EnvSchema } from 'src/config';
 import { MediaStatusEnum } from 'src/models/enums/media-status.enum';
-import { setTimeout } from 'node:timers/promises';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -28,13 +31,6 @@ export interface MediaUploadRequest {
   };
 }
 
-export interface MediaUploadValidationResult {
-  isValid: boolean;
-  error?: string;
-  publicKey?: string;
-  signerKeyId?: string;
-}
-
 export interface MediaUploadResponse {
   success: boolean;
   media?: Media;
@@ -47,7 +43,7 @@ export class MediaUploadService {
   private readonly bucketName: string;
 
   constructor(
-    private readonly gnuPgVerificationService: GnuPgVerificationService,
+    private readonly verificationService: VerificationService,
     private readonly gcsUploadService: GcsUploadService,
     @InjectRepository(Media)
     private readonly mediaRepository: Repository<Media>,
@@ -70,8 +66,11 @@ export class MediaUploadService {
       // Validate file
       this.validateFile(fileSize, mimetype);
 
-      if (verification.perform) {
-        await this.verifySignature(verification.payload);
+      const result = verification.perform
+        ? await this.verifySignature(verification.payload)
+        : undefined;
+      if (verification.perform && !result.success) {
+        throw new UnauthorizedException('Invalid signature');
       }
 
       const storageFilename = this.generateStorageFilename(
@@ -91,6 +90,11 @@ export class MediaUploadService {
         size: fileSize,
         gcsUrl,
         publicUrl,
+        ...(verification.perform &&
+          result.success && {
+            signatureData: result.signature,
+            signatureVerified: result.success,
+          }),
       };
       this.logger.debug(
         `Creating an attachment with this payload: ${JSON.stringify(createMediaDto)}`,
@@ -138,7 +142,11 @@ export class MediaUploadService {
       `Performing verification process with payload: ${payload}`,
     );
 
-    await setTimeout(200);
+    return await this.verificationService.verifySignature({
+      message: payload.metadata,
+      signatureBase64: payload.signature,
+      jwtToken: payload.jwtToken,
+    });
   }
 
   /**

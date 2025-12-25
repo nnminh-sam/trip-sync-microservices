@@ -1,8 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Media } from '../../models';
-import { CreateMediaDto, UpdateMediaDto, FilterMediaDto } from './dtos';
+import { Media } from '../../../models';
+import { CreateMediaDto, UpdateMediaDto, FilterMediaDto } from '../dtos';
 import { MediaStatusEnum } from 'src/models/enums/media-status.enum';
 
 class NotReadyError extends Error {
