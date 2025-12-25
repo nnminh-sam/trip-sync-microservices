@@ -12,7 +12,8 @@
   - [Use Case với Quản lý là tác nhân chính](#use-case-với-quản-lý-là-tác-nhân-chính)
   - [Use Case với hệ thống là tác nhân chính](#use-case-với-hệ-thống-là-tác-nhân-chính)
 - [Các sơ đồ Use Case](#các-sơ-đồ-use-case)
-  - [Các sơ đồ Use Case với Nhân viên là tác nhân chính](#các-sơ-đồ-use-case-với-nhân-viên-là-tác-nhân-chính)
+  - [Sơ đồ Use Case với Nhân viên là tác nhân chính](#sơ-đồ-use-case-với-nhân-viên-là-tác-nhân-chính)
+  - [Sơ đồ Use Case với Quản lý là tác nhân chính](#sơ-đồ-use-case-với-quản-lý-là-tác-nhân-chính)
 
 <!-- /code_chunk_output -->
 
@@ -36,14 +37,14 @@ Use case chung là những use case có tác nhân thực hiện là bao gồm N
 **Danh sách các sự kiện có thông báo:**
 
 | Mã sự kiện |                       Tên sự kiện                        | Người nhận (Nhân viên/Quản lý/Cả hai) | Use Case liên quan |
-| :--------: | :------------------------------------------------------: | :-----------------------------------: | :----------------- |
-|    SK01    |                     Đề xuất công tác                     |                Cả hai                 | UC07               |
-|    SK02    |            Quyết định đề xuất chuyến công tác            |               Nhân viên               | UC17               |
-|    SK03    |                    Phân công công tác                    |               Nhân viên               | UC16               |
-|    SK04    |                     Bắt đầu công tác                     |                Quản lý                | UC10               |
-|    SK05    |                    Kết thúc công tác                     |                Quản lý                | UC11               |
-|    SK06    |      Đề xuất hủy chuyến công tác/nhiệm vụ công tác       |                Quản lý                | UC13               |
-|    SK07    | Quyết định đề xuất hủy chuyến công tác/nhiệm vụ công tác |               Nhân viên               | UC22               |
+| :--------: | :------------------------------------------------------: | :-----------------------------------: | :----------------: |
+|    SK01    |                     Đề xuất công tác                     |                Cả hai                 |        UC07        |
+|    SK02    |               Quyết định đề xuất công tác                |               Nhân viên               |        UC16        |
+|    SK03    |                    Phân công công tác                    |               Nhân viên               |        UC15        |
+|    SK04    |                     Bắt đầu công tác                     |                Quản lý                |        UC10        |
+|    SK05    |                    Kết thúc công tác                     |                Quản lý                |        UC11        |
+|    SK06    |      Yêu cầu hủy chuyến công tác/nhiệm vụ công tác       |                Quản lý                |        UC13        |
+|    SK07    | Quyết định yêu cầu hủy chuyến công tác/nhiệm vụ công tác |               Nhân viên               |        UC20        |
 
 **Ghi chú:**
 
@@ -60,30 +61,28 @@ Use case chung là những use case có tác nhân thực hiện là bao gồm N
 | UC10 | Bắt đầu công tác                                 | Nhân viên bắt đầu thực hiện chuyến công tác                                                                                                     |
 | UC11 | Kết thúc công tác                                | Nhân viên kết thúc chuyến công tác                                                                                                              |
 | UC12 | Check-in/Check-out tại địa điểm công tác         | Nhân viên thực hiện quá trình check-in/check-out tại địa điểm công tác                                                                          |
-| UC13 | Gửi yêu cầu hủy chuyến/nhiệm vụ công tác         | Nhân viên thực hiện gửi yêu cầu hủy công tác                                                                                                    |
+| UC13 | Gửi yêu cầu hủy chuyến/nhiệm vụ công tác         | Nhân viên thực hiện gửi yêu cầu hủy chuyến/nhiệm vụ công tác                                                                                    |
 
 ### Use Case với Quản lý là tác nhân chính
 
 |  ID  | Tên                                               | Mô tả                                                                                                                                                                               |
 | :--: | :------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| UC14 | Tạo tài khoản người dùng                          | Quản lý tạo tài khoản cấp bậc nhân viên trên hệ thống                                                                                                                               |
-| UC15 | Kích hoạt/Khóa tài khoản                          | Quản lý kích hoạt hoặc khóa tài khoản nhân viên trên hệ thống                                                                                                                       |
-| UC16 | Tạo và phân công công tác                         | Quản lý tạo chuyến công tác gồm các thông tin cơ bản của chuyến công tác, địa điểm công tác, nhiệm vụ công tác và lựa chọn nhân viên thực hiện chuyến công tác (phân công công tác) |
-| UC17 | Quyết định đề xuất công tác                       | Quản lý đưa ra quyết định đề xuất công tác của nhân viên                                                                                                                            |
-| UC18 | Giám sát công tác                                 | Quản lý giám sát quá trình thực hiện công tác của nhân viên                                                                                                                         |
-| UC19 | Đánh giá công tác                                 | Quản lý thực hiện đánh giá chất lượng chuyến công tác sau khi chuyến công tác đã kết thúc                                                                                           |
-| UC20 | Hủy chuyến công tác                               | Quản lý thực hiện hủy chuyến công tác khi cần thiết                                                                                                                                 |
-| UC21 | Hủy nhiệm vụ công tác                             | Quản lý thực hiện hủy nhiệm vụ công tác khi cần thiết                                                                                                                               |
-| UC22 | Quyết định đề xuất hủy chuyến/nhiệm vụ công tác   | Quản lý đưa ra quyết định cho đề xuát hủy chuyến công tác của nhân viên                                                                                                             |
-| UC23 | Xem danh sách công tác bản thân trực tiếp quản lý | Quản lý xem danh sách các chuyến công tác của các nhân viên mà mình trực tiếp quản lý                                                                                               |
+| UC14 | Quản lý tài khoản người dùng                      | Quản lý tạo, xem, sửa đổi, kích hoạt hoặc khóa tài khoản cấp bậc nhân viên trên hệ thống                                                                                            |
+| UC15 | Phân công công tác                                | Quản lý tạo chuyến công tác gồm các thông tin cơ bản của chuyến công tác, địa điểm công tác, nhiệm vụ công tác và lựa chọn nhân viên thực hiện chuyến công tác (phân công công tác) |
+| UC16 | Quyết định đề xuất công tác                       | Quản lý đưa ra quyết định đề xuất công tác của nhân viên                                                                                                                            |
+| UC17 | Giám sát công tác                                 | Quản lý giám sát quá trình thực hiện công tác của nhân viên                                                                                                                         |
+| UC18 | Đánh giá công tác                                 | Quản lý thực hiện đánh giá chất lượng chuyến công tác sau khi chuyến công tác đã kết thúc                                                                                           |
+| UC19 | Hủy chuyến/nhiệm vụ công tác                      | Quản lý thực hiện hủy chuyến/nhiệm vụ công tác khi cần thiết                                                                                                                        |
+| UC20 | Quyết định yêu cầu hủy chuyến/nhiệm vụ công tác   | Quản lý đưa ra quyết định cho yêu cầu hủy chuyến công tác của nhân viên                                                                                                             |
+| UC21 | Xem danh sách công tác bản thân trực tiếp quản lý | Quản lý xem danh sách các chuyến công tác của các nhân viên mà mình trực tiếp quản lý                                                                                               |
 
 ### Use Case với hệ thống là tác nhân chính
 
 |  ID  | Tên                          | Mô tả                                                                                    |
 | :--: | :--------------------------- | :--------------------------------------------------------------------------------------- |
-| UC24 | Gửi thông báo                | Hệ thống gửi thông báo đến người nhận khi có sự kiện diễn ra                             |
-| UC25 | Gửi thông báo đấy            | Hệ thống gửi thông báo đẩy đến nhân viên khi có sự kiện diễn ra                          |
-| UC26 | Cập nhật tiến trình công tác | Hệ thống thực hiện lưu lại tiến trình diễn ra của chuyến công tác khi có sự kiện diễn ra |
+| UC22 | Gửi thông báo                | Hệ thống gửi thông báo đến người nhận khi có sự kiện diễn ra                             |
+| UC23 | Gửi thông báo đấy            | Hệ thống gửi thông báo đẩy đến nhân viên khi có sự kiện diễn ra                          |
+| UC24 | Cập nhật tiến trình công tác | Hệ thống thực hiện lưu lại tiến trình diễn ra của chuyến công tác khi có sự kiện diễn ra |
 
 **Ghi chú:** Người nhận ở đây bao gồm nhân viên và quản lý
 
@@ -91,7 +90,7 @@ Use case chung là những use case có tác nhân thực hiện là bao gồm N
 
 ## Các sơ đồ Use Case
 
-### Các sơ đồ Use Case với Nhân viên là tác nhân chính
+### Sơ đồ Use Case với Nhân viên là tác nhân chính
 
 ```mermaid
 flowchart LR
@@ -110,34 +109,34 @@ flowchart LR
   UC06([Tìm địa điểm<br/>công tác<br/>UC06])
   UC01([Đăng nhập<br/>UC01])
   UC05([Xem chi tiết<br/>chuyến công tác<br/>UC05])
-  UC24([Gửi thông báo<br/>UC24])
-  UC25([Gửi thông báo đấy<br/>UC25])
-  UC26([Cập nhật<br/>tiến trình công tác<br/>UC26])
+  UC22([Gửi thông báo<br/>UC22])
+  UC23([Gửi thông báo đấy<br/>UC23])
+  UC24([Cập nhật<br/>tiến trình công tác<br/>UC24])
 
   UC07 -.->|<< include >>| UC06
+  UC07 -.->|<< include >>| UC22
+  UC07 -.->|<< include >>| UC23
   UC07 -.->|<< include >>| UC24
-  UC07 -.->|<< include >>| UC25
-  UC07 -.->|<< include >>| UC26
 
   UC10 -.->|<< include >>| UC05
+  UC10 -.->|<< include >>| UC22
+  UC10 -.->|<< include >>| UC23
   UC10 -.->|<< include >>| UC24
-  UC10 -.->|<< include >>| UC25
-  UC10 -.->|<< include >>| UC26
 
   UC11 -.->|<< include >>| UC05
+  UC11 -.->|<< include >>| UC22
+  UC11 -.->|<< include >>| UC23
   UC11 -.->|<< include >>| UC24
-  UC11 -.->|<< include >>| UC25
-  UC11 -.->|<< include >>| UC26
 
   UC12 -.->|<< include >>| UC05
+  UC12 -.->|<< include >>| UC22
+  UC12 -.->|<< include >>| UC23
   UC12 -.->|<< include >>| UC24
-  UC12 -.->|<< include >>| UC25
-  UC12 -.->|<< include >>| UC26
 
   UC13 -.->|<< include >>| UC05
+  UC13 -.->|<< include >>| UC22
+  UC13 -.->|<< include >>| UC23
   UC13 -.->|<< include >>| UC24
-  UC13 -.->|<< include >>| UC25
-  UC13 -.->|<< include >>| UC26
 
   UC07 -.->|<< include >>| UC01
   UC08 -.->|<< include >>| UC01
@@ -154,4 +153,69 @@ flowchart LR
   Employee --- UC11
   Employee --- UC12
   Employee --- UC13
+```
+
+### Sơ đồ Use Case với Quản lý là tác nhân chính
+
+```mermaid
+flowchart LR
+  Manager[Quản lý]
+
+  UC14([Quản lý tài<br/>khoản người dùng<br/>UC14])
+  UC15([Phân công công tác<br/>UC15])
+  UC16([Quyết định<br/>đề xuất công tác<br/>UC16])
+  UC17([Giám sát công tác<br/>UC17])
+  UC18([Đánh giá công tác<br/>UC18])
+  UC19([Hủy chuyến/nhiệm<br/>vụ công tác<br/>UC19])
+  UC20([Quyết định đề xuất hủy<br/>chuyến/nhiệm vụ công tác<br/>UC20])
+  UC21([Xem danh sách<br/>công tác bản thân<br/>trực tiếp quản lý<br/>UC21])
+
+  UC01([Đăng nhập<br/>UC01])
+  UC05([Xem chi tiết<br/>chuyến công tác<br/>UC05])
+  UC06([Tìm địa điểm công tác<br/>UC06])
+  UC22([Gửi thông báo<br/>UC22])
+  UC23([Gửi thông báo đẩy<br/>UC23])
+  UC24([Cập nhật tiến<br/>trình công tác<br/>UC24])
+
+  UC14 -.->|<< include >>| UC01
+  UC15 -.->|<< include >>| UC01
+  UC16 -.->|<< include >>| UC01
+  UC17 -.->|<< include >>| UC01
+  UC18 -.->|<< include >>| UC01
+  UC19 -.->|<< include >>| UC01
+  UC20 -.->|<< include >>| UC01
+  UC21 -.->|<< include >>| UC01
+
+  UC15 -.->|<< include >>| UC06
+  UC15 -.->|<< include >>| UC22
+  UC15 -.->|<< include >>| UC23
+  UC15 -.->|<< include >>| UC24
+
+  UC16 -.->|<< include >>| UC05
+  UC16 -.->|<< include >>| UC22
+  UC16 -.->|<< include >>| UC23
+  UC16 -.->|<< include >>| UC24
+
+  UC17 -.->|<< include >>| UC05
+  UC18 -.->|<< include >>| UC05
+
+  UC19 -.->|<< include >>| UC05
+  UC19 -.->|<< include >>| UC22
+  UC19 -.->|<< include >>| UC23
+  UC19 -.->|<< include >>| UC24
+
+  UC20 -.->|<< include >>| UC05
+  UC20 -.->|<< include >>| UC22
+  UC20 -.->|<< include >>| UC23
+  UC20 -.->|<< include >>| UC24
+
+  Manager --- UC14
+  Manager --- UC15
+  Manager --- UC16
+  Manager --- UC17
+  Manager --- UC18
+  Manager --- UC19
+  Manager --- UC20
+  Manager --- UC21
+
 ```
