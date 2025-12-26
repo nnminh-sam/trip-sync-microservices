@@ -34,6 +34,7 @@ import { Cancelation } from 'src/models/cancelation.model';
 import { CancelationTargetEntity } from 'src/models/enums/TargetEntity.enum';
 import { CancelationDecision } from 'src/models/enums/CancelationDecision.enum';
 import { TripEvaluation } from 'src/models/trip-evaluation.model';
+import { isEAN } from 'class-validator';
 
 @Injectable()
 export class TripService {
@@ -355,9 +356,13 @@ export class TripService {
   async findAll(filter: FilterTripDto): Promise<ListDataDto<any>> {
     const {
       assignee_id,
-      from_date,
-      to_date,
+      from_date_schedule,
+      to_date_schedule,
+      from_date_deadline,
+      to_date_deadline,
+      manager_id,
       status,
+      is_evaluated,
       page = 1,
       size = 10,
       sortBy = 'id',
@@ -367,21 +372,88 @@ export class TripService {
     const query = this.tripRepo
       .createQueryBuilder('trip')
       .leftJoinAndSelect('trip.tripLocations', 'tripLocation')
-      .leftJoinAndSelect('tripLocation.location', 'location');
+      .leftJoinAndSelect('tripLocation.location', 'location')
+      .where('trip.deletedAt IS NULL');
+
+    /* -------------------- BASIC FILTERS -------------------- */
 
     if (assignee_id) {
-      query.andWhere('trip.assignee_id = :assignee_id', { assignee_id });
+      query.andWhere('trip.assigneeId = :assignee_id', { assignee_id });
     }
 
-    if (from_date && to_date) {
-      query.andWhere('trip.schedule BETWEEN :from_date AND :to_date', {
-        from_date,
-        to_date,
-      });
+    if (manager_id) {
+      query.andWhere('trip.managerId = :manager_id', { manager_id });
     }
+
     if (status) {
       query.andWhere('trip.status = :status', { status });
     }
+
+    /* -------------------- SCHEDULE FILTER -------------------- */
+
+    if (from_date_schedule && to_date_schedule) {
+      query.andWhere(
+        'trip.schedule BETWEEN :from_date_schedule AND :to_date_schedule',
+        { from_date_schedule, to_date_schedule },
+      );
+    } else if (from_date_schedule) {
+      query.andWhere('trip.schedule >= :from_date_schedule', {
+        from_date_schedule,
+      });
+    } else if (to_date_schedule) {
+      query.andWhere('trip.schedule <= :to_date_schedule', {
+        to_date_schedule,
+      });
+    }
+
+    /* -------------------- DEADLINE FILTER -------------------- */
+
+    if (from_date_deadline && to_date_deadline) {
+      query.andWhere(
+        'trip.deadline BETWEEN :from_date_deadline AND :to_date_deadline',
+        { from_date_deadline, to_date_deadline },
+      );
+    } else if (from_date_deadline) {
+      query.andWhere('trip.deadline >= :from_date_deadline', {
+        from_date_deadline,
+      });
+    } else if (to_date_deadline) {
+      query.andWhere('trip.deadline <= :to_date_deadline', {
+        to_date_deadline,
+      });
+    }
+
+    /* -------------------- LATEST EVALUATION JOIN -------------------- */
+
+    query.leftJoin(
+      (qb) =>
+        qb
+          .select('te.trip_id', 'trip_id')
+          .addSelect('MAX(te.version)', 'max_version')
+          .from('trip_evaluations', 'te')
+          .groupBy('te.trip_id'),
+      'latest_eval',
+      'latest_eval.trip_id = trip.id',
+    );
+
+    query.leftJoinAndSelect(
+      'trip_evaluations',
+      'evaluation',
+      'evaluation.trip_id = trip.id AND evaluation.version = latest_eval.max_version',
+    );
+
+    /* -------------------- EVALUATED FILTER -------------------- */
+
+    if (is_evaluated === 'true') {
+      query.andWhere('latest_eval.trip_id IS NOT NULL');
+    }
+
+    if (is_evaluated === 'false') {
+      query.andWhere('latest_eval.trip_id IS NULL');
+    }
+
+    /* -------------------- PAGINATION & SORT -------------------- */
+
     query
       .orderBy(`trip.${sortBy}`, order.toUpperCase() as 'ASC' | 'DESC')
       .skip((page - 1) * size)
@@ -389,7 +461,7 @@ export class TripService {
 
     const [items, total] = await query.getManyAndCount();
 
-    return ListDataDto.build<any>({
+    return ListDataDto.build({
       data: items,
       page,
       size,

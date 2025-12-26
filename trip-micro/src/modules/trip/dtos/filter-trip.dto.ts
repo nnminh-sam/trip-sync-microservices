@@ -1,10 +1,16 @@
-import { IsOptional, IsUUID, IsDateString, IsString, isString } from 'class-validator';
+import {
+  IsOptional,
+  IsUUID,
+  IsDateString,
+  IsString,
+  IsBoolean,
+} from 'class-validator';
 import { BaseRequestFilterDto } from 'src/dtos/base-request-filter.dto';
 
 export class FilterTripDto extends BaseRequestFilterDto {
   @IsOptional()
   @IsString()
-  name?: string;
+  title?: string;
 
   @IsOptional()
   @IsUUID()
@@ -12,13 +18,29 @@ export class FilterTripDto extends BaseRequestFilterDto {
 
   @IsOptional()
   @IsDateString()
-  from_date?: string;
+  from_date_schedule?: string;
 
   @IsOptional()
   @IsDateString()
-  to_date?: string;
+  to_date_schedule?: string;
+
+  @IsOptional()
+  @IsDateString()
+  from_date_deadline?: string;
+
+  @IsOptional()
+  @IsDateString()
+  to_date_deadline?: string;
 
   @IsOptional()
   @IsString()
-  status?: string; 
+  status?: string;
+
+  @IsOptional()
+  @IsUUID()
+  manager_id?: string;
+
+  @IsOptional()
+  @IsString()
+  is_evaluated?: 'true' | 'false';
 }
