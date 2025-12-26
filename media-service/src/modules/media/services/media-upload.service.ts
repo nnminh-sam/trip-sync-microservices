@@ -167,6 +167,14 @@ export class MediaUploadService {
       'image/webp',
       'video/mp4',
       'video/quicktime',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'audio/mpeg',
+      'audio/wav',
+      'audio/flac',
     ];
 
     if (!allowedMimes.includes(mimetype)) {
