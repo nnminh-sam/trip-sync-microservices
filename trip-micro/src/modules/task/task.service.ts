@@ -255,12 +255,12 @@ export class TaskService {
       const trip = tripLocation.trip;
 
       // Save trip progress for cancellation request
-      await this.saveProgress(
+      this.saveProgress(
         trip,
         userId,
         trip.status,
-        `Task Cancellation Request for task: ${task.title}`,
-        `A cancellation request has been made for task "${task.title}". ${dto.reason ? 'Reason: ' + dto.reason : ''}`,
+        `Task "${task.title}" of trip "${trip.title}" has been canceled`,
+        `Task "${task.title}" has been cancelded. ${dto.reason ? 'Reason: ' + dto.reason : ''}`,
       );
 
       const claims: TokenClaimsDto = {
@@ -277,8 +277,8 @@ export class TaskService {
         data: {
           senderId: userId,
           receiverId: trip.managerId,
-          title: `Task Cancellation Request: ${task.title} (${trip.title})`,
-          message: `A cancellation request has been made for task "${task.title}" in trip "${trip.title}" ${dto.reason ? 'with reason: ' + dto.reason : ''}`,
+          title: `Task "${task.title}" of trip "${trip.title}" has been canceled`,
+          message: `Task "${task.title}" has been cancelded. ${dto.reason ? 'Reason: ' + dto.reason : ''}`,
         },
         claims,
       });
@@ -290,8 +290,8 @@ export class TaskService {
           data: {
             senderId: userId,
             receiverId: trip.assigneeId,
-            title: `Task Cancellation Request: ${task.title} (${trip.title})`,
-            message: `A cancellation request has been made for task "${task.title}" in trip "${trip.title}" ${dto.reason ? 'with reason: ' + dto.reason : ''}`,
+            title: `Task "${task.title}" of trip "${trip.title}" has been canceled`,
+            message: `Task "${task.title}" has been cancelded. ${dto.reason ? 'Reason: ' + dto.reason : ''}`,
           },
           claims,
         });
@@ -299,6 +299,14 @@ export class TaskService {
     }
 
     this.logger.log(`Task cancellation request created for task: ${task.id}`);
+
+    this.resolveCancel(
+      cancelation.id,
+      {
+        decision: CancelationDecision.APPROVE,
+      },
+      userId,
+    );
 
     return cancelation;
   }
@@ -326,12 +334,12 @@ export class TaskService {
       });
     }
 
-    if (cancelation.createdBy === userId) {
-      throwRpcException({
-        statusCode: HttpStatus.BAD_REQUEST,
-        message: 'You cannot resolve your own cancellation request',
-      });
-    }
+    // if (cancelation.createdBy === userId) {
+    //   throwRpcException({
+    //     statusCode: HttpStatus.BAD_REQUEST,
+    //     message: 'You cannot resolve your own cancellation request',
+    //   });
+    // }
 
     const task = await this.findOne(cancelation.targetId);
 
@@ -372,37 +380,37 @@ export class TaskService {
         const trip = tripLocation.trip;
 
         // Save trip progress for approved cancellation
-        await this.saveProgress(
-          trip,
-          userId,
-          trip.status,
-          `Task Cancellation Approved for task: ${task.title}`,
-          `Task cancellation has been approved. ${dto.note ? 'Note: ' + dto.note : ''}`,
-        );
+        // await this.saveProgress(
+        //   trip,
+        //   userId,
+        //   trip.status,
+        //   `Task Cancellation Approved for task: ${task.title}`,
+        //   `Task cancellation has been approved. ${dto.note ? 'Note: ' + dto.note : ''}`,
+        // );
 
-        this.firebaseService.sendNotification({
-          path: `/noti/${trip.managerId}/${new Date().getTime()}`,
-          data: {
-            senderId: userId,
-            receiverId: trip.managerId,
-            title: `Task Cancellation Approved: ${task.title} (${trip.title})`,
-            message: `The cancellation request for task "${task.title}" in trip "${trip.title}" has been approved. ${dto.note ? 'Note: ' + dto.note : ''}`,
-          },
-          claims,
-        });
+        // this.firebaseService.sendNotification({
+        //   path: `/noti/${trip.managerId}/${new Date().getTime()}`,
+        //   data: {
+        //     senderId: userId,
+        //     receiverId: trip.managerId,
+        //     title: `Task Cancellation Approved: ${task.title} (${trip.title})`,
+        //     message: `The cancellation request for task "${task.title}" in trip "${trip.title}" has been approved. ${dto.note ? 'Note: ' + dto.note : ''}`,
+        //   },
+        //   claims,
+        // });
 
-        if (trip.assigneeId) {
-          this.firebaseService.sendNotification({
-            path: `/noti/${trip.assigneeId}/${new Date().getTime()}`,
-            data: {
-              senderId: userId,
-              receiverId: trip.assigneeId,
-              title: `Task Cancellation Approved: ${task.title} (${trip.title})`,
-              message: `Your cancellation request for task "${task.title}" in trip "${trip.title}" has been approved.`,
-            },
-            claims,
-          });
-        }
+        // if (trip.assigneeId) {
+        //   this.firebaseService.sendNotification({
+        //     path: `/noti/${trip.assigneeId}/${new Date().getTime()}`,
+        //     data: {
+        //       senderId: userId,
+        //       receiverId: trip.assigneeId,
+        //       title: `Task Cancellation Approved: ${task.title} (${trip.title})`,
+        //       message: `Your cancellation request for task "${task.title}" in trip "${trip.title}" has been approved.`,
+        //     },
+        //     claims,
+        //   });
+        // }
 
         // Check if all tasks in the trip are either canceled or completed
         // If so, update trip status to ENDED
@@ -424,6 +432,38 @@ export class TaskService {
             { status: TripStatusEnum.ENDED },
           );
 
+          this.saveProgress(
+            trip,
+            userId,
+            TripStatusEnum.ENDED,
+            `Trip "${trip.title}" has ended.`,
+            `Trip "${trip.title}" has ended because there's no more tasks to do.`,
+          );
+
+          this.firebaseService.sendNotification({
+            path: `/noti/${trip.managerId}/${new Date().getTime()}`,
+            data: {
+              senderId: userId,
+              receiverId: trip.managerId,
+              title: `Trip "${trip.title}" has ended`,
+              message: `Trip "${trip.title}" has ended because there's no more tasks to do.`,
+            },
+            claims,
+          });
+
+          // if (trip.assigneeId) {
+          //   this.firebaseService.sendNotification({
+          //     path: `/noti/${trip.assigneeId}/${new Date().getTime()}`,
+          //     data: {
+          //       senderId: userId,
+          //       receiverId: trip.assigneeId,
+          //       title: `Task Cancellation Approved: ${task.title} (${trip.title})`,
+          //       message: `Your cancellation request for task "${task.title}" in trip "${trip.title}" has been approved.`,
+          //     },
+          //     claims,
+          //   });
+          // }
+
           this.logger.log(
             `Trip status updated to ENDED for trip: ${trip.id} (all tasks completed or canceled)`,
           );
@@ -437,37 +477,37 @@ export class TaskService {
         const trip = tripLocation.trip;
 
         // Save trip progress for rejected cancellation
-        await this.saveProgress(
-          trip,
-          userId,
-          trip.status,
-          `Task Cancellation Rejected for task: ${task.title}`,
-          `Task cancellation request has been rejected. ${dto.note ? 'Note: ' + dto.note : ''}`,
-        );
+        // await this.saveProgress(
+        //   trip,
+        //   userId,
+        //   trip.status,
+        //   `Task Cancellation Rejected for task: ${task.title}`,
+        //   `Task cancellation request has been rejected. ${dto.note ? 'Note: ' + dto.note : ''}`,
+        // );
 
-        this.firebaseService.sendNotification({
-          path: `/noti/${trip.managerId}/${new Date().getTime()}`,
-          data: {
-            senderId: userId,
-            receiverId: trip.managerId,
-            title: `Task Cancellation Rejected: ${task.title} (${trip.title})`,
-            message: `The cancellation request for task "${task.title}" in trip "${trip.title}" has been rejected. ${dto.note ? 'Note: ' + dto.note : ''}`,
-          },
-          claims,
-        });
+        // this.firebaseService.sendNotification({
+        //   path: `/noti/${trip.managerId}/${new Date().getTime()}`,
+        //   data: {
+        //     senderId: userId,
+        //     receiverId: trip.managerId,
+        //     title: `Task Cancellation Rejected: ${task.title} (${trip.title})`,
+        //     message: `The cancellation request for task "${task.title}" in trip "${trip.title}" has been rejected. ${dto.note ? 'Note: ' + dto.note : ''}`,
+        //   },
+        //   claims,
+        // });
 
-        if (trip.assigneeId) {
-          this.firebaseService.sendNotification({
-            path: `/noti/${trip.assigneeId}/${new Date().getTime()}`,
-            data: {
-              senderId: userId,
-              receiverId: trip.assigneeId,
-              title: `Task Cancellation Rejected: ${task.title} (${trip.title})`,
-              message: `Your cancellation request for task "${task.title}" in trip "${trip.title}" has been rejected.`,
-            },
-            claims,
-          });
-        }
+        // if (trip.assigneeId) {
+        //   this.firebaseService.sendNotification({
+        //     path: `/noti/${trip.assigneeId}/${new Date().getTime()}`,
+        //     data: {
+        //       senderId: userId,
+        //       receiverId: trip.assigneeId,
+        //       title: `Task Cancellation Rejected: ${task.title} (${trip.title})`,
+        //       message: `Your cancellation request for task "${task.title}" in trip "${trip.title}" has been rejected.`,
+        //     },
+        //     claims,
+        //   });
+        // }
       }
 
       this.logger.log(`Task cancellation rejected for task: ${task.id}`);
