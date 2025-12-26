@@ -15,6 +15,6 @@ export class UploadFileDto {
   originalFilename: string;
 
   @IsString()
-  @IsNotEmpty()
-  mimetype: string;
+  @IsOptional()
+  mimetype?: string;
 }

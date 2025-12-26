@@ -10,8 +10,8 @@ export class Media extends BaseModel {
   @Column({ type: 'varchar', length: 255 })
   originalName: string;
 
-  @Column({ type: 'varchar', length: 100 })
-  mimetype: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  mimetype?: string;
 
   @Column({ type: 'int' })
   size: number;

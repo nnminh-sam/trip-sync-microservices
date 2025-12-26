@@ -56,7 +56,7 @@ export class MediaUploadService {
   async uploadMediaWithSignature(
     fileBuffer: Buffer,
     filename: string,
-    mimetype: string,
+    mimetype: string | undefined,
     fileSize: number,
     uploadRequest: MediaUploadRequest,
   ): Promise<MediaUploadResponse> {

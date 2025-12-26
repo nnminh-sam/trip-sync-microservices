@@ -135,7 +135,7 @@ export class MediaController {
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['file', 'originalFilename', 'mimetype'],
+      required: ['file', 'originalFilename'],
       properties: {
         file: {
           type: 'string',
@@ -246,7 +246,7 @@ export class MediaController {
     const result = await this.mediaUploadService.uploadMediaWithSignature(
       file.buffer,
       originalFilename,
-      mimetype,
+      mimetype || file.mimetype,
       file.size,
       uploadRequest,
     );
