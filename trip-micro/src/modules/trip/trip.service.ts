@@ -1,6 +1,6 @@
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Repository } from 'typeorm';
 import axios from 'axios';
 import { Trip } from 'src/models/trip.model';
 import { TripLocation } from 'src/models/trip-location.model';
@@ -35,6 +35,7 @@ import { CancelationTargetEntity } from 'src/models/enums/TargetEntity.enum';
 import { CancelationDecision } from 'src/models/enums/CancelationDecision.enum';
 import { TripEvaluation } from 'src/models/trip-evaluation.model';
 import { isEAN } from 'class-validator';
+import { EmployeeStatisticDto } from './dtos/employee-statistic.dto';
 
 @Injectable()
 export class TripService {
@@ -1343,5 +1344,151 @@ export class TripService {
     );
 
     return savedLocation;
+  }
+
+  async getTripStatisticOfEmployee(
+    managerId: string,
+    employeeId: string,
+    dto: EmployeeStatisticDto,
+  ) {
+    const {
+      from_date_deadline,
+      to_date_deadline,
+      from_date_schedule,
+      to_date_schedule,
+    } = dto;
+
+    const query = this.tripRepo
+      .createQueryBuilder('trip')
+      .where('trip.deletedAt IS NULL')
+      .andWhere('trip.assigneeId = :employeeId', { employeeId });
+
+    /* -------------------- DATE FILTERS -------------------- */
+
+    if (from_date_schedule && to_date_schedule) {
+      query.andWhere(
+        'trip.schedule BETWEEN :from_date_schedule AND :to_date_schedule',
+        { from_date_schedule, to_date_schedule },
+      );
+    } else if (from_date_schedule) {
+      query.andWhere('trip.schedule >= :from_date_schedule', {
+        from_date_schedule,
+      });
+    } else if (to_date_schedule) {
+      query.andWhere('trip.schedule <= :to_date_schedule', {
+        to_date_schedule,
+      });
+    }
+
+    if (from_date_deadline && to_date_deadline) {
+      query.andWhere(
+        'trip.deadline BETWEEN :from_date_deadline AND :to_date_deadline',
+        { from_date_deadline, to_date_deadline },
+      );
+    } else if (from_date_deadline) {
+      query.andWhere('trip.deadline >= :from_date_deadline', {
+        from_date_deadline,
+      });
+    } else if (to_date_deadline) {
+      query.andWhere('trip.deadline <= :to_date_deadline', {
+        to_date_deadline,
+      });
+    }
+
+    /* -------------------- LATEST EVALUATION JOIN -------------------- */
+
+    query.innerJoin(
+      (qb) =>
+        qb
+          .select('te.trip_id', 'trip_id')
+          .addSelect('MAX(te.version)', 'max_version')
+          .from('trip_evaluations', 'te')
+          .where('te.deletedAt IS NULL')
+          .groupBy('te.trip_id'),
+      'latest_eval',
+      'latest_eval.trip_id = trip.id',
+    );
+
+    query.innerJoin(
+      'trip_evaluations',
+      'evaluation',
+      `
+      evaluation.trip_id = trip.id
+      AND evaluation.version = latest_eval.max_version
+      AND evaluation.deletedAt IS NULL
+    `,
+    );
+
+    /* -------------------- SELECT (FLATTENED) -------------------- */
+
+    query.select([
+      'trip.id AS trip_id',
+      'trip.status AS status',
+      'trip.schedule AS schedule',
+      'trip.deadline AS deadline',
+      'trip.goal AS goal',
+      'trip.purpose AS purpose',
+      'trip.assigneeId AS assigneeId',
+      'trip.managerId AS managerId',
+      'evaluation.evaluation_value AS evaluation_value',
+    ]);
+
+    // const totalTrips = await this.tripRepo.count({
+    //   where: {
+    //     assigneeId: employeeId,
+    //     decidedAt: IsNull(),
+    //   },
+    // });
+    const [ended, canceled] = await Promise.all([
+      this.tripRepo.count({
+        where: {
+          assigneeId: employeeId,
+          status: TripStatusEnum.ENDED,
+        },
+      }),
+      this.tripRepo.count({
+        where: {
+          assigneeId: employeeId,
+          status: TripStatusEnum.CANCELED,
+        },
+      }),
+    ]);
+
+    const items = await query.getRawMany<{
+      trip_id: string;
+      status: string;
+      schedule: Date;
+      deadline: Date;
+      goal: string;
+      purpose: string;
+      assigneeId: string;
+      managerId: string;
+      evaluation_value: 'successful' | 'partially_successful' | 'unsuccessful';
+    }>();
+
+    const counter: Record<string, number> = {};
+    items.forEach((trip) => {
+      if (counter[trip.evaluation_value]) {
+        counter[trip.evaluation_value]++;
+      } else {
+        counter[trip.evaluation_value] = 1;
+      }
+    });
+
+    return {
+      data: items,
+      count: items.length,
+      evaluated: items.length,
+      totalTrips: ended + canceled,
+      ended,
+      canceled,
+      unevaluated: ended + canceled - items.length,
+      pagination: {
+        page: 1,
+        size: items.length,
+        totalPages: 1,
+      },
+      statistic: counter,
+    };
   }
 }

@@ -33,6 +33,7 @@ import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { ApiResponseConstruction } from 'src/common/decorators/api-response-construction.decorator';
 import { CheckInAtLocationDto } from './dtos/check-in-at-location.dto';
 import { CheckOutAtLocationDto } from './dtos/check-out-at-location.dto';
+import { EmployeeStatisticDto } from './dtos/employee-statistic.dto';
 
 @ApiTags('Trip')
 @Controller('trips')
@@ -72,6 +73,52 @@ export class TripController {
     @Query() filter: FilterTripDto,
   ) {
     return this.tripService.findAll(claims, filter);
+  }
+
+  @Patch('/locations/check-in')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Check-in at location' })
+  @ApiBody({ type: CheckInAtLocationDto })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Check-in success',
+  })
+  async checkInAtLocation(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Body() dto: CheckInAtLocationDto,
+  ) {
+    return await this.tripService.checkInAtLocation(claims, dto);
+  }
+
+  @Patch('/locations/check-out')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Check-out at location' })
+  @ApiBody({ type: CheckOutAtLocationDto })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'Check-out success',
+  })
+  async checkOutAtLocation(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Body() dto: CheckOutAtLocationDto,
+  ) {
+    return await this.tripService.checkOutAtLocation(claims, dto);
+  }
+
+  @Get('/statistics')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get trip statistic of an employee' })
+  @ApiResponseConstruction({
+    status: 200,
+    description: 'List of trip cancellation requests',
+    isArray: true,
+  })
+  async getEmployeeStatistic(
+    @RequestUserClaims() claims: TokenClaimsDto,
+    @Query('employee-id') employeeId: string,
+    @Body() dto: EmployeeStatisticDto,
+  ) {
+    return await this.tripService.getEmployeeStatistic(claims, employeeId, dto);
   }
 
   @Get(':id')
@@ -141,36 +188,6 @@ export class TripController {
     @Body() dto: ApproveTripDto,
   ) {
     return this.tripService.approveTrip(id, claims, dto);
-  }
-
-  @Patch('/locations/check-in')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Check-in at location' })
-  @ApiBody({ type: CheckInAtLocationDto })
-  @ApiResponseConstruction({
-    status: 200,
-    description: 'Check-in success',
-  })
-  async checkInAtLocation(
-    @RequestUserClaims() claims: TokenClaimsDto,
-    @Body() dto: CheckInAtLocationDto,
-  ) {
-    return await this.tripService.checkInAtLocation(claims, dto);
-  }
-
-  @Patch('/locations/check-out')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Check-out at location' })
-  @ApiBody({ type: CheckOutAtLocationDto })
-  @ApiResponseConstruction({
-    status: 200,
-    description: 'Check-out success',
-  })
-  async checkOutAtLocation(
-    @RequestUserClaims() claims: TokenClaimsDto,
-    @Body() dto: CheckOutAtLocationDto,
-  ) {
-    return await this.tripService.checkOutAtLocation(claims, dto);
   }
 
   @Post(':id/cancelations/request')

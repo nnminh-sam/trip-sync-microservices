@@ -12,4 +12,5 @@ export const TripMessagePattern = {
   APPROVALS: 'trip.approvals',
   CHECK_IN: 'trip.location.check_in',
   CHECK_OUT: 'trip.location.check_out',
+  STATISTIC: 'tríp.statistic',
 } as const;

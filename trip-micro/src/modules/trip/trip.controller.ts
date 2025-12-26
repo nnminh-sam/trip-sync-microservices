@@ -12,6 +12,7 @@ import { CancelTripDto } from './dtos/cancel-trip.dto';
 import { ResolveCancelationDto } from './dtos/resolve-cancelation.dto';
 import { CheckInAtLocationDto } from './dtos/check-in-at-location.dto';
 import { CheckOutAtLocationDto } from './dtos/check-out-at-location.dto';
+import { EmployeeStatisticDto } from './dtos/employee-statistic.dto';
 
 @Controller()
 export class TripController {
@@ -261,5 +262,16 @@ export class TripController {
     const assigneeId: string = payload.claims.sub;
     const dto: CheckOutAtLocationDto = payload.request.body;
     return await this.tripService.checkOutAtLocation(assigneeId, dto);
+  }
+
+  @MessagePattern(TripMessagePattern.STATISTIC)
+  async getStatisticOfEmployee(
+    @Payload() payload: MessagePayloadDto<EmployeeStatisticDto>,
+  ) {
+    const managerId: string = payload.claims.sub;
+    const employeeId: string = payload.request.param?.id;
+    const dto: EmployeeStatisticDto = payload.request.body;
+
+    return await this.tripService.getTripStatisticOfEmployee(managerId, employeeId, dto);
   }
 }

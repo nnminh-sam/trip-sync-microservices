@@ -12,6 +12,7 @@ import { ResolveCancelationDto } from './dtos/resolve-cancelation.dto';
 import { TokenClaimsDto } from 'src/dtos/token-claims.dto';
 import { CheckInAtLocationDto } from './dtos/check-in-at-location.dto';
 import { CheckOutAtLocationDto } from './dtos/check-out-at-location.dto';
+import { EmployeeStatisticDto } from './dtos/employee-statistic.dto';
 
 @Injectable()
 export class TripService {
@@ -183,9 +184,7 @@ export class TripService {
     tripId: string,
     dto: CancelTripDto,
   ) {
-    this.logger.log(
-      `Sending request cancel trip for trip_id: ${tripId}`,
-    );
+    this.logger.log(`Sending request cancel trip for trip_id: ${tripId}`);
 
     const result = await this.sender.send({
       messagePattern: 'REQUEST_CANCEL',
@@ -223,9 +222,7 @@ export class TripService {
   }
 
   async getCancelationRequests(claims: TokenClaimsDto, tripId: string) {
-    this.logger.log(
-      `Sending get cancelation requests for trip_id: ${tripId}`,
-    );
+    this.logger.log(`Sending get cancelation requests for trip_id: ${tripId}`);
 
     const result = await this.sender.send({
       messagePattern: 'GET_CANCELATIONS',
@@ -233,6 +230,28 @@ export class TripService {
         claims,
         request: {
           path: { id: tripId },
+        },
+      },
+    });
+    return result;
+  }
+
+  async getEmployeeStatistic(
+    claims: TokenClaimsDto,
+    employeeId: string,
+    dto: EmployeeStatisticDto,
+  ) {
+    this.logger.log(
+      `Sending get employee statistic for employee: ${employeeId} by ${claims.sub}`,
+    );
+
+    const result = await this.sender.send({
+      messagePattern: 'STATISTIC',
+      payload: {
+        claims,
+        request: {
+          body: dto,
+          param: { id: employeeId },
         },
       },
     });
