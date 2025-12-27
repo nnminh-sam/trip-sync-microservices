@@ -116,7 +116,7 @@ export class TripController {
   async getEmployeeStatistic(
     @RequestUserClaims() claims: TokenClaimsDto,
     @Query('employee-id') employeeId: string,
-    @Body() dto: EmployeeStatisticDto,
+    @Query() dto: EmployeeStatisticDto,
   ) {
     return await this.tripService.getEmployeeStatistic(claims, employeeId, dto);
   }
