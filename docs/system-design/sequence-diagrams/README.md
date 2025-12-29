@@ -101,11 +101,10 @@ sequenceDiagram
         APIGateway-->>AttachmentService: Chuyển tiếp phản hồi
         AttachmentService->>AttachmentService: Sử dụng public key để xác<br/>thực chữ kí số nhận được
         alt Xác thực thất bại
-            AttachmentService-->>MobileApp: Phản hồi xác thực<br/>không thành công: Lí do<br/>chữ kí không đúng
-            MobileApp-->>Employee: Hiển thị lỗi
+            AttachmentService->>AttachmentService: Lưu trữ minh chứng với đánh<br/>giá xác thực người gửi thất bại
         else Xác thực thành công
-            Note over AttachmentService: Xem quá trình lưu minh<br/>chứng ở diagram tiếp theo
-            AttachmentService->>AttachmentService: Lưu trữ minh chứng
+            AttachmentService->>AttachmentService: Lưu trữ minh chứng với đánh<br/>giá xác thực người gửi thành công
+            Note over AttachmentService: Xem quá trình lưu minh<br/>chứng ở sơ đồ 4.9
             AttachmentService-->>MobileApp: Phản hồi kết quả<br/>lưu trữ minh chứng
             MobileApp-->>Employee: Hiển thị kết quả quá<br/>trình gửi minh chứng
         end
