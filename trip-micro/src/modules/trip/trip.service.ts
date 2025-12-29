@@ -195,6 +195,37 @@ export class TripService {
       }
     }
 
+    // Check for conflicting schedule and deadline in pending and in-progress trips
+    const scheduleDate = new Date(dto.schedule);
+    const deadlineDate = new Date(dto.deadline);
+
+    const conflictingTrips = await this.tripRepo
+      .createQueryBuilder('trip')
+      .where('trip.assigneeId = :assigneeId', { assigneeId: dto.assignee_id })
+      .andWhere('trip.deletedAt IS NULL')
+      .andWhere('trip.status IN (:...statuses)', {
+        statuses: [
+          TripStatusEnum.WAITING_FOR_APPROVAL,
+          TripStatusEnum.NOT_STARTED,
+          TripStatusEnum.IN_PROGRESS,
+        ],
+      })
+      .andWhere('DATE(trip.schedule) = DATE(:schedule)', { schedule: scheduleDate })
+      .andWhere('DATE(trip.deadline) = DATE(:deadline)', { deadline: deadlineDate })
+      .getMany();
+
+    if (conflictingTrips.length > 0) {
+      throwRpcException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'A trip with the same schedule and deadline already exists for this assignee',
+        details: {
+          conflictingTripIds: conflictingTrips.map((t) => t.id),
+          schedule: scheduleDate,
+          deadline: deadlineDate,
+        },
+      });
+    }
+
     const isTitleExisted = await this.tripRepo.existsBy({ title: dto.title });
     if (isTitleExisted) {
       throwRpcException({
